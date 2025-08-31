@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Sprout, LayoutDashboard, ShoppingCart, Apple, Package, Users, History } from 'lucide-react';
-import { SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
+import { SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup, SidebarGroupLabel, SidebarSeparator } from '@/components/ui/sidebar';
 import { useAuth } from '@/context/auth-context';
 import { useLanguage } from '@/context/language-context';
 import { useTranslation } from '@/lib/i18n';
@@ -27,20 +27,22 @@ export function AppSidebar() {
     { href: '/dashboard/users', label: t('sidebar_manage_users'), icon: Users },
   ];
 
-  const getNavItems = () => {
-    switch (role) {
-      case 'superadmin':
-        return [...adminNav, ...superAdminNav];
-      case 'admin':
-        return adminNav;
-      case 'client':
-        return clientNav;
-      default:
-        return [];
-    }
+  const renderNavItems = (items: { href: string; label: string; icon: React.ElementType }[]) => {
+    return items.map((item) => (
+      <SidebarMenuItem key={item.href}>
+        <SidebarMenuButton
+          asChild
+          isActive={pathname === item.href}
+          tooltip={item.label}
+        >
+          <Link href={item.href}>
+            <item.icon />
+            <span>{item.label}</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    ));
   };
-
-  const navItems = getNavItems();
 
   return (
     <>
@@ -51,22 +53,33 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu>
-          {navItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === item.href}
-                tooltip={item.label}
-              >
-                <Link href={item.href}>
-                  <item.icon />
-                  <span>{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
+        {role === 'client' && (
+          <SidebarMenu>
+            {renderNavItems(clientNav)}
+          </SidebarMenu>
+        )}
+        {role === 'admin' && (
+           <SidebarMenu>
+            {renderNavItems(adminNav)}
+          </SidebarMenu>
+        )}
+        {role === 'superadmin' && (
+          <>
+            <SidebarGroup>
+              <SidebarGroupLabel>Admin Panel</SidebarGroupLabel>
+              <SidebarMenu>
+                {renderNavItems([...adminNav, ...superAdminNav])}
+              </SidebarMenu>
+            </SidebarGroup>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupLabel>Client Portal</SidebarGroupLabel>
+               <SidebarMenu>
+                {renderNavItems(clientNav)}
+              </SidebarMenu>
+            </SidebarGroup>
+          </>
+        )}
       </SidebarContent>
     </>
   );
