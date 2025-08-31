@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -16,18 +16,45 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
 
+const SUPER_ADMIN_EMAIL = 'superadmin@thefreshhub.com';
+
 const formSchema = z.object({
-  businessName: z.string().min(2, { message: "Business name must be at least 2 characters." }),
   email: z.string().email({ message: "Invalid email address." }),
-  phone: z.string().min(10, { message: "Please enter a valid phone number." }),
-  address: z.string().min(5, { message: "Please enter a valid address." }),
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
+  businessName: z.string().optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+}).refine(data => {
+  if (data.email.toLowerCase() !== SUPER_ADMIN_EMAIL) {
+    return !!data.businessName && data.businessName.length >= 2;
+  }
+  return true;
+}, {
+  message: "Business name must be at least 2 characters.",
+  path: ["businessName"],
+}).refine(data => {
+  if (data.email.toLowerCase() !== SUPER_ADMIN_EMAIL) {
+    return !!data.phone && data.phone.length >= 10;
+  }
+  return true;
+}, {
+  message: "Please enter a valid phone number.",
+  path: ["phone"],
+}).refine(data => {
+  if (data.email.toLowerCase() !== SUPER_ADMIN_EMAIL) {
+    return !!data.address && data.address.length >= 5;
+  }
+  return true;
+}, {
+  message: "Please enter a valid address.",
+  path: ["address"],
 });
 
 export function SignupForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -40,21 +67,35 @@ export function SignupForm() {
     },
   });
 
+  const watchedEmail = form.watch("email");
+
+  useEffect(() => {
+    setIsSuperAdmin(watchedEmail.toLowerCase() === SUPER_ADMIN_EMAIL);
+  }, [watchedEmail]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
-      await setDoc(doc(db, "users", user.uid), {
+      const userData: any = {
         uid: user.uid,
         email: values.email,
-        businessName: values.businessName,
-        phone: values.phone,
-        address: values.address,
-        role: 'client',
         createdAt: serverTimestamp(),
-      });
+      };
+
+      if (values.email.toLowerCase() === SUPER_ADMIN_EMAIL) {
+        userData.role = 'superadmin';
+        userData.businessName = 'Super Admin';
+      } else {
+        userData.role = 'client';
+        userData.businessName = values.businessName;
+        userData.phone = values.phone;
+        userData.address = values.address;
+      }
+      
+      await setDoc(doc(db, "users", user.uid), userData);
 
       toast({
         title: "Account Created",
@@ -87,19 +128,6 @@ export function SignupForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
             <FormField
               control={form.control}
-              name="businessName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Business Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Your Business Inc." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
@@ -111,32 +139,49 @@ export function SignupForm() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="(555) 555-5555" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Business Address</FormLabel>
-                  <FormControl>
-                    <Input placeholder="123 Main St, Chicago, IL" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {!isSuperAdmin && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="businessName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Business Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Your Business Inc." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="(555) 555-5555" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Business Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123 Main St, Chicago, IL" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
             <FormField
               control={form.control}
               name="password"
@@ -150,7 +195,7 @@ export function SignupForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full !mt-4" disabled={isLoading}>
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </form>
