@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import './globals.css';
 import { AuthProvider } from '@/context/auth-context';
@@ -21,6 +21,18 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   const [locale, setLocale] = useState<Locale>('en');
+
+  useEffect(() => {
+    const storedLocale = localStorage.getItem('locale') as Locale | null;
+    if (storedLocale) {
+      setLocale(storedLocale);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('locale', locale);
+  }, [locale]);
+
 
   return (
     <html lang={locale}>
