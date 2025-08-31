@@ -1,3 +1,5 @@
+"use client";
+
 import { Sprout } from 'lucide-react';
 import { useLanguage } from '@/context/language-context';
 import { useTranslation } from '@/lib/i18n';

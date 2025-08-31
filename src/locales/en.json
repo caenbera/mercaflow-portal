@@ -12,5 +12,49 @@
     "feature_3_title": "Reliable Delivery",
     "feature_3_desc": "Our logistics ensure your orders arrive on time, every time, across Chicago.",
     "footer_made_with_love": "Made for Chicago's finest businesses.",
-    "footer_all_rights_reserved": "All rights reserved."
+    "footer_all_rights_reserved": "All rights reserved.",
+
+    "sidebar_new_order": "New Order",
+    "sidebar_order_history": "Order History",
+    "sidebar_dashboard": "Dashboard",
+    "sidebar_manage_orders": "Manage Orders",
+    "sidebar_manage_products": "Manage Products",
+    "sidebar_manage_users": "Manage Users",
+
+    "dashboard_title": "Dashboard",
+    "dashboard_card_new_orders": "New Orders Today",
+    "dashboard_card_sales_month": "Sales This Month",
+    "dashboard_card_low_stock": "Low Stock Products",
+    "dashboard_card_new_orders_desc": "+1 since yesterday",
+    "dashboard_card_sales_month_desc": "+15.2% from last month",
+    "dashboard_card_low_stock_desc": "Products need restocking",
+
+    "orders_title": "Manage Orders",
+    "orders_card_title": "All Customer Orders",
+    "orders_card_desc": "View, track, and update order statuses.",
+    "orders_table_placeholder": "A table of all orders will be displayed here.",
+
+    "products_title": "Manage Products",
+    "products_add_button": "Add Product",
+    "products_card_title": "Product Catalog",
+    "products_card_desc": "Add, edit, and manage your product inventory.",
+
+    "users_title": "Manage Users",
+    "users_card_title": "All Users",
+    "users_card_desc": "Assign and remove admin roles for users.",
+    "users_table_placeholder": "A table of users with role management options will be displayed here.",
+
+    "portal_title": "Place a New Order",
+    "portal_card_title": "Product Catalog",
+    "portal_card_desc": "Browse our products and add them to your order.",
+    "portal_table_placeholder": "A list of available products for ordering will be displayed here.",
+
+    "history_title": "Your Order History",
+    "history_card_title": "Past Orders",
+    "history_card_desc": "Here you can find all your previous orders and their statuses.",
+    "history_table_placeholder": "A table of your past orders will be displayed here.",
+    
+    "header_settings": "Settings",
+    "header_support": "Support",
+    "header_logout": "Logout"
 }

@@ -16,11 +16,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
+import { LanguageSwitcher } from '../landing/language-switcher';
+import { useLanguage } from '@/context/language-context';
+import { useTranslation } from '@/lib/i18n';
 
 export function DashboardHeader() {
   const { user, userProfile } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const { locale } = useLanguage();
+  const t = useTranslation(locale);
 
   const handleSignOut = async () => {
     try {
@@ -50,6 +55,7 @@ export function DashboardHeader() {
       <div className="relative ml-auto flex-1 md:grow-0">
         {/* Potentially add a search bar here in the future */}
       </div>
+      <LanguageSwitcher />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -68,10 +74,10 @@ export function DashboardHeader() {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>{userProfile?.businessName}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Settings</DropdownMenuItem>
-          <DropdownMenuItem>Support</DropdownMenuItem>
+          <DropdownMenuItem>{t('header_settings')}</DropdownMenuItem>
+          <DropdownMenuItem>{t('header_support')}</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleSignOut}>Logout</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleSignOut}>{t('header_logout')}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </header>

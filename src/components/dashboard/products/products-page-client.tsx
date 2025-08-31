@@ -10,12 +10,16 @@ import { ProductDialog } from './product-dialog';
 import { DeleteProductAlert } from './delete-product-alert';
 import type { Product } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/context/language-context';
+import { useTranslation } from '@/lib/i18n';
 
 export function ProductsPageClient() {
   const { products, loading } = useProducts();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const { locale } = useLanguage();
+  const t = useTranslation(locale);
 
   const handleAdd = () => {
     setSelectedProduct(null);
@@ -46,16 +50,16 @@ export function ProductsPageClient() {
       />
 
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-headline font-bold">Manage Products</h1>
+        <h1 className="text-2xl font-headline font-bold">{t('products_title')}</h1>
         <Button onClick={handleAdd}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Product
+          <PlusCircle className="mr-2 h-4 w-4" /> {t('products_add_button')}
         </Button>
       </div>
       
       <Card>
         <CardHeader>
-          <CardTitle>Product Catalog</CardTitle>
-          <CardDescription>Add, edit, and manage your product inventory.</CardDescription>
+          <CardTitle>{t('products_card_title')}</CardTitle>
+          <CardDescription>{t('products_card_desc')}</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (

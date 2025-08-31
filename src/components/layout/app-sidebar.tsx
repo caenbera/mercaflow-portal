@@ -3,25 +3,29 @@ import { usePathname } from 'next/navigation';
 import { Sprout, LayoutDashboard, ShoppingCart, Apple, Package, Users, History } from 'lucide-react';
 import { SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { useAuth } from '@/context/auth-context';
-
-const clientNav = [
-  { href: '/portal', label: 'New Order', icon: ShoppingCart },
-  { href: '/portal/history', label: 'Order History', icon: History },
-];
-
-const adminNav = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/orders', label: 'Manage Orders', icon: Package },
-  { href: '/dashboard/products', label: 'Manage Products', icon: Apple },
-];
-
-const superAdminNav = [
-  { href: '/dashboard/users', label: 'Manage Users', icon: Users },
-];
+import { useLanguage } from '@/context/language-context';
+import { useTranslation } from '@/lib/i18n';
 
 export function AppSidebar() {
   const { role } = useAuth();
   const pathname = usePathname();
+  const { locale } = useLanguage();
+  const t = useTranslation(locale);
+
+  const clientNav = [
+    { href: '/portal', label: t('sidebar_new_order'), icon: ShoppingCart },
+    { href: '/portal/history', label: t('sidebar_order_history'), icon: History },
+  ];
+
+  const adminNav = [
+    { href: '/dashboard', label: t('sidebar_dashboard'), icon: LayoutDashboard },
+    { href: '/dashboard/orders', label: t('sidebar_manage_orders'), icon: Package },
+    { href: '/dashboard/products', label: t('sidebar_manage_products'), icon: Apple },
+  ];
+
+  const superAdminNav = [
+    { href: '/dashboard/users', label: t('sidebar_manage_users'), icon: Users },
+  ];
 
   const getNavItems = () => {
     switch (role) {

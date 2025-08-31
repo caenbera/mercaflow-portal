@@ -12,5 +12,49 @@
     "feature_3_title": "Entrega Confiable",
     "feature_3_desc": "Nuestra logística asegura que sus pedidos lleguen a tiempo, siempre, en todo Chicago.",
     "footer_made_with_love": "Hecho para los mejores negocios de Chicago.",
-    "footer_all_rights_reserved": "Todos los derechos reservados."
+    "footer_all_rights_reserved": "Todos los derechos reservados.",
+
+    "sidebar_new_order": "Nuevo Pedido",
+    "sidebar_order_history": "Historial de Pedidos",
+    "sidebar_dashboard": "Panel de Control",
+    "sidebar_manage_orders": "Gestionar Pedidos",
+    "sidebar_manage_products": "Gestionar Productos",
+    "sidebar_manage_users": "Gestionar Usuarios",
+
+    "dashboard_title": "Panel de Control",
+    "dashboard_card_new_orders": "Nuevos Pedidos Hoy",
+    "dashboard_card_sales_month": "Ventas del Mes",
+    "dashboard_card_low_stock": "Productos con Poco Stock",
+    "dashboard_card_new_orders_desc": "+1 desde ayer",
+    "dashboard_card_sales_month_desc": "+15.2% del mes pasado",
+    "dashboard_card_low_stock_desc": "Productos necesitan reabastecimiento",
+
+    "orders_title": "Gestionar Pedidos",
+    "orders_card_title": "Todos los Pedidos de Clientes",
+    "orders_card_desc": "Ver, rastrear y actualizar el estado de los pedidos.",
+    "orders_table_placeholder": "Aquí se mostrará una tabla con todos los pedidos.",
+
+    "products_title": "Gestionar Productos",
+    "products_add_button": "Añadir Producto",
+    "products_card_title": "Catálogo de Productos",
+    "products_card_desc": "Añada, edite y gestione el inventario de sus productos.",
+
+    "users_title": "Gestionar Usuarios",
+    "users_card_title": "Todos los Usuarios",
+    "users_card_desc": "Asignar y remover roles de administrador para los usuarios.",
+    "users_table_placeholder": "Aquí se mostrará una tabla de usuarios con opciones de gestión de roles.",
+
+    "portal_title": "Realizar un Nuevo Pedido",
+    "portal_card_title": "Catálogo de Productos",
+    "portal_card_desc": "Explore nuestros productos y añádalos a su pedido.",
+    "portal_table_placeholder": "Aquí se mostrará una lista de los productos disponibles para ordenar.",
+
+    "history_title": "Su Historial de Pedidos",
+    "history_card_title": "Pedidos Anteriores",
+    "history_card_desc": "Aquí puede encontrar todos sus pedidos anteriores y sus estados.",
+    "history_table_placeholder": "Aquí se mostrará una tabla con sus pedidos anteriores.",
+
+    "header_settings": "Configuración",
+    "header_support": "Soporte",
+    "header_logout": "Cerrar Sesión"
 }

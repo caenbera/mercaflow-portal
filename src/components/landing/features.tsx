@@ -1,3 +1,5 @@
+"use client";
+
 import { Package, Leaf, Truck } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useLanguage } from '@/context/language-context';

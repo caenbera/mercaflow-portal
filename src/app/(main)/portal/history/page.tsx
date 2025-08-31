@@ -1,16 +1,23 @@
+"use client";
+
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { useLanguage } from "@/context/language-context";
+import { useTranslation } from "@/lib/i18n";
 
 export default function OrderHistoryPage() {
+  const { locale } = useLanguage();
+  const t = useTranslation(locale);
+
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-headline font-bold">Your Order History</h1>
+      <h1 className="text-2xl font-headline font-bold">{t('history_title')}</h1>
        <Card>
         <CardHeader>
-          <CardTitle>Past Orders</CardTitle>
-          <CardDescription>Here you can find all your previous orders and their statuses.</CardDescription>
+          <CardTitle>{t('history_card_title')}</CardTitle>
+          <CardDescription>{t('history_card_desc')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <p>A table of your past orders will be displayed here.</p>
+          <p>{t('history_table_placeholder')}</p>
         </CardContent>
       </Card>
     </div>
