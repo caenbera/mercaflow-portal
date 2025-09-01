@@ -105,3 +105,33 @@ exports.onUserRoleChange = functions.firestore
       );
     }
   });
+
+/**
+ * Callable function to get a user's custom claims.
+ * Only callable by an authenticated user who is a superadmin.
+ */
+exports.getUserClaims = functions.https.onCall(async (data, context) => {
+  // Check if the caller is authenticated and is a superadmin.
+  if (!context.auth || context.auth.token.email !== SUPER_ADMIN_EMAIL) {
+    throw new functions.https.HttpsError(
+      'permission-denied',
+      'This function can only be called by a superadmin.'
+    );
+  }
+  
+  const uid = data.uid;
+  if (!uid) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'The function must be called with a "uid" argument.'
+    );
+  }
+
+  try {
+    const userRecord = await admin.auth().getUser(uid);
+    return { claims: userRecord.customClaims || {} };
+  } catch (error) {
+    functions.logger.error(`Error fetching claims for user ${uid}:`, error);
+    throw new functions.https.HttpsError('internal', 'Unable to fetch user claims.');
+  }
+});

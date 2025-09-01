@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from "@/context/language-context";
@@ -10,17 +10,56 @@ import { useUsers } from '@/hooks/use-users';
 import { UsersTable } from '@/components/dashboard/users/users-table';
 import { RoleGuard } from '@/components/auth/role-guard';
 import type { UserProfile } from '@/types';
-import { updateUserRole } from '@/lib/firestore/users';
+import { updateUserRole, addAdminInvite } from '@/lib/firestore/users';
 import { useToast } from '@/hooks/use-toast';
 import { InviteAdminForm } from '@/components/dashboard/users/invite-admin-form';
-import { addAdminInvite } from '@/lib/firestore/users';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '@/lib/firebase/config';
+import { useAuth } from '@/context/auth-context';
+
+type UserClaims = { [key: string]: any };
 
 export default function ManageUsersPage() {
   const { locale } = useLanguage();
   const t = useTranslation(locale);
-  const { users, loading } = useUsers();
+  const { user } = useAuth();
+  const { users, loading: usersLoading } = useUsers();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [claims, setClaims] = useState<Record<string, UserClaims | null>>({});
+  const [claimsLoading, setClaimsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchClaims = async () => {
+      if (!users.length || !user) return;
+      
+      setClaimsLoading(true);
+      const getUserClaims = httpsCallable(functions, 'getUserClaims');
+      const claimsPromises = users.map(async (userToFetch) => {
+        try {
+          const result: any = await getUserClaims({ uid: userToFetch.uid });
+          return { uid: userToFetch.uid, claims: result.data.claims };
+        } catch (error) {
+          console.error(`Failed to get claims for user ${userToFetch.uid}:`, error);
+          return { uid: userToFetch.uid, claims: { error: 'Failed to load' } };
+        }
+      });
+      
+      const results = await Promise.all(claimsPromises);
+      const newClaims = results.reduce((acc, result) => {
+        acc[result.uid] = result.claims;
+        return acc;
+      }, {} as Record<string, UserClaims | null>);
+      
+      setClaims(newClaims);
+      setClaimsLoading(false);
+    };
+
+    if (!usersLoading) {
+      fetchClaims();
+    }
+  }, [users, usersLoading, user]);
+
 
   const handleRoleChange = async (user: UserProfile, newRole: 'admin' | 'client') => {
     setIsUpdating(true);
@@ -28,8 +67,9 @@ export default function ManageUsersPage() {
       await updateUserRole(user.uid, newRole);
       toast({
         title: "Success",
-        description: `${user.businessName}'s role has been updated. The user must sign out and sign back in to see the changes.`
+        description: `${user.businessName}'s role has been updated. Claims will update shortly, but the user must sign out and sign back in to see the changes.`
       });
+      // In a real app, you might want to re-trigger claims fetching here after a delay.
     } catch (error: any) {
        toast({
         variant: "destructive",
@@ -80,7 +120,7 @@ export default function ManageUsersPage() {
             <CardDescription>{t('users_card_desc')}</CardDescription>
           </CardHeader>
           <CardContent>
-             {loading ? (
+             {usersLoading ? (
                 <div className="space-y-4">
                   <Skeleton className="h-12 w-full" />
                   <Skeleton className="h-12 w-full" />
@@ -89,6 +129,8 @@ export default function ManageUsersPage() {
               ) : (
                 <UsersTable 
                   users={users} 
+                  claims={claims}
+                  claimsLoading={claimsLoading}
                   onRoleChange={handleRoleChange}
                   isUpdating={isUpdating}
                 />
