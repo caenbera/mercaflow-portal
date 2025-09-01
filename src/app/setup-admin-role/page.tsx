@@ -32,11 +32,11 @@ export default function SetupAdminRolePage() {
       console.log(result.data);
       toast({
         title: "Success!",
-        description: "You have been granted Super Admin privileges. Redirecting to dashboard...",
+        description: "You have been granted Super Admin privileges. Please log out and log back in to see the changes.",
       });
       // Force refresh of the token to get new custom claims
       await user.getIdToken(true);
-      router.push('/dashboard');
+      router.push('/admin/dashboard');
     } catch (error: any) {
       console.error(error);
       toast({
@@ -55,7 +55,7 @@ export default function SetupAdminRolePage() {
         <CardHeader>
           <CardTitle className="font-headline">Super Admin Setup</CardTitle>
           <CardDescription>
-            Click the button below to assign the Super Admin role to your account. This is a one-time setup action.
+            Click the button below to assign the Super Admin role to your account. This is a one-time setup action. After clicking, you may need to log out and log back in.
           </CardDescription>
         </CardHeader>
         <CardContent>
