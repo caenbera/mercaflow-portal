@@ -59,7 +59,7 @@ export default function SetupAdminRolePage() {
         <CardHeader>
           <CardTitle className="font-headline">Super Admin Setup</CardTitle>
           <CardDescription>
-            Click the button below to assign the Super Admin role to your account. This is a one-time setup action. If you get an 'internal' error, please complete the step below first.
+            Click the button below to assign the Super Admin role to your account. If you get an 'internal' error, please complete the step below first. This is the final configuration step.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -67,19 +67,19 @@ export default function SetupAdminRolePage() {
             <Terminal className="h-4 w-4" />
             <AlertTitle>Fixing the 'internal' Error</AlertTitle>
             <AlertDescription>
-              The 'internal' error usually means there's a configuration issue in your Google Cloud project. The most common cause is that billing is not enabled for this specific project.
+              The 'internal' error usually means the Cloud Function needs permission to access Firebase Authentication services. Enabling the 'Cloud Identity Platform API' grants this permission.
             </AlertDescription>
           </Alert>
 
           <Alert variant="default" className="flex items-start">
             <Lightbulb className="h-4 w-4 mr-3 mt-1" />
             <div>
-                <AlertTitle>1. Enable Billing for the Project</AlertTitle>
+                <AlertTitle>1. Enable the Correct API</AlertTitle>
                 <AlertDescription>
-                  Cloud Functions require billing to be enabled on your project. Click the button below to link your billing account to the 'fresh-hub-portal' project.
+                  The Cloud Function needs the **Cloud Identity Platform API** to manage user roles. Click the button below to enable it for your project.
                    <Button variant="link" asChild className="p-0 h-auto ml-1">
-                    <Link href={`https://console.cloud.google.com/billing/linkedaccount?project=${projectId}`} target="_blank" rel="noopener noreferrer">
-                      Enable Billing Now
+                    <Link href={`https://console.cloud.google.com/apis/library/identitytoolkit.googleapis.com?project=${projectId}`} target="_blank" rel="noopener noreferrer">
+                      Enable API Now
                     </Link>
                   </Button>
                 </AlertDescription>
@@ -92,7 +92,7 @@ export default function SetupAdminRolePage() {
           {!user && <p className="text-sm text-destructive mt-2 text-center">Please log in first.</p>}
         </CardContent>
         <CardFooter className="flex-col items-start text-sm">
-            <p>After enabling billing, try clicking the "Become Super Admin" button again.</p>
+            <p>After enabling the API, try clicking the "Become Super Admin" button again.</p>
           </CardFooter>
       </Card>
   );
