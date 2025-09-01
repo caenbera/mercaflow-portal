@@ -73,14 +73,12 @@ export function AppSidebar() {
         </SidebarMenu>
       );
     }
-    if (role === 'client') {
-       return (
-        <SidebarMenu>
-          {renderNavItems(clientNav)}
-        </SidebarMenu>
-      );
-    }
-    return null; // Render nothing if role is not determined yet
+    // Default to client view if not admin or superadmin
+    return (
+     <SidebarMenu>
+       {renderNavItems(clientNav)}
+     </SidebarMenu>
+   );
   }
 
   return (
