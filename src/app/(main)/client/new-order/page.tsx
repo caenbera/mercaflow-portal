@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Product, OrderItem } from '@/types';
+import { Badge } from '@/components/ui/badge';
 
 interface OrderSelection {
   [productId: string]: {
@@ -32,8 +34,17 @@ export default function NewOrderPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleQuantityChange = (product: Product, quantityStr: string) => {
-    const quantity = Number(quantityStr);
+    let quantity = Number(quantityStr);
     const productId = product.id;
+
+    if (quantity > product.stock) {
+      quantity = product.stock;
+      toast({
+        variant: "destructive",
+        title: "Stock Limit Reached",
+        description: `You can only order up to ${product.stock} units of ${product.name}.`,
+      });
+    }
 
     setSelection(prev => {
       const newSelection = { ...prev };
@@ -69,13 +80,29 @@ export default function NewOrderPage() {
   }, [selection]);
 
   const handleSubmitOrder = async () => {
-    if (!user || !userProfile || orderItems.length === 0) {
+    if (!user || !userProfile) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not find user profile. Please try again.",
+        });
+        return;
+    }
+    if (orderItems.length === 0) {
         toast({
             variant: "destructive",
             title: "Error",
             description: "Please select at least one product.",
         });
         return;
+    }
+     if (!userProfile.address) {
+      toast({
+        variant: "destructive",
+        title: "Missing Address",
+        description: "Your profile is missing a shipping address. Please contact support.",
+      });
+      return;
     }
     
     setIsSubmitting(true);
@@ -148,16 +175,25 @@ export default function NewOrderPage() {
                   <CardContent className="p-4 flex-grow">
                     <h3 className="font-semibold text-lg">{product.name}</h3>
                     <p className="text-sm text-muted-foreground">{product.description}</p>
+                     <div className="mt-2">
+                        {product.stock > 0 ? (
+                           <Badge variant="secondary">In Stock: {product.stock}</Badge>
+                        ) : (
+                           <Badge variant="destructive">Out of Stock</Badge>
+                        )}
+                    </div>
                   </CardContent>
                   <CardFooter className="p-4 flex items-center justify-between">
                      <div className="font-bold text-lg">{formatCurrency(product.price)}</div>
                      <Input
                         type="number"
                         min="0"
+                        max={product.stock}
                         placeholder="Qty"
                         className="w-20"
                         value={selection[product.id]?.quantity || ''}
                         onChange={(e) => handleQuantityChange(product, e.target.value)}
+                        disabled={product.stock === 0}
                       />
                   </CardFooter>
                 </Card>
