@@ -1,13 +1,17 @@
+
 "use client";
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/lib/firebase/config';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Terminal } from 'lucide-react';
 
 export default function SetupAdminRolePage() {
   const { user } = useAuth();
@@ -50,7 +54,7 @@ export default function SetupAdminRolePage() {
   };
 
   return (
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle className="font-headline">Super Admin Setup</CardTitle>
           <CardDescription>
@@ -58,11 +62,27 @@ export default function SetupAdminRolePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={handleSetup} disabled={isLoading || !user} className="w-full">
+           <Alert>
+            <Terminal className="h-4 w-4" />
+            <AlertTitle>Important Prerequisite</AlertTitle>
+            <AlertDescription>
+              For this operation to succeed, your Google Cloud project must have billing enabled. This is required for Cloud Functions to run. The 'internal' error often indicates a billing or API permission issue.
+            </AlertDescription>
+          </Alert>
+
+          <Button onClick={handleSetup} disabled={isLoading || !user} className="w-full mt-4">
             {isLoading ? 'Processing...' : 'Become Super Admin'}
           </Button>
           {!user && <p className="text-sm text-destructive mt-2 text-center">Please log in first.</p>}
         </CardContent>
+        <CardFooter className="flex-col items-start text-sm">
+            <p>If you encounter an 'internal' error, please verify billing:</p>
+            <Button variant="link" asChild className="p-0 h-auto">
+              <Link href="https://console.cloud.google.com/billing" target="_blank" rel="noopener noreferrer">
+                Go to Google Cloud Billing
+              </Link>
+            </Button>
+          </CardFooter>
       </Card>
   );
 }
