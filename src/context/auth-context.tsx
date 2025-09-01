@@ -37,16 +37,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(firebaseUser);
 
         try {
+          // Force refresh the token to get the latest custom claims.
           const tokenResult = await getIdTokenResult(firebaseUser, true);
           const claims = tokenResult.claims;
           
-          let userRole: UserRole = claims.superadmin ? 'superadmin' : claims.admin ? 'admin' : 'client';
+          let userRole: UserRole = 'client'; // Default to client
           
-          // *** SOLUCIÓN DEFINITIVA ***
-          // Si el email es el del superadmin, forzamos el rol en el frontend.
-          // Esto evita la dependencia en Cloud Functions que no funcionaban.
-          if (firebaseUser.email === SUPER_ADMIN_EMAIL) {
+          if (firebaseUser.email === SUPER_ADMIN_EMAIL || claims.superadmin) {
             userRole = 'superadmin';
+          } else if (claims.admin) {
+            userRole = 'admin';
           }
           
           setRole(userRole);
