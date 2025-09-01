@@ -45,42 +45,6 @@ export function AppSidebar() {
     ));
   };
   
-  const renderSidebarContent = () => {
-    if (role === 'superadmin') {
-      return (
-        <>
-          <SidebarGroup>
-            <SidebarGroupLabel>{t('sidebar_admin_panel')}</SidebarGroupLabel>
-            <SidebarMenu>
-              {renderNavItems(adminNav)}
-              {renderNavItems(superAdminNav)}
-            </SidebarMenu>
-          </SidebarGroup>
-          <SidebarSeparator />
-          <SidebarGroup>
-            <SidebarGroupLabel>{t('sidebar_client_portal')}</SidebarGroupLabel>
-             <SidebarMenu>
-              {renderNavItems(clientNav)}
-            </SidebarMenu>
-          </SidebarGroup>
-        </>
-      );
-    }
-    if (role === 'admin') {
-      return (
-        <SidebarMenu>
-          {renderNavItems(adminNav)}
-        </SidebarMenu>
-      );
-    }
-    // Default to client view if not admin or superadmin
-    return (
-     <SidebarMenu>
-       {renderNavItems(clientNav)}
-     </SidebarMenu>
-   );
-  }
-
   return (
     <>
       <SidebarHeader>
@@ -90,7 +54,32 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        {renderSidebarContent()}
+        {role === 'superadmin' ? (
+          <>
+            <SidebarGroup>
+              <SidebarGroupLabel>{t('sidebar_admin_panel')}</SidebarGroupLabel>
+              <SidebarMenu>
+                {renderNavItems(adminNav)}
+                {renderNavItems(superAdminNav)}
+              </SidebarMenu>
+            </SidebarGroup>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupLabel>{t('sidebar_client_portal')}</SidebarGroupLabel>
+               <SidebarMenu>
+                {renderNavItems(clientNav)}
+              </SidebarMenu>
+            </SidebarGroup>
+          </>
+        ) : role === 'admin' ? (
+          <SidebarMenu>
+            {renderNavItems(adminNav)}
+          </SidebarMenu>
+        ) : (
+          <SidebarMenu>
+            {renderNavItems(clientNav)}
+          </SidebarMenu>
+        )}
       </SidebarContent>
     </>
   );
