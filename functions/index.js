@@ -18,9 +18,8 @@ exports.processSignUp = functions.auth.user().onCreate(async (user) => {
     return null;
   }
   
-  // Special handling for the superadmin email is not needed here,
-  // as their role is determined on the client-side for simplicity.
   // This function focuses on promoting pre-approved admins.
+  // The superadmin role is handled on the client-side for simplicity via email check.
 
   const inviteDocRef = admin.firestore().collection("adminInvites").doc(email);
 
@@ -33,9 +32,8 @@ exports.processSignUp = functions.auth.user().onCreate(async (user) => {
       await admin.auth().setCustomUserClaims(uid, { admin: true });
       functions.logger.log(`Successfully set 'admin' custom claim for user ${uid} (${email}).`);
       
-      // Optional: Delete the invite so it can't be reused.
-      // For simplicity and robustness, we can leave this out for now.
-      // If needed in the future, it can be added back carefully.
+      // Optional: It's safer to leave the invite for auditing purposes or delete it in a separate cleanup job.
+      // Deleting it here can introduce race conditions or complexity.
       // await inviteDocRef.delete();
       
       return { result: `Admin claim assigned to ${email}` };

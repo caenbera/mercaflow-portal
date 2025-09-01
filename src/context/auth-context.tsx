@@ -13,7 +13,7 @@ interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
   role: UserRole | null;
-  loading: boolean; // El estado de carga es clave
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -52,22 +52,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           setRole(userRole);
 
+          // Listen for profile changes in Firestore
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const unsubProfile = onSnapshot(userDocRef, (doc) => {
             if (doc.exists()) {
-              setUserProfile({ ...doc.data(), uid: doc.id } as UserProfile);
+              const profileData = { ...doc.data(), uid: doc.id } as UserProfile;
+              // If the role in firestore is different from the claim, it might indicate a recent change.
+              // For simplicity, we trust the claim determined above.
+              setUserProfile(profileData);
             } else {
+              // This can happen briefly during sign up before the user document is created.
               setUserProfile(null);
             }
+            // We are ready to show the UI only after claims and profile are checked.
             setLoading(false);
           }, (error) => {
-             console.error("Error al obtener perfil:", error);
+             console.error("Error getting user profile:", error);
              setLoading(false);
           });
 
           return () => unsubProfile();
         } catch (error) {
-           console.error("Error al obtener claims del usuario:", error);
+           console.error("Error getting user claims:", error);
            setUser(null);
            setRole(null);
            setLoading(false);
