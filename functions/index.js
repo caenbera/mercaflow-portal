@@ -5,50 +5,53 @@ const admin = require("firebase-admin");
 // Initialize the Admin SDK
 admin.initializeApp();
 
-const SUPER_ADMIN_EMAIL = "superadmin@thefreshhub.com";
-
+/**
+ * Cloud Function to assign the 'superadmin' role to a specific user.
+ * This is a callable function, meaning it's invoked directly from the client.
+ *
+ * Security:
+ * 1. Only authenticated users can call this function.
+ * 2. Only the user with the email 'superadmin@thefreshhub.com' can assign themselves the role.
+ */
 exports.setupSuperAdmin = functions.https.onCall(async (data, context) => {
-  // Check if the user is authenticated.
+  // 1. Check if the user calling the function is authenticated.
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "The function must be called while authenticated."
+      "The function must be called by an authenticated user."
     );
   }
 
+  const callerEmail = context.auth.token.email;
   const callerUid = context.auth.uid;
 
+  // 2. Define the superadmin email.
+  const superAdminEmail = "superadmin@thefreshhub.com";
+
+  // 3. Verify that the user calling the function is the intended superadmin.
+  // This prevents any user from assigning the role to themselves.
+  if (callerEmail !== superAdminEmail) {
+    throw new functions.https.HttpsError(
+      "permission-denied",
+      "You do not have permission to perform this action."
+    );
+  }
+
   try {
-    const userRecord = await admin.auth().getUser(callerUid);
-
-    // Only the specified super admin email can call this to elevate themselves.
-    if (userRecord.email !== SUPER_ADMIN_EMAIL) {
-        throw new functions.https.HttpsError(
-            "permission-denied",
-            "You are not authorized to perform this action."
-        );
-    }
-    
-    // Check if the user already has the claim
-    if (userRecord.customClaims && userRecord.customClaims.superadmin === true) {
-      return {
-        message: "User is already a superadmin.",
-      };
-    }
-
-    // Set the custom claim
+    // 4. Assign the Custom Claims to the user.
+    // This is what defines their role across the application.
     await admin.auth().setCustomUserClaims(callerUid, { superadmin: true });
-    
+
+    // 5. Return a success message.
     return {
-      message: `Success! ${userRecord.email} has been made a superadmin.`,
+      success: true,
+      message: `Success! The Super Admin role has been assigned to ${callerEmail}.`,
     };
   } catch (error) {
-    console.error("Error setting superadmin claim:", error);
-    // Log the detailed error to Firebase console for debugging.
+    console.error("Error setting superadmin claims:", error);
     throw new functions.https.HttpsError(
       "internal",
-      "An internal error occurred while setting the superadmin role. Check the function logs for details.",
-      error
+      "An internal error occurred while trying to assign the role."
     );
   }
 });
