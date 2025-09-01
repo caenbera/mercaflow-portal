@@ -123,7 +123,7 @@ export function AppSidebar() {
           <Sprout className="h-6 w-6 text-primary" />
           <span className="font-bold font-headline text-lg">Fresh Hub</span>
         </Link>
-      </Header>
+      </SidebarHeader>
       <SidebarContent>
         {content}
       </SidebarContent>
