@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(firebaseUser);
 
         try {
-          // Force refresh the token to get the latest custom claims.
+          // Force refresh the token to get the latest custom claims. This is crucial.
           const tokenResult = await getIdTokenResult(firebaseUser, true);
           const claims = tokenResult.claims;
           
