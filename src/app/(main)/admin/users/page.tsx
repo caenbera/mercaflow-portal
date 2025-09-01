@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -11,6 +12,8 @@ import { RoleGuard } from '@/components/auth/role-guard';
 import type { UserProfile } from '@/types';
 import { updateUserRole } from '@/lib/firestore/users';
 import { useToast } from '@/hooks/use-toast';
+import { InviteAdminForm } from '@/components/dashboard/users/invite-admin-form';
+import { addAdminInvite } from '@/lib/firestore/users';
 
 export default function ManageUsersPage() {
   const { locale } = useLanguage();
@@ -25,7 +28,7 @@ export default function ManageUsersPage() {
       await updateUserRole(user.uid, newRole);
       toast({
         title: "Success",
-        description: `${user.businessName}'s role has been updated to ${newRole}.`
+        description: `${user.businessName}'s role has been updated. The user must sign out and sign back in to see the changes.`
       });
     } catch (error: any) {
        toast({
@@ -37,11 +40,40 @@ export default function ManageUsersPage() {
       setIsUpdating(false);
     }
   };
+
+  const handleInviteAdmin = async (email: string) => {
+    try {
+      await addAdminInvite(email);
+      toast({
+        title: "Admin Pre-Approved",
+        description: `${email} is now pre-approved. They will become an admin as soon as they sign up with this email.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Could not pre-approve this email.",
+      });
+    }
+  };
   
   return (
     <RoleGuard allowedRoles={['superadmin']}>
       <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-headline font-bold">{t('users_title')}</h1>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Invite New Admin</CardTitle>
+            <CardDescription>
+              Pre-approve an email address to become an admin. Once they sign up using this email, they will automatically be granted admin privileges.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <InviteAdminForm onInvite={handleInviteAdmin} />
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>{t('users_card_title')}</CardTitle>

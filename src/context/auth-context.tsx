@@ -43,6 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           let userRole: UserRole = 'client'; // Default to client
           
+          // The email check for superadmin acts as a failsafe
           if (firebaseUser.email === SUPER_ADMIN_EMAIL || claims.superadmin) {
             userRole = 'superadmin';
           } else if (claims.admin) {

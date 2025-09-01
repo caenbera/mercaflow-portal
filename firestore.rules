@@ -3,36 +3,62 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Helper function to check for admin roles from the auth token's custom claims
+    function isAdmin() {
+      return request.auth.token.admin == true || request.auth.token.superadmin == true;
+    }
     
-    // Users can only read and update their own profile
+    function isSuperAdmin() {
+      return request.auth.token.superadmin == true;
+    }
+
+    // USERS Collection
     match /users/{userId} {
-      allow read, update: if request.auth.uid == userId;
-      allow create: if request.auth.uid == userId;
+      // Any authenticated user can create their own user profile document
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // Users can only read their own data
+      allow read: if request.auth.uid == userId || isSuperAdmin();
+      
+      // Users can only update their own data, but superadmins can update anyone's role
+      allow update: if request.auth.uid == userId || (isSuperAdmin() && 'role' in request.resource.data);
+      
+      // Only superadmins can delete users
+      allow delete: if isSuperAdmin();
     }
 
-    // Authenticated users can read products
+    // PRODUCTS Collection
     match /products/{productId} {
+      // Any authenticated user (client) can read products
       allow read: if request.auth != null;
-      // Only admins/superadmins can create, update, or delete products (future rule)
-      allow write: if false; // Temporarily lock down writes until roles work
+      
+      // Only admins and superadmins can create, update, or delete products
+      allow write: if isAdmin();
     }
 
-    // Users can create and read their own orders
+    // ORDERS Collection
     match /orders/{orderId} {
-       allow read, create: if request.auth.uid == request.resource.data.userId;
-       // Only admins/superadmins can update orders (e.g., change status)
-       allow update: if false; // Temporarily lock down updates until roles work
+      // Users can create their own orders
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Users can read their own orders. Admins can read all orders.
+      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin();
+      
+      // Admins can update orders (e.g., change status)
+      allow update: if isAdmin();
+      
+      // Only admins can delete orders
+      allow delete: if isAdmin();
     }
 
-    // SPECIAL RULE for Super Admin setup
-    // Only the specific superadmin email can write to this collection
-    match /admin_role_requests/{userId} {
-      allow create: if request.auth.uid == userId && request.auth.token.email == "superadmin@thefreshhub.com";
-    }
+    // ADMIN INVITES Collection
+    match /adminInvites/{email} {
+      // Only Super Admins can create or read invites
+      allow create, read: if isSuperAdmin();
 
-    // Default deny all other access
-    match /{document=**} {
-      allow read, write: if false;
+      // Nobody can update or delete invites through the client, they are single-use
+      allow update, delete: if false;
     }
   }
 }
