@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { LanguageSwitcher } from '@/components/landing/language-switcher';
 import { useLanguage } from '@/context/language-context';
 import { useTranslation } from '@/lib/i18n';
+import { Phone, MessageSquare } from 'lucide-react';
 
 export function LandingHeader() {
   const { locale } = useLanguage();
@@ -23,13 +24,28 @@ export function LandingHeader() {
                     </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                    <LanguageSwitcher />
-                     <Button variant="ghost" asChild>
-                        <Link href="/login">{t('nav_login')}</Link>
-                    </Button>
-                    <Button asChild>
-                        <Link href="/signup">{t('nav_signup')}</Link>
-                    </Button>
+                    <div className="hidden md:flex items-center space-x-4">
+                       <div className="flex items-center space-x-2 text-green-600">
+                           <MessageSquare className="h-5 w-5" />
+                           <span className="font-semibold">{t('header_speaks_spanish')}</span>
+                       </div>
+                       <LanguageSwitcher />
+                       <Button variant="ghost" asChild>
+                          <Link href="/login">{t('nav_login')}</Link>
+                      </Button>
+                      <Button asChild>
+                          <Link href="/signup">{t('nav_signup')}</Link>
+                      </Button>
+                    </div>
+                    <div className="md:hidden flex items-center space-x-2">
+                      <LanguageSwitcher />
+                      <Button asChild size="icon" className="bg-accent-orange hover:bg-orange-600">
+                        <a href="tel:+1-555-FRESH">
+                          <Phone className="h-5 w-5" />
+                          <span className="sr-only">{t('header_call_now')}</span>
+                        </a>
+                      </Button>
+                    </div>
                 </div>
             </div>
         </div>
