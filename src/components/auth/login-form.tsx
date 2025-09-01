@@ -127,6 +127,12 @@ export function LoginForm() {
             Sign up
           </Link>
         </div>
+        <div className="mt-4 text-center text-sm border-t pt-4">
+          First time Super Admin setup?{' '}
+          <Link href="/setup-admin-role" className="underline text-primary font-semibold">
+            Assign Role
+          </Link>
+        </div>
       </CardContent>
     </Card>
   );
