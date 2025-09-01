@@ -31,19 +31,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setLoading(true); // Start loading whenever auth state might change
+      setLoading(true);
       if (firebaseUser) {
         setUser(firebaseUser);
 
         try {
-          // This is the critical part: force a refresh of the ID token
-          // to get the latest custom claims for the user role.
           const tokenResult = await getIdTokenResult(firebaseUser, true);
           const claims = tokenResult.claims;
           const userRole: UserRole = claims.superadmin ? 'superadmin' : claims.admin ? 'admin' : 'client';
           setRole(userRole);
 
-          // Listen for user profile changes from Firestore
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const unsubProfile = onSnapshot(userDocRef, 
             (doc) => {
@@ -52,7 +49,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               } else {
                 setUserProfile(null);
               }
-              // Only set loading to false after role AND profile are set
               setLoading(false);
             }, 
             (error) => {
@@ -62,7 +58,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                setLoading(false);
             }
           );
-
+          // This is a cleanup function for the profile listener.
+          // It's important to return it so it gets called when the user logs out.
           return () => unsubProfile();
 
         } catch (error) {
