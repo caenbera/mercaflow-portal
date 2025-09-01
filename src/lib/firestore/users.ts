@@ -12,8 +12,8 @@ export const updateUserRole = (uid: string, newRole: 'admin' | 'client') => {
 
 export const addAdminInvite = (email: string) => {
   // Use the email as the document ID for easy lookup
-  const inviteDoc = doc(collection(db, 'adminInvites'), email);
-  return setDoc(inviteDoc, {
+  const inviteDocRef = doc(db, 'adminInvites', email);
+  return setDoc(inviteDocRef, {
     email: email,
     role: 'admin',
   });
