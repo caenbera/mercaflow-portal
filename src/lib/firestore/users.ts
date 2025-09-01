@@ -1,7 +1,6 @@
 
-import { doc, updateDoc, setDoc, collection } from 'firebase/firestore';
+import { doc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import type { UserRole } from '@/types';
 
 export const updateUserRole = (uid: string, newRole: 'admin' | 'client') => {
   const userDoc = doc(db, 'users', uid);
@@ -10,11 +9,13 @@ export const updateUserRole = (uid: string, newRole: 'admin' | 'client') => {
   });
 };
 
+// This function is no longer needed with the simplified role management.
+// We keep it here in case we want to re-introduce a pre-approval flow later,
+// but it is not used by any component.
 export const addAdminInvite = (email: string) => {
-  // Use the email as the document ID for easy lookup and to prevent duplicates.
-  const inviteDocRef = doc(db, 'adminInvites', email);
+  const inviteDocRef = doc(db, 'adminInvites', email.toLowerCase());
   return setDoc(inviteDocRef, {
     email: email.toLowerCase(),
-    role: 'admin',
+    status: 'pending',
   });
 };

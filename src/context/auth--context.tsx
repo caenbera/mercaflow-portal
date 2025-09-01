@@ -1,4 +1,3 @@
-
 "use client";
 
 import { createContext, useState, useEffect, useContext } from 'react';
@@ -23,8 +22,6 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
 });
 
-const SUPER_ADMIN_EMAIL = 'superadmin@thefreshhub.com';
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -36,33 +33,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (firebaseUser) {
         setUser(firebaseUser);
 
-        // Listen for profile changes in Firestore
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         const unsubProfile = onSnapshot(userDocRef, (doc) => {
           if (doc.exists()) {
             const profileData = { ...doc.data(), uid: doc.id } as UserProfile;
-            
-            // --- NEW SIMPLIFIED LOGIC ---
-            // The role from the Firestore document is the single source of truth.
-            // The superadmin email check is a failsafe.
-            if (profileData.email === SUPER_ADMIN_EMAIL) {
-              setRole('superadmin');
-            } else {
-              setRole(profileData.role || 'client');
-            }
-            
             setUserProfile(profileData);
+            // The role from Firestore is the single source of truth.
+            setRole(profileData.role || 'client');
           } else {
-            // User exists in Auth, but not in Firestore.
-            // This can happen during signup before the doc is created.
-            // Default to client, the profile will update shortly.
+            // User exists in Auth, but not in Firestore. Default to client.
             setUserProfile(null);
             setRole('client');
-
-            // For superadmin signup, we need to ensure the role is set immediately
-             if (firebaseUser.email === SUPER_ADMIN_EMAIL) {
-                setRole('superadmin');
-            }
           }
           setLoading(false);
         }, (error) => {
@@ -85,7 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value = { user, userProfile, role, loading };
 
-  return <AuthContext.Provider value={value}>{children}</Auth.Provider>;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

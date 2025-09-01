@@ -16,6 +16,9 @@ interface InviteAdminFormProps {
   onInvite: (email: string) => Promise<void>;
 }
 
+// NOTE: This component is currently not used in the ManageUsersPage.
+// The pre-approval flow has been removed in favor of direct role management
+// from the users table. It is kept for potential future use.
 export function InviteAdminForm({ onInvite }: InviteAdminFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

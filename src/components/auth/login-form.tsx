@@ -12,16 +12,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { signInWithEmailAndPassword, getIdTokenResult } from 'firebase/auth';
-import { auth } from '@/lib/firebase/config';
-import type { UserRole } from '@/types';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase/config';
+import { doc, getDoc } from 'firebase/firestore';
+import type { UserRole, UserProfile } from '@/types';
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(1, { message: "Password is required." }),
 });
-
-const SUPER_ADMIN_EMAIL = 'superadmin@thefreshhub.com';
 
 export function LoginForm() {
   const router = useRouter();
@@ -36,18 +35,12 @@ export function LoginForm() {
     },
   });
 
-  const getRedirectPath = (role: UserRole | null, email: string): string => {
-    // La nueva lógica simple: si es el email del superadmin, va al dashboard.
-    if (email === SUPER_ADMIN_EMAIL) {
-        return '/admin/dashboard';
-    }
-    
+  const getRedirectPath = (role: UserRole): string => {
     switch (role) {
       case 'superadmin':
       case 'admin':
         return '/admin/dashboard';
       case 'client':
-        return '/client/new-order';
       default:
         return '/client/new-order';
     }
@@ -58,16 +51,23 @@ export function LoginForm() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       
-      const tokenResult = await getIdTokenResult(userCredential.user, true);
-      const claims = tokenResult.claims;
-      const userRole: UserRole = claims.superadmin ? 'superadmin' : claims.admin ? 'admin' : 'client';
+      // Fetch user profile from Firestore to determine role
+      const userDocRef = doc(db, 'users', userCredential.user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        throw new Error("User profile not found.");
+      }
+      
+      const userProfile = userDoc.data() as UserProfile;
+      const userRole = userProfile.role || 'client';
 
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
       
-      const redirectPath = getRedirectPath(userRole, values.email);
+      const redirectPath = getRedirectPath(userRole);
       router.replace(redirectPath);
 
     } catch (error: any) {
