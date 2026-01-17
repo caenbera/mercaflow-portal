@@ -1,34 +1,44 @@
-import { LandingHeader } from '@/components/landing/landing-header';
-import { Hero } from '@/components/landing/hero';
-import { ProblemSection } from '@/components/landing/problem-section';
-import { AgitationSection } from '@/components/landing/agitation-section';
-import { BridgeSection } from '@/components/landing/bridge-section';
-import { SolutionSection } from '@/components/landing/solution-section';
-import { Testimonials } from '@/components/landing/testimonials';
-import { ProductsSection } from '@/components/landing/products-section';
-import { SpecialOffer } from '@/components/landing/special-offer';
-import { ContactForms } from '@/components/landing/contact-forms';
-import { ContactInfo } from '@/components/landing/contact-info';
-import { Footer } from '@/components/landing/footer';
+"use client";
 
+import { useEffect } from 'react';
+import { useAuth } from '@/context/auth-context';
+import { useRouter } from '@/navigation';
+import { Sprout } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function LandingPage() {
+export default function HomePage() {
+  const { user, role, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) {
+      return; // Wait for the auth state to be resolved
+    }
+
+    if (user && role) {
+      // User is logged in, redirect to their respective dashboard
+      if (role === 'admin' || role === 'superadmin') {
+        router.replace('/admin/dashboard');
+      } else {
+        router.replace('/client/dashboard');
+      }
+    } else {
+      // No user, redirect to login
+      router.replace('/login');
+    }
+  }, [user, role, loading, router]);
+
+  // Show a loading skeleton while the redirection is happening
   return (
-    <div className="bg-gray-50">
-      <LandingHeader />
-      <main>
-        <Hero />
-        <ProblemSection />
-        <AgitationSection />
-        <BridgeSection />
-        <SolutionSection />
-        <Testimonials />
-        <ProductsSection />
-        <SpecialOffer />
-        <ContactForms />
-        <ContactInfo />
-      </main>
-      <Footer />
+    <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-background">
+      <div className="flex items-center gap-3 text-2xl font-semibold font-headline text-primary">
+          <Sprout className="h-8 w-8 animate-spin" />
+          <span>Loading Portal...</span>
+      </div>
+       <div className="space-y-2 w-full max-w-sm">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-[80%]" />
+        </div>
     </div>
   );
 }
