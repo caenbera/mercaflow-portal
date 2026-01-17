@@ -1,11 +1,9 @@
 "use client";
 
-import { useLanguage } from '@/context/language-context';
-import { useTranslation } from '@/lib/i18n';
+import { useTranslations } from 'next-intl';
 
 export function ProblemSection() {
-    const { locale } = useLanguage();
-    const t = useTranslation(locale);
+    const t = useTranslations('Landing');
     return (
         <section className="py-16 bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

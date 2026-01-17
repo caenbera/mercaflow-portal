@@ -1,12 +1,9 @@
-
 "use client";
 
 import { useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import { useOrders } from '@/hooks/use-orders';
 import { useProducts } from '@/hooks/use-products';
-import { useLanguage } from '@/context/language-context';
-import { useTranslation } from '@/lib/i18n';
+import { useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,10 +19,10 @@ import {
 import { ArrowRight, History, Info, Package, Repeat, ShoppingCart, TrendingUp } from 'lucide-react';
 import type { Order, OrderItem, Product } from '@/types';
 import { format } from 'date-fns';
+import { useRouter } from '@/navigation';
 
 export function ClientDashboard() {
-  const { locale } = useLanguage();
-  const t = useTranslation(locale);
+  const t = useTranslations('Dashboard');
   const router = useRouter();
   const { orders, loading: ordersLoading } = useOrders();
   const { products, loading: productsLoading } = useProducts();

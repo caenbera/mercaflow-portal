@@ -1,13 +1,9 @@
-
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Sprout, LayoutDashboard, ShoppingCart, Apple, Package, Users, History, Loader2 } from 'lucide-react';
 import { SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup, SidebarGroupLabel, SidebarSeparator } from '@/components/ui/sidebar';
 import { useAuth } from '@/context/auth-context';
-import { useLanguage } from '@/context/language-context';
-import { useTranslation } from '@/lib/i18n';
+import { Sprout, LayoutDashboard, ShoppingCart, Apple, Package, Users, History } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { Link, usePathname } from '@/navigation';
 
-// Componente para el estado de carga (opcional pero recomendado)
 function SidebarSkeleton() {
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -21,15 +17,13 @@ function SidebarSkeleton() {
 
 
 export function AppSidebar() {
-  const { role, loading } = useAuth(); // ¡Importamos 'loading'!
+  const { role, loading } = useAuth();
   const pathname = usePathname();
-  const { locale } = useLanguage();
-  const t = useTranslation(locale);
+  const t = useTranslations('Dashboard');
 
-  // Definimos todos los enlaces en un solo lugar para mayor claridad
   const navLinks = {
     client: [
-      { href: '/client/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/client/dashboard', label: t('sidebar_dashboard'), icon: LayoutDashboard },
       { href: '/client/new-order', label: t('sidebar_new_order'), icon: ShoppingCart },
       { href: '/client/history', label: t('sidebar_order_history'), icon: History },
     ],
@@ -60,7 +54,6 @@ export function AppSidebar() {
     ));
   };
   
-  // 1. Manejar el estado de carga PRIMERO
   if (loading) {
     return (
       <>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,6 +14,8 @@ import { useToast } from '@/hooks/use-toast';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
+import { Link } from '@/navigation';
+import { useTranslations } from 'next-intl';
 
 const SUPER_ADMIN_EMAIL = 'superadmin@thefreshhub.com';
 
@@ -55,6 +56,7 @@ export function SignupForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const t = useTranslations('Auth');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -120,8 +122,8 @@ export function SignupForm() {
           <Sprout className="h-8 w-8 text-primary" />
           <h1 className="text-2xl font-headline font-bold">Fresh Hub Portal</h1>
         </div>
-        <CardTitle className="text-2xl font-headline">Sign Up</CardTitle>
-        <CardDescription>Enter your information to create an account</CardDescription>
+        <CardTitle className="text-2xl font-headline">{t('signup_title')}</CardTitle>
+        <CardDescription>{t('signup_desc')}</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -196,14 +198,14 @@ export function SignupForm() {
               )}
             />
             <Button type="submit" className="w-full !mt-4" disabled={isLoading}>
-              {isLoading ? 'Creating Account...' : 'Create Account'}
+              {isLoading ? t('creating_account') : t('create_account')}
             </Button>
           </form>
         </Form>
         <div className="mt-4 text-center text-sm">
-          Already have an account?{' '}
+          {t('has_account')}{' '}
           <Link href="/login" className="underline">
-            Login
+            {t('login')}
           </Link>
         </div>
       </CardContent>

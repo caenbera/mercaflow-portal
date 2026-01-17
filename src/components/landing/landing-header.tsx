@@ -1,16 +1,14 @@
 "use client";
 
-import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { LanguageSwitcher } from '@/components/landing/language-switcher';
-import { useLanguage } from '@/context/language-context';
-import { useTranslation } from '@/lib/i18n';
+import { useTranslations } from 'next-intl';
 import { Phone, MessageSquare } from 'lucide-react';
+import Image from 'next/image';
+import { Link } from '@/navigation';
 
 export function LandingHeader() {
-  const { locale } = useLanguage();
-  const t = useTranslation(locale);
+  const t = useTranslations('Landing');
 
   return (
     <header className="bg-white shadow-lg sticky top-0 z-50">

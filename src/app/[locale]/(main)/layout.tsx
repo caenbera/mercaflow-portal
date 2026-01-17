@@ -1,18 +1,18 @@
-
 "use client";
 
 import { useEffect, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { DashboardHeader } from '@/components/layout/dashboard-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sprout } from 'lucide-react';
+import { usePathname, useRouter } from '@/navigation';
 
 export default function MainLayout({ children }: { children: ReactNode }) {
   const { user, loading, role } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     // This effect handles redirection AFTER loading is complete.
@@ -20,7 +20,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
       router.replace('/login');
     } else if (!loading && user && role) {
       // Redirect to the appropriate dashboard after login
-      const currentPath = window.location.pathname;
+      const currentPath = pathname;
       if (currentPath === '/' || currentPath === '/login' || currentPath === '/signup') {
          if (role === 'admin' || role === 'superadmin') {
             router.replace('/admin/dashboard');
@@ -29,7 +29,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
          }
       }
     }
-  }, [user, loading, role, router]);
+  }, [user, loading, role, router, pathname]);
 
   if (loading) {
     // Show a full-screen loader while auth context is resolving.

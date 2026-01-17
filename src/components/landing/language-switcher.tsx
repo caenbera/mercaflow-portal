@@ -6,12 +6,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Globe, Check } from 'lucide-react';
-import { useLanguage } from '@/context/language-context';
-import type { Locale } from '@/lib/i18n';
+import { useLocale } from 'next-intl';
+import { useRouter, usePathname } from '@/navigation';
 import { cn } from '@/lib/utils';
 
 export function LanguageSwitcher() {
-  const { locale, setLocale } = useLanguage();
+  const locale = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const handleLocaleChange = (nextLocale: string) => {
+    router.replace(pathname, { locale: nextLocale });
+  };
 
   return (
     <DropdownMenu>
@@ -22,11 +28,11 @@ export function LanguageSwitcher() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setLocale('en' as Locale)}>
+        <DropdownMenuItem onClick={() => handleLocaleChange('en')}>
           <Check className={cn("mr-2 h-4 w-4", locale === 'en' ? "opacity-100" : "opacity-0")} />
           English
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setLocale('es' as Locale)}>
+        <DropdownMenuItem onClick={() => handleLocaleChange('es')}>
            <Check className={cn("mr-2 h-4 w-4", locale === 'es' ? "opacity-100" : "opacity-0")} />
           Español
         </DropdownMenuItem>

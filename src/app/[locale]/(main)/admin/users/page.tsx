@@ -1,11 +1,9 @@
-
 "use client";
 
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Skeleton } from '@/components/ui/skeleton';
-import { useLanguage } from "@/context/language-context";
-import { useTranslation } from "@/lib/i18n";
+import { useTranslations } from 'next-intl';
 import { useUsers } from '@/hooks/use-users';
 import { UsersTable } from '@/components/dashboard/users/users-table';
 import { RoleGuard } from '@/components/auth/role-guard';
@@ -14,8 +12,7 @@ import { updateUserRole } from '@/lib/firestore/users';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ManageUsersPage() {
-  const { locale } = useLanguage();
-  const t = useTranslation(locale);
+  const t = useTranslations('Dashboard');
   const { users, loading: usersLoading } = useUsers();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);

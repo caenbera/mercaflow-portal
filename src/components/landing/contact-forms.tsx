@@ -1,11 +1,9 @@
 "use client";
 
-import { useLanguage } from '@/context/language-context';
-import { useTranslation } from '@/lib/i18n';
+import { useTranslations } from 'next-intl';
 
 export function ContactForms() {
-    const { locale } = useLanguage();
-    const t = useTranslation(locale);
+    const t = useTranslations('Landing');
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();

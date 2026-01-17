@@ -1,11 +1,9 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { useLanguage } from "@/context/language-context";
-import { useTranslation } from "@/lib/i18n";
+import { useTranslations } from 'next-intl';
 import { useProducts } from '@/hooks/use-products';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
@@ -25,8 +23,7 @@ interface OrderSelection {
 }
 
 export default function NewOrderPage() {
-  const { locale } = useLanguage();
-  const t = useTranslation(locale);
+  const t = useTranslations('Dashboard');
   const { products, loading: productsLoading } = useProducts();
   const { user, userProfile } = useAuth();
   const { toast } = useToast();

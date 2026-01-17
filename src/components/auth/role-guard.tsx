@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/navigation';
 import { useAuth } from '@/context/auth-context';
 import type { UserRole } from '@/types';
 

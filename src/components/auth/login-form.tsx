@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,6 +15,8 @@ import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/aut
 import { auth, db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import type { UserRole, UserProfile } from '@/types';
+import { Link } from '@/navigation';
+import { useTranslations } from 'next-intl';
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -27,6 +28,8 @@ export function LoginForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const t = useTranslations('Auth');
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -122,8 +125,8 @@ export function LoginForm() {
           <Sprout className="h-8 w-8 text-primary" />
           <h1 className="text-2xl font-headline font-bold">Fresh Hub Portal</h1>
         </div>
-        <CardTitle className="text-2xl font-headline">Login</CardTitle>
-        <CardDescription>Enter your email below to login to your account</CardDescription>
+        <CardTitle className="text-2xl font-headline">{t('login_title')}</CardTitle>
+        <CardDescription>{t('login_desc')}</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -154,7 +157,7 @@ export function LoginForm() {
                       disabled={isLoading}
                       className="ml-auto inline-block text-sm underline disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Forgot your password?
+                      {t('forgot_password')}
                     </button>
                   </div>
                   <FormControl>
@@ -179,14 +182,14 @@ export function LoginForm() {
               )}
             />
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Signing In...' : 'Sign In'}
+              {isLoading ? t('signing_in') : t('sign_in')}
             </Button>
           </form>
         </Form>
         <div className="mt-4 text-center text-sm">
-          Don&apos;t have an account?{' '}
+          {t('no_account')}{' '}
           <Link href="/signup" className="underline">
-            Sign up
+            {t('sign_up')}
           </Link>
         </div>
       </CardContent>

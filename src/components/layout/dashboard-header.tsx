@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/navigation';
 import { auth } from '@/lib/firebase/config';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/context/auth-context';
@@ -17,15 +17,13 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { LanguageSwitcher } from '../landing/language-switcher';
-import { useLanguage } from '@/context/language-context';
-import { useTranslation } from '@/lib/i18n';
+import { useTranslations } from 'next-intl';
 
 export function DashboardHeader() {
   const { user, userProfile } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const { locale } = useLanguage();
-  const t = useTranslation(locale);
+  const t = useTranslations('Dashboard');
 
   const handleSignOut = async () => {
     try {

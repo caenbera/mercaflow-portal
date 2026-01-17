@@ -10,16 +10,14 @@ import { ProductDialog } from './product-dialog';
 import { DeleteProductAlert } from './delete-product-alert';
 import type { Product } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useLanguage } from '@/context/language-context';
-import { useTranslation } from '@/lib/i18n';
+import { useTranslations } from 'next-intl';
 
 export function ProductsPageClient() {
   const { products, loading } = useProducts();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const { locale } = useLanguage();
-  const t = useTranslation(locale);
+  const t = useTranslations('Dashboard');
 
   const handleAdd = () => {
     setSelectedProduct(null);

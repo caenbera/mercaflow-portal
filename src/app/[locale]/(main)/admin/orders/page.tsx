@@ -1,10 +1,8 @@
-
 "use client";
 
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { useLanguage } from "@/context/language-context";
-import { useTranslation } from "@/lib/i18n";
+import { useTranslations } from 'next-intl';
 import { useAllOrders } from "@/hooks/use-all-orders";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OrdersTable } from "@/components/dashboard/orders/orders-table";
@@ -12,8 +10,7 @@ import { OrderDetailsDialog } from '@/components/dashboard/orders/order-details-
 import type { Order } from '@/types';
 
 export default function ManageOrdersPage() {
-  const { locale } = useLanguage();
-  const t = useTranslation(locale);
+  const t = useTranslations('Dashboard');
   const { orders, loading } = useAllOrders();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);

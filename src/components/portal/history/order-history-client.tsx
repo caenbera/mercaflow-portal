@@ -2,14 +2,12 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLanguage } from "@/context/language-context";
-import { useTranslation } from "@/lib/i18n";
+import { useTranslations } from 'next-intl';
 import { useOrders } from "@/hooks/use-orders";
 import { OrderHistoryTable } from "./order-history-table";
 
 export function OrderHistoryClient() {
-  const { locale } = useLanguage();
-  const t = useTranslation(locale);
+  const t = useTranslations('Dashboard');
   const { orders, loading } = useOrders();
 
   return (

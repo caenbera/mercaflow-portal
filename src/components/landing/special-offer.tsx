@@ -1,11 +1,9 @@
 "use client";
 
-import { useLanguage } from '@/context/language-context';
-import { useTranslation } from '@/lib/i18n';
+import { useTranslations } from 'next-intl';
 
 export function SpecialOffer() {
-    const { locale } = useLanguage();
-    const t = useTranslation(locale);
+    const t = useTranslations('Landing');
     return (
         <section id="muestra" className="py-16 bg-accent-orange text-white">
             <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">

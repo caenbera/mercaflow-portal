@@ -35,18 +35,16 @@ import {
   User,
   Crown,
 } from 'lucide-react';
-import { useLanguage } from '@/context/language-context';
-import { useTranslation } from '@/lib/i18n';
+import { useTranslations } from 'next-intl';
 import { useAllOrders } from '@/hooks/use-all-orders';
 import { useProducts } from '@/hooks/use-products';
-import { isToday, isThisMonth, subDays, format } from 'date-fns';
+import { isThisMonth, subDays, format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import type { Order } from '@/types';
 
 export default function DashboardPage() {
-  const { locale } = useLanguage();
-  const t = useTranslation(locale);
+  const t = useTranslations('Dashboard');
   const { orders, loading: ordersLoading } = useAllOrders();
   const { products, loading: productsLoading } = useProducts();
 
