@@ -40,11 +40,12 @@
     
     --radius: 0.5rem;
 
-    --sidebar-background: 210 25% 28%;
+    /* New sidebar colors from the prototype */
+    --sidebar-background: 210 29% 24%;
     --sidebar-foreground: 210 20% 85%;
     --sidebar-primary: 145 63% 42%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 25% 35%;
+    --sidebar-accent: 210 29% 30%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 210 25% 38%;
     --sidebar-ring: 145 63% 49%;
@@ -86,11 +87,11 @@
     --chart-5: 340 75% 55%;
 
     /* Sidebar is always dark themed */
-    --sidebar-background: 210 25% 28%;
+    --sidebar-background: 210 29% 24%;
     --sidebar-foreground: 210 20% 85%;
     --sidebar-primary: 145 63% 42%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 25% 35%;
+    --sidebar-accent: 210 29% 30%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 210 25% 38%;
     --sidebar-ring: 145 63% 49%;
