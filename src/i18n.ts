@@ -2,21 +2,27 @@ import {getRequestConfig} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {locales} from './i18n-config';
 
+// Statically import the messages to prevent dynamic import issues.
+import enMessages from './messages/en.json';
+import esMessages from './messages/es.json';
+
 export default getRequestConfig(async ({locale}) => {
   // Validate that the incoming `locale` parameter is valid
-  if (!locales.includes(locale as any)) notFound();
+  if (!locales.includes(locale as any)) {
+    notFound();
+  }
 
   let messages;
   switch (locale) {
     case 'en':
-      messages = (await import('./messages/en.json')).default;
+      messages = enMessages;
       break;
     case 'es':
-      messages = (await import('./messages/es.json')).default;
+      messages = esMessages;
       break;
     default:
-      // Fallback to Spanish if something goes wrong
-      messages = (await import('./messages/es.json')).default;
+      // This should not be reached given the check above, but it's a safeguard.
+      notFound();
   }
  
   return {
