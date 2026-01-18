@@ -92,6 +92,7 @@
         "form_business_name_placeholder": "Taqueria La Guadalupana, Supermercado Mi Pueblo, etc.",
         "form_phone_label": "Phone",
         "form_products_interest_label": "Which products are you most interested in?",
+        "form_select_placeholder": "Select an option",
         "form_product_option_1": "Avocados and Vegetables",
         "form_product_option_2": "Peppers and Spices",
         "form_product_option_3": "Tropical Fruits",
@@ -103,7 +104,8 @@
         "form_address_label": "Delivery Address",
         "form_address_placeholder": "Where do we deliver the free sample?",
         "sample_form_button": "Request Free Delivery",
-        "form_submit_alert": "Thank you! We will contact you very soon. Have a great day, friend!"
+        "form_submit_alert_title": "Thank you!",
+        "form_submit_alert_desc": "We will contact you very soon. Have a great day, friend!"
     },
     "LandingPageContactInfo": {
         "contact_info_title": "Let's Talk in Your Language",
@@ -133,8 +135,8 @@
         "header_call_now": "Call Now"
     },
     "LandingPageHero": {
-        "hero_title_html": "Quality and Freshness for Your <span class=\"text-yellow-300\">Latino Business</span>",
-        "hero_subtitle_html": "The Authentic Flavor Your Chicago Business Demands<br><span class=\"text-yellow-200\">Delivered with Reliability</span>",
+        "hero_title_html": "Quality and Freshness for Your <yellow>Latino Business</yellow>",
+        "hero_subtitle_html": "The Authentic Flavor Your Chicago Business Demands<br/><lightYellow>Delivered with Reliability</lightYellow>",
         "hero_feature1": "Quality Fresh Products",
         "hero_feature2": "Punctual Deliveries",
         "hero_feature3": "We Are Your Partner",

@@ -12,13 +12,13 @@ export function Hero() {
             <div className="text-center">
                 <h1 className="text-5xl md:text-6xl font-bold mb-6" style={{textShadow: '2px 2px 4px rgba(0,0,0,0.3)'}}>
                     {t.rich('hero_title_html', {
-                      span: (chunks) => <span className="text-yellow-300">{chunks}</span>
+                      yellow: (chunks) => <span className="text-yellow-300">{chunks}</span>
                     })}
                 </h1>
                 <p className="text-xl md:text-2xl mb-8" style={{textShadow: '2px 2px 4px rgba(0,0,0,0.3)'}}>
                     {t.rich('hero_subtitle_html', {
                       br: () => <br />,
-                      span: (chunks) => <span className="text-yellow-200">{chunks}</span>
+                      lightYellow: (chunks) => <span className="text-yellow-200">{chunks}</span>
                     })}
                 </p>
                 <div className="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-6 mb-12">

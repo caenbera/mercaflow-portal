@@ -1,7 +1,7 @@
 
 {
-    "hero_title_html": "Calidad y Frescura para tu <span class=\"text-yellow-300\">Negocio Latino</span>",
-    "hero_subtitle_html": "El Sabor Auténtico que tu Negocio en Chicago Exige<br><span class=\"text-yellow-200\">Delivered with Reliability • Entregado con Confiabilidad</span>",
+    "hero_title_html": "Calidad y Frescura para tu <yellow>Negocio Latino</yellow>",
+    "hero_subtitle_html": "El Sabor Auténtico que tu Negocio en Chicago Exige<br/><lightYellow>Delivered with Reliability • Entregado con Confiabilidad</lightYellow>",
     "hero_feature1": "Productos Frescos de Calidad",
     "hero_feature2": "Entregas Puntuales",
     "hero_feature3": "Somos tu Parcero",
