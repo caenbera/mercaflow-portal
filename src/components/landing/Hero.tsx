@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, Truck, Handshake, Calculator, Gift } from 'lucide-react';
 
 export function Hero() {
-
   return (
     <section className="bg-gradient-to-br from-green-500 via-green-600 to-green-700 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,25 +17,25 @@ export function Hero() {
                 </p>
                 <div className="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-6 mb-12">
                     <div className="flex items-center space-x-2">
-                        <CheckCircle className="text-yellow-300" size={20} />
-                        <span className="text-lg">Productos Frescos de Calidad</span>
+                        <CheckCircle className="text-yellow-300" />
+                        <span>Productos Frescos de Calidad</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Truck className="text-yellow-300" size={20}/>
-                        <span className="text-lg">Entregas Puntuales</span>
+                        <Truck className="text-yellow-300" />
+                        <span>Entregas Puntuales</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Handshake className="text-yellow-300" size={20}/>
-                        <span className="text-lg">Somos tu Parcero</span>
+                        <Handshake className="text-yellow-300" />
+                        <span>Somos tu Parcero</span>
                     </div>
                 </div>
                 <div className="space-y-4 md:space-y-0 md:space-x-4 md:flex justify-center">
-                    <Button asChild size="lg" className="bg-accent text-white px-8 py-4 text-lg font-bold hover:bg-orange-600 transition animate-pulse">
+                    <Button asChild size="lg" className="bg-accent text-white px-8 py-4 text-lg font-bold hover:bg-orange-600 transition animate-pulse h-auto">
                       <a href="#cotizacion">
                           <Calculator className="mr-2" />Pide una Cotización GRATIS
                       </a>
                     </Button>
-                    <Button asChild size="lg" className="bg-yellow-400 text-gray-900 px-8 py-4 text-lg font-bold hover:bg-yellow-300 transition">
+                    <Button asChild size="lg" className="bg-yellow-400 text-gray-900 px-8 py-4 text-lg font-bold hover:bg-yellow-300 transition h-auto">
                       <a href="#muestra">
                           <Gift className="mr-2" />Solicita Caja de Muestra
                       </a>

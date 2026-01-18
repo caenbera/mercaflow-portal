@@ -12,10 +12,12 @@ export function ContactForms() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.target as HTMLFormElement;
     toast({
       title: "¡Gracias!",
       description: "Nos pondremos en contacto contigo muy pronto. ¡Que tengas un excelente día, compadre!",
     });
+    form.reset();
   };
 
   return (

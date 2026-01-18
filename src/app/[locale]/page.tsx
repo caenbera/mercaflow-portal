@@ -13,7 +13,7 @@ import { Footer } from '@/components/landing/Footer';
 
 export default function LandingPage() {
   return (
-    <div className="bg-gray-900 text-white font-body">
+    <div className="bg-gray-50 text-gray-800 font-body">
       <LandingPageHeader />
       <main>
         <Hero />

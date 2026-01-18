@@ -24,7 +24,7 @@ export function SpecialOffer() {
                 </ul>
                 <p className="text-2xl font-bold mb-4">Valor: $35 - HOY: GRATIS</p>
             </div>
-            <Button asChild size="lg" className="bg-white text-orange-600 px-10 py-4 text-xl font-bold hover:bg-gray-100 transition animate-pulse">
+            <Button asChild size="lg" className="bg-white text-orange-600 px-10 py-4 text-xl font-bold hover:bg-gray-100 transition animate-pulse h-auto">
               <a href="#formulario-muestra">
                   <Gift className="mr-2" />Solicitar Mi Caja Gratis
               </a>
