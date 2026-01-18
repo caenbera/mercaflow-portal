@@ -2,22 +2,24 @@
 import { Star } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useTranslations } from 'next-intl';
 
 
 export function Testimonials() {
+  const t = useTranslations('LandingPageTestimonials');
 
   const testimonials = [
-    { text: `"The Fresh Hub me cambió el negocio. Mis clientes siempre me felicitan por la frescura de mis verduras. Desde que trabajo con ellos, mi supermercado es el referente del barrio."`, name: "María González", location: "Supermercado La Esperanza, Pilsen", initial: "M", color: "bg-green-500" },
-    { text: `"Por fin un proveedor que entiende lo que necesito para mi taquería. Los chiles tienen el picor perfecto, el cilantro huele como debe ser. Mis tacos nunca habían tenido tanto sabor."`, name: "Carlos Mendoza", location: "Taquería El Corazón, Little Village", initial: "C", color: "bg-accent" },
-    { text: `"Llevo 15 años en Chicago y nunca había encontrado un proveedor tan confiable. Hablan mi idioma, entienden mi negocio, y nunca me fallan. Son mi familia."`, name: "Rosa Herrera", location: "Restaurante Mi Pueblo, Back of the Yards", initial: "R", color: "bg-red-500" },
+    { text: t('testimonial_1_text'), name: t('testimonial_1_name'), location: t('testimonial_1_location'), initial: "M", color: "bg-green-500" },
+    { text: t('testimonial_2_text'), name: t('testimonial_2_name'), location: t('testimonial_2_location'), initial: "C", color: "bg-accent" },
+    { text: t('testimonial_3_text'), name: t('testimonial_3_name'), location: t('testimonial_3_location'), initial: "R", color: "bg-red-500" },
   ];
 
   return (
     <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
-                <h2 className="text-4xl font-bold text-gray-900 mb-4">Lo Que Dicen Nuestros Socios</h2>
-                <p className="text-xl text-gray-600">La confianza de la comunidad latina en Chicago</p>
+                <h2 className="text-4xl font-bold text-gray-900 mb-4">{t('testimonials_title')}</h2>
+                <p className="text-xl text-gray-600">{t('testimonials_subtitle')}</p>
             </div>
             <div className="grid md:grid-cols-3 gap-8">
                 {testimonials.map((testimonial, index) => (

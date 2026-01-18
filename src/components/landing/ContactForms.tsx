@@ -6,16 +6,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Calculator, Gift, Send, Truck } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export function ContactForms() {
   const { toast } = useToast();
+  const t = useTranslations('LandingPageContactForms');
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     toast({
-      title: "¡Gracias!",
-      description: "Nos pondremos en contacto contigo muy pronto. ¡Que tengas un excelente día, compadre!",
+      title: t('form_submit_alert_title'),
+      description: t('form_submit_alert_desc'),
     });
     form.reset();
   };
@@ -24,45 +26,45 @@ export function ContactForms() {
     <section id="cotizacion" className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
-                <h2 className="text-4xl font-bold text-gray-900 mb-4">¿Listo para Ser tu Propio Jefe del Sabor?</h2>
-                <p className="text-xl text-gray-600">Habla con un especialista ahora - Te atendemos en español</p>
+                <h2 className="text-4xl font-bold text-gray-900 mb-4">{t('contact_forms_title')}</h2>
+                <p className="text-xl text-gray-600">{t('contact_forms_subtitle')}</p>
             </div>
             <div className="grid md:grid-cols-2 gap-12">
                 {/* Cotización Form */}
                 <div className="bg-green-50 p-8 rounded-xl border border-green-200">
                     <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center flex items-center justify-center gap-2">
                         <Calculator className="text-green-600" />
-                        Cotización Personalizada
+                        {t('quote_form_title')}
                     </h3>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <Label htmlFor="q-name" className="block text-sm font-semibold text-gray-700 mb-2">Tu Nombre</Label>
-                            <Input id="q-name" type="text" placeholder="Como te llamas, compadre" />
+                            <Label htmlFor="q-name" className="block text-sm font-semibold text-gray-700 mb-2">{t('form_name_label')}</Label>
+                            <Input id="q-name" type="text" placeholder={t('form_name_placeholder_es')} />
                         </div>
                         <div>
-                            <Label htmlFor="q-business" className="block text-sm font-semibold text-gray-700 mb-2">Nombre de tu Negocio</Label>
-                            <Input id="q-business" type="text" placeholder="Taquería La Guadalupana, Supermercado Mi Pueblo, etc." />
+                            <Label htmlFor="q-business" className="block text-sm font-semibold text-gray-700 mb-2">{t('form_business_name_label')}</Label>
+                            <Input id="q-business" type="text" placeholder={t('form_business_name_placeholder')} />
                         </div>
                         <div>
-                            <Label htmlFor="q-phone" className="block text-sm font-semibold text-gray-700 mb-2">Teléfono</Label>
+                            <Label htmlFor="q-phone" className="block text-sm font-semibold text-gray-700 mb-2">{t('form_phone_label')}</Label>
                             <Input id="q-phone" type="tel" placeholder="(773) 555-0123" />
                         </div>
                         <div>
-                            <Label className="block text-sm font-semibold text-gray-700 mb-2">¿Qué productos te interesan más?</Label>
+                            <Label className="block text-sm font-semibold text-gray-700 mb-2">{t('form_products_interest_label')}</Label>
                             <Select>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Selecciona una opción" />
+                                    <SelectValue placeholder={t('form_select_placeholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="veg">Aguacates y Verduras</SelectItem>
-                                    <SelectItem value="spice">Chiles y Especias</SelectItem>
-                                    <SelectItem value="fruit">Frutas Tropicales</SelectItem>
-                                    <SelectItem value="all">Todo - Surtido Completo</SelectItem>
+                                    <SelectItem value="veg">{t('form_product_option_1')}</SelectItem>
+                                    <SelectItem value="spice">{t('form_product_option_2')}</SelectItem>
+                                    <SelectItem value="fruit">{t('form_product_option_3')}</SelectItem>
+                                    <SelectItem value="all">{t('form_product_option_4')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <Button type="submit" className="w-full bg-primary text-primary-foreground py-4 text-lg font-bold hover:bg-green-700 transition h-auto">
-                            <Send className="mr-2" />Enviar Solicitud
+                            <Send className="mr-2" />{t('quote_form_button')}
                         </Button>
                     </form>
                 </div>
@@ -71,27 +73,27 @@ export function ContactForms() {
                 <div id="formulario-muestra" className="bg-orange-50 p-8 rounded-xl border border-orange-200">
                     <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center flex items-center justify-center gap-2">
                         <Gift className="text-accent" />
-                        Caja de Muestra Gratis
+                        {t('sample_form_title')}
                     </h3>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <Label htmlFor="s-name" className="block text-sm font-semibold text-gray-700 mb-2">Tu Nombre</Label>
-                            <Input id="s-name" type="text" placeholder="Como te llamas" />
+                            <Label htmlFor="s-name" className="block text-sm font-semibold text-gray-700 mb-2">{t('form_name_label')}</Label>
+                            <Input id="s-name" type="text" placeholder={t('form_name_placeholder')} />
                         </div>
                         <div>
-                            <Label htmlFor="s-business" className="block text-sm font-semibold text-gray-700 mb-2">Nombre de tu Negocio</Label>
-                            <Input id="s-business" type="text" placeholder="Nombre de tu restaurante/supermercado" />
+                            <Label htmlFor="s-business" className="block text-sm font-semibold text-gray-700 mb-2">{t('form_business_name_label')}</Label>
+                            <Input id="s-business" type="text" placeholder={t('form_business_name_placeholder_sample')} />
                         </div>
                         <div>
-                            <Label htmlFor="s-phone" className="block text-sm font-semibold text-gray-700 mb-2">Teléfono</Label>
-                            <Input id="s-phone" type="tel" placeholder="Tu número de teléfono" />
+                            <Label htmlFor="s-phone" className="block text-sm font-semibold text-gray-700 mb-2">{t('form_phone_label')}</Label>
+                            <Input id="s-phone" type="tel" placeholder={t('form_phone_placeholder')} />
                         </div>
                         <div>
-                            <Label htmlFor="s-address" className="block text-sm font-semibold text-gray-700 mb-2">Dirección de Entrega</Label>
-                            <Textarea id="s-address" rows={3} placeholder="Dónde te entregamos la muestra gratis" />
+                            <Label htmlFor="s-address" className="block text-sm font-semibold text-gray-700 mb-2">{t('form_address_label')}</Label>
+                            <Textarea id="s-address" rows={3} placeholder={t('form_address_placeholder')} />
                         </div>
                         <Button type="submit" className="w-full bg-accent text-accent-foreground py-4 text-lg font-bold hover:bg-orange-600 transition h-auto">
-                            <Truck className="mr-2" />Solicitar Entrega Gratis
+                            <Truck className="mr-2" />{t('sample_form_button')}
                         </Button>
                     </form>
                 </div>

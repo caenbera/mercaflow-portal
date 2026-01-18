@@ -1,37 +1,40 @@
 'use client';
 
 import { Frown, Smile, X, Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export function BridgeSection() {
+  const t = useTranslations('LandingPageBridgeSection');
+
   const befores = [
-    "Rezar para que el pedido llegue completo y a tiempo",
-    "Pelear con proveedores que no te entienden",
-    "Productos que no te enorgullecen en tu negocio",
-    "Clientes que se van por falta de frescura",
-    "Noches sin dormir pensando en el negocio",
+    t('bridge_before_1'),
+    t('bridge_before_2'),
+    t('bridge_before_3'),
+    t('bridge_before_4'),
+    t('bridge_before_5'),
   ];
 
   const afters = [
-    "Tu negocio reconocido por tener los productos más frescos del barrio",
-    "Clientes que regresan porque saben que aquí hay calidad",
-    "Paz mental de tener un socio que nunca te falla",
-    "Más tiempo para atender a tu familia y crecer",
-    "El orgullo de servir productos auténticos de calidad",
+    t('bridge_after_1'),
+    t('bridge_after_2'),
+    t('bridge_after_3'),
+    t('bridge_after_4'),
+    t('bridge_after_5'),
   ];
 
   return (
     <section className="py-16 bg-gradient-to-r from-gray-900 to-gray-800 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
-                <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">De la Frustración al Éxito</h2>
-                <p className="text-xl text-gray-300">Imagina la transformación de tu negocio</p>
+                <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{t('bridge_title')}</h2>
+                <p className="text-xl text-gray-300">{t('bridge_subtitle')}</p>
             </div>
             <div className="grid md:grid-cols-2 gap-12">
                 {/* Before */}
                 <div className="bg-red-900 bg-opacity-50 p-8 rounded-xl border border-red-500">
                     <div className="text-center mb-6">
                         <Frown className="text-4xl text-red-400 mb-4 mx-auto" />
-                        <h3 className="text-2xl font-bold text-red-300">ANTES: La Lucha Diaria</h3>
+                        <h3 className="text-2xl font-bold text-red-300">{t('bridge_before_title')}</h3>
                     </div>
                     <ul className="space-y-4 text-red-100">
                       {befores.map((item, i) => (
@@ -46,7 +49,7 @@ export function BridgeSection() {
                 <div className="bg-green-900 bg-opacity-50 p-8 rounded-xl border border-green-500">
                     <div className="text-center mb-6">
                         <Smile className="text-4xl text-green-400 mb-4 mx-auto" />
-                        <h3 className="text-2xl font-bold text-green-300">DESPUÉS: El Éxito que Mereces</h3>
+                        <h3 className="text-2xl font-bold text-green-300">{t('bridge_after_title')}</h3>
                     </div>
                     <ul className="space-y-4 text-green-100">
                         {afters.map((item, i) => (
@@ -60,8 +63,8 @@ export function BridgeSection() {
             </div>
             <div className="text-center mt-12">
                 <div className="bg-accent p-6 rounded-xl inline-block">
-                    <h3 className="text-2xl font-bold mb-2">🌉 EL PUENTE ES THE FRESH HUB</h3>
-                    <p className="text-lg">Somos el puente directo entre el campo y tu negocio. Conectamos tu sazón con la calidad que merece.</p>
+                    <h3 className="text-2xl font-bold mb-2">{t('bridge_the_bridge_title')}</h3>
+                    <p className="text-lg">{t('bridge_the_bridge_desc')}</p>
                 </div>
             </div>
         </div>

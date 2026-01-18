@@ -2,22 +2,24 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslations } from 'next-intl';
 
 export function ProductsSection() {
+  const t = useTranslations('LandingPageProductsSection');
   
   const products = [
-    { emoji: '🥑', title: 'Aguacates Hass', desc: 'Siempre en su punto, listos para el guacamole que hace regresar a tus clientes.', tag: 'Premium Quality', tagColor: 'bg-green-100 text-green-800' },
-    { emoji: '🌶️', title: 'Chiles Variados', desc: 'Jalapeños, serranos, poblanos, habaneros. Cada uno con su picor auténtico.', tag: 'Picor Perfecto', tagColor: 'bg-red-100 text-red-800' },
-    { emoji: '🌿', title: 'Cilantro Fresco', desc: "Que huele 'de verdad', con el aroma y sabor que tus platillos merecen.", tag: 'Aroma Auténtico', tagColor: 'bg-green-100 text-green-800' },
-    { emoji: '🍅', title: 'Tomatillos', desc: 'Firmes y frescos, perfectos para tus salsas verdes tradicionales.', tag: 'Salsa Verde', tagColor: 'bg-green-100 text-green-800' },
+    { emoji: '🥑', title: t('product_1_title'), desc: t('product_1_desc'), tag: t('product_1_tag'), tagColor: 'bg-green-100 text-green-800' },
+    { emoji: '🌶️', title: t('product_2_title'), desc: t('product_2_desc'), tag: t('product_2_tag'), tagColor: 'bg-red-100 text-red-800' },
+    { emoji: '🌿', title: t('product_3_title'), desc: t('product_3_desc'), tag: t('product_3_tag'), tagColor: 'bg-green-100 text-green-800' },
+    { emoji: '🍅', title: t('product_4_title'), desc: t('product_4_desc'), tag: t('product_4_tag'), tagColor: 'bg-green-100 text-green-800' },
   ];
 
   return (
     <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
-                <h2 className="text-4xl font-bold text-gray-900 mb-4">Productos Frescos que tu Negocio Necesita</h2>
-                <p className="text-xl text-gray-600">Calidad auténtica para el sabor de tu tierra</p>
+                <h2 className="text-4xl font-bold text-gray-900 mb-4">{t('products_section_title')}</h2>
+                <p className="text-xl text-gray-600">{t('products_section_subtitle')}</p>
             </div>
             <div className="grid md:grid-cols-4 gap-6">
               {products.map((product) => (
@@ -36,10 +38,10 @@ export function ProductsSection() {
               ))}
             </div>
             <div className="text-center mt-12">
-                <p className="text-xl text-gray-700 mb-4">¿No ves lo que necesitas? ¡Pregúntanos!</p>
+                <p className="text-xl text-gray-700 mb-4">{t('products_section_cta_prompt')}</p>
                 <Button asChild size="lg" className="bg-primary text-primary-foreground px-8 py-3 text-lg font-semibold hover:bg-green-700 transition">
                   <a href="#contacto">
-                    Ver Catálogo Completo
+                    {t('products_section_cta_button')}
                   </a>
                 </Button>
             </div>
