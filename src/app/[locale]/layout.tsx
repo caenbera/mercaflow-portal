@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { NextIntlClientProvider } from 'next-intl';
+import { NextIntlClientProvider, useMessages } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import '../globals.css';
 import { AuthProvider } from '@/context/auth-context';

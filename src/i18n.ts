@@ -8,11 +8,13 @@ async function loadMessages(locale: string) {
       return {
         Dashboard: (await import('../messages/en/Dashboard.json')).default,
         Auth: (await import('../messages/en/Auth.json')).default,
+        Landing: (await import('../messages/en.json')).default.Landing,
       };
     case 'es':
       return {
         Dashboard: (await import('../messages/es/Dashboard.json')).default,
         Auth: (await import('../messages/es/Auth.json')).default,
+        Landing: (await import('../messages/es.json')).default.Landing,
       };
     default:
       return {};
