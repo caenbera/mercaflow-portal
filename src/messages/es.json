@@ -92,6 +92,7 @@
         "form_business_name_placeholder": "Taquería La Guadalupana, Supermercado Mi Pueblo, etc.",
         "form_phone_label": "Teléfono",
         "form_products_interest_label": "¿Qué productos te interesan más?",
+        "form_select_placeholder": "Selecciona una opción",
         "form_product_option_1": "Aguacates y Verduras",
         "form_product_option_2": "Chiles y Especias",
         "form_product_option_3": "Frutas Tropicales",
