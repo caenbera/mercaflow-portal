@@ -97,17 +97,21 @@ export function ClientsPageClient() {
                             return (
                                 <TableRow key={client.id}>
                                     <TableCell>
-                                        <Link href={`/admin/clients/${client.id}`} className="flex items-center gap-3 group">
+                                        <div className="flex items-center gap-3">
                                             <Avatar className="h-10 w-10 rounded-lg" style={{backgroundColor: client.color}}>
                                                 <AvatarFallback className="bg-transparent text-white font-bold">{client.name.substring(0,2).toUpperCase()}</AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                <span className="font-bold group-hover:underline">{client.name}</span>
-                                                <div className="text-xs text-muted-foreground">ID: {client.id}</div>
+                                                <Link href={`/admin/clients/${client.id}`}>
+                                                  <span className="font-bold hover:underline cursor-pointer">{client.name}</span>
+                                                </Link>
+                                                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                                  ID: {client.id}
+                                                  {client.tier === 'gold' && <Crown className="h-4 w-4 text-yellow-500" title={t('tier_gold')} />}
+                                                  {client.tier === 'silver' && <Star className="h-4 w-4 text-gray-400" title={t('tier_silver')} />}
+                                                </div>
                                             </div>
-                                            {client.tier === 'gold' && <Crown className="h-4 w-4 text-yellow-500" title={t('tier_gold')} />}
-                                            {client.tier === 'silver' && <Star className="h-4 w-4 text-gray-400" title={t('tier_silver')} />}
-                                        </Link>
+                                        </div>
                                     </TableCell>
                                     <TableCell>
                                         <div className="font-semibold">{client.contact}</div>
