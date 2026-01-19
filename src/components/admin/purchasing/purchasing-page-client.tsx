@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
@@ -78,22 +79,28 @@ interface ComparisonData {
 
 // --- PRINTABLE PO COMPONENT ---
 const PrintablePO = ({ poData, onDone }: { poData: any, onDone: () => void }) => {
-    const printRef = useRef<HTMLDivElement>(null);
     const t = useTranslations('PurchasingPage');
 
-    useMemo(() => {
+    useEffect(() => {
         if (poData) {
-            setTimeout(() => {
-                window.print();
+            const handleAfterPrint = () => {
                 onDone();
-            }, 100);
+                window.removeEventListener('afterprint', handleAfterPrint);
+            };
+
+            window.addEventListener('afterprint', handleAfterPrint);
+            window.print();
+            
+            return () => {
+                window.removeEventListener('afterprint', handleAfterPrint);
+            };
         }
     }, [poData, onDone]);
 
     if (!poData) return null;
 
     return (
-        <div ref={printRef} className="print-area">
+        <div className="print-area">
              <div className="flex justify-between mb-10 border-b pb-4" style={{borderColor: 'hsl(var(--sidebar-background))'}}>
                 <div>
                     <h1 className="text-4xl font-extrabold m-0" style={{color: 'hsl(var(--sidebar-background))'}}>{t('po_id')}</h1>
@@ -161,6 +168,11 @@ export function PurchasingPageClient() {
   const [searchTerm, setSearchTerm] = useState('');
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
   const [poToPrint, setPoToPrint] = useState<any | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const filteredCatalog = useMemo(() => {
     if (!searchTerm) return generalCatalog;
@@ -230,8 +242,11 @@ export function PurchasingPageClient() {
 
   return (
     <>
-      {poToPrint && <PrintablePO poData={poToPrint} onDone={() => setPoToPrint(null)} />}
-      <div className={cn("flex flex-col gap-6", poToPrint && "no-print")}>
+      {isClient && poToPrint && createPortal(
+        <PrintablePO poData={poToPrint} onDone={() => setPoToPrint(null)} />,
+        document.body
+      )}
+      <div className="flex flex-col gap-6 no-print">
         {/* Page Header */}
         <div>
           <h1 className="text-2xl font-bold font-headline">{t('title')}</h1>
