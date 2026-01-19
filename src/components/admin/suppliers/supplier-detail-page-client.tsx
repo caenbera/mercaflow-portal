@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   ArrowLeft,
   Star,
-  FileInvoice,
+  FileText,
   Send,
   UserCircle,
   Phone,
@@ -94,7 +94,7 @@ export function SupplierDetailPageClient({ supplier }: SupplierDetailPageClientP
             </div>
           </div>
           <div className="flex gap-2 self-start sm:self-center">
-            <Button variant="outline"><FileInvoice className="mr-2" />{t('account_statement')}</Button>
+            <Button variant="outline"><FileText className="mr-2" />{t('account_statement')}</Button>
             <Button><Send className="mr-2" />{t('send_order')}</Button>
           </div>
         </div>
@@ -126,10 +126,22 @@ export function SupplierDetailPageClient({ supplier }: SupplierDetailPageClientP
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div className="p-2 bg-muted rounded-lg"><div className="text-xl font-bold">{supplier.finance.fillRate}%</div><div className="text-xs text-muted-foreground">{t('fill_rate')}</div></div>
-              <div className="p-2 bg-muted rounded-lg"><div className={`text-xl font-bold ${supplier.finance.onTimeDelivery ? 'text-green-600' : 'text-red-600'}`}>On-Time</div><div className="text-xs text-muted-foreground">{t('on_time_deliveries')}</div></div>
-              <div className="p-2 bg-muted rounded-lg"><div className="text-xl font-bold">12</div><div className="text-xs text-muted-foreground">{t('active_skus')}</div></div>
-              <div className="p-2 bg-muted rounded-lg"><div className="text-xl font-bold">{formatCurrency(supplier.finance.ytdSpend / 1000)}k</div><div className="text-xs text-muted-foreground">{t('ytd_purchases')}</div></div>
+              <div className="p-2 bg-muted rounded-lg">
+                <div className="text-xl font-bold">{supplier.finance.fillRate}%</div>
+                <div className="text-xs text-muted-foreground">{t('fill_rate')}</div>
+              </div>
+              <div className="p-2 bg-muted rounded-lg">
+                <div className={`text-xl font-bold ${supplier.finance.onTimeDelivery ? 'text-green-600' : 'text-red-600'}`}>On-Time</div>
+                <div className="text-xs text-muted-foreground">{t('on_time_deliveries')}</div>
+              </div>
+              <div className="p-2 bg-muted rounded-lg">
+                <div className="text-xl font-bold">12</div>
+                <div className="text-xs text-muted-foreground">{t('active_skus')}</div>
+              </div>
+              <div className="p-2 bg-muted rounded-lg">
+                <div className="text-xl font-bold">{formatCurrency(supplier.finance.ytdSpend / 1000)}k</div>
+                <div className="text-xs text-muted-foreground">{t('ytd_purchases')}</div>
+              </div>
             </div>
             {supplier.notes && (
               <div className="mt-4 bg-blue-50 text-blue-800 p-3 rounded-lg text-sm flex gap-2">
