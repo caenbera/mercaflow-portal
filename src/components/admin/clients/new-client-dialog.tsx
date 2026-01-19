@@ -56,7 +56,7 @@ export function NewClientDialog({ open, onOpenChange }: NewClientDialogProps) {
                 <Label htmlFor="paymentTerms">{t('payment_terms_label')}</Label>
                 <Select>
                     <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder={t('payment_terms_label')} />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="net7">Net 7</SelectItem>
@@ -69,7 +69,7 @@ export function NewClientDialog({ open, onOpenChange }: NewClientDialogProps) {
                 <Label htmlFor="priceList">{t('price_list_label')}</Label>
                  <Select>
                     <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder={t('price_list_label')} />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="standard">Standard</SelectItem>
