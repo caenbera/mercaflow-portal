@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, WithFieldValue } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
 import { Link } from '@/navigation';
@@ -99,10 +99,11 @@ export function SignupForm() {
       }
       
       await setDoc(doc(db, "users", user.uid), userData);
+      await sendEmailVerification(user);
 
       toast({
-        title: "Account Created",
-        description: "Welcome to The Fresh Hub! You can now log in.",
+        title: t('signup_success_title'),
+        description: t('signup_success_desc'),
       });
       router.push('/login');
     } catch (error: any) {
