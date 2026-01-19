@@ -1,0 +1,20 @@
+{
+  "title": "Billing & Payments",
+  "total_to_pay": "Total to Pay",
+  "overdue_amount": "{amount} Overdue",
+  "payment_methods": "Payment Methods",
+  "pending_tab": "Pending ({count})",
+  "history_tab": "Payment History",
+  "no_invoices": "No invoices in this section.",
+  "issued_date": "Issued: {date}",
+  "due_date_overdue": "Overdue: {date}",
+  "due_date_open": "Due: {date}",
+  "paid_status": "Paid",
+  "download_pdf": "Download PDF",
+  "selected_total": "Selected:",
+  "pay_now_button": "Pay Now",
+  "pay_button_with_amount": "Pay {amount}",
+  "processing_payment": "Processing...",
+  "payment_success_title": "Payment Successful!",
+  "payment_success_desc": "The payment of {amount} has been processed. You will receive a receipt via email."
+}

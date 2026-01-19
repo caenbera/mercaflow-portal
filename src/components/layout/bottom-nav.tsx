@@ -11,7 +11,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, UserCircle, MoreHorizontal, ChevronRight, Users, LayoutGrid, Tag, Trophy, Headset } from 'lucide-react';
+import { LogOut, UserCircle, MoreHorizontal, ChevronRight, Users, LayoutGrid, Tag, Trophy, Headset, FileText } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { NavDefinition } from './app-sidebar';
 
@@ -97,22 +97,22 @@ function MoreMenuSheetContent({ onClose, navConfig }: { onClose: () => void, nav
 
     return (
         <div className="flex flex-col p-4 max-h-[80vh] overflow-y-auto">
-            <SheetHeader className="text-left pb-2">
-                <SheetTitle className="text-sm">
-                    <div className="flex items-center gap-3">
-                        <Avatar>
-                            <AvatarImage src="/placeholder-user.jpg" alt={userProfile?.businessName} />
-                            <AvatarFallback>{userProfile ? getInitials(userProfile.businessName) : 'U'}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col">
-                            <span className="font-semibold text-sm text-left">{userProfile?.businessName}</span>
-                            <span className="text-xs text-muted-foreground capitalize text-left">{role}</span>
-                        </div>
+            <SheetHeader>
+              <SheetTitle>
+                <div className="flex items-center gap-3">
+                    <Avatar>
+                        <AvatarImage src="/placeholder-user.jpg" alt={userProfile?.businessName} />
+                        <AvatarFallback>{userProfile ? getInitials(userProfile.businessName) : 'U'}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col text-left">
+                        <span className="font-semibold text-sm">{userProfile?.businessName}</span>
+                        <span className="text-xs text-muted-foreground capitalize">{role}</span>
                     </div>
-                </SheetTitle>
-                <SheetDescription className="hidden">
-                    User account and navigation menu.
-                </SheetDescription>
+                </div>
+              </SheetTitle>
+              <SheetDescription className="hidden">
+                  User account and navigation menu.
+              </SheetDescription>
             </SheetHeader>
             <div className="ml-auto -mt-10">
                 <LanguageSwitcher />
@@ -176,6 +176,13 @@ function MoreMenuSheetContent({ onClose, navConfig }: { onClose: () => void, nav
                     <span>{t('support')}</span>
                 </div>
                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </Link>
+             <Link href="/client/invoices" onClick={onClose} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-muted text-sm font-medium">
+                <div className="flex items-center gap-3">
+                    <FileText className="w-5 h-5 text-muted-foreground" />
+                    <span>{t('invoices')}</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </Link>
             <Separator className="my-2" />
             <Button variant="ghost" className="w-full justify-start p-2 text-sm font-medium text-destructive hover:text-destructive" onClick={handleSignOut}>

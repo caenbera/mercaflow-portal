@@ -1,0 +1,20 @@
+{
+  "title": "Facturación y Pagos",
+  "total_to_pay": "Total a Pagar",
+  "overdue_amount": "{amount} Vencidos",
+  "payment_methods": "Métodos de Pago",
+  "pending_tab": "Pendientes ({count})",
+  "history_tab": "Historial de Pagos",
+  "no_invoices": "No hay facturas en esta sección.",
+  "issued_date": "Emitida: {date}",
+  "due_date_overdue": "Vencida: {date}",
+  "due_date_open": "Vence: {date}",
+  "paid_status": "Pagada",
+  "download_pdf": "Descargar PDF",
+  "selected_total": "Seleccionado:",
+  "pay_now_button": "Pagar Ahora",
+  "pay_button_with_amount": "Pagar {amount}",
+  "processing_payment": "Procesando...",
+  "payment_success_title": "¡Pago Exitoso!",
+  "payment_success_desc": "El pago de {amount} fue procesado. Recibirás un recibo por email."
+}
