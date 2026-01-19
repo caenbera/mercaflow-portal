@@ -2,7 +2,7 @@
 
 import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup, SidebarGroupLabel, SidebarSeparator } from '@/components/ui/sidebar';
 import { useAuth } from '@/context/auth-context';
-import { LayoutGrid, ShoppingCart, Package, Users, History, Home, ClipboardList, Leaf, Truck, ShoppingBag, Boxes } from 'lucide-react';
+import { LayoutGrid, ShoppingCart, Package, Users, History, Home, ClipboardList, Leaf, Truck, ShoppingBag, Boxes, UserCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/navigation';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -54,6 +54,7 @@ export function AppSidebar() {
         { href: '/client/dashboard', label: t('dashboard'), icon: LayoutGrid },
         { href: '/client/new-order', label: t('newOrder'), icon: ShoppingCart },
         { href: '/client/history', label: t('orderHistory'), icon: History },
+        { href: '/client/account', label: t('my_account'), icon: UserCircle },
       ],
       admin: [
         { href: '/admin/dashboard', label: t('dashboard'), icon: LayoutGrid },
@@ -75,6 +76,7 @@ export function AppSidebar() {
         { href: '/client/dashboard', label: t('home'), icon: Home },
         { href: '/client/new-order', label: t('myOrder'), icon: ClipboardList },
         { href: '/client/history', label: t('history'), icon: History },
+        { href: '/client/account', label: t('my_account'), icon: UserCircle },
       ],
        admin: [
         { href: '/admin/dashboard', label: t('dashboard'), icon: LayoutGrid },
@@ -111,6 +113,9 @@ export function AppSidebar() {
   }
   
   if (isMobile) {
+    // The "More" button in BottomNavBar will handle showing the account link
+    const mobileNavItems = (role === 'client' ? navConfig.mobile.client : navConfig.mobile.admin) || [];
+    const mainNavItems = mobileNavItems.slice(0, 3);
     return <BottomNavBar navConfig={navConfig} />;
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from '@/navigation';
+import { useRouter, Link } from '@/navigation';
 import { auth } from '@/lib/firebase/config';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/context/auth-context';
@@ -24,6 +24,7 @@ export function DashboardHeader() {
   const router = useRouter();
   const { toast } = useToast();
   const t = useTranslations('Dashboard');
+  const tNav = useTranslations('NavigationBar');
 
   const handleSignOut = async () => {
     try {
@@ -72,7 +73,9 @@ export function DashboardHeader() {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>{userProfile?.businessName}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>{t('header_settings')}</DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/client/account">{tNav('my_account')}</Link>
+          </DropdownMenuItem>
           <DropdownMenuItem>{t('header_support')}</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSignOut}>{t('header_logout')}</DropdownMenuItem>

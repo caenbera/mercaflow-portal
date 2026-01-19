@@ -11,7 +11,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, Settings, MoreHorizontal, ChevronRight, Users, LayoutGrid } from 'lucide-react';
+import { LogOut, UserCircle, MoreHorizontal, ChevronRight, Users, LayoutGrid } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { NavDefinition } from './app-sidebar';
 
@@ -137,10 +137,10 @@ function MoreMenuSheetContent({ onClose, navConfig }: { onClose: () => void, nav
                  <Separator className="my-2" />
                 </>
              )}
-            <Link href="#" onClick={onClose} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-muted text-sm font-medium">
+            <Link href="/client/account" onClick={onClose} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-muted text-sm font-medium">
                 <div className="flex items-center gap-3">
-                    <Settings className="w-5 h-5 text-muted-foreground" />
-                    <span>{t('settings')}</span>
+                    <UserCircle className="w-5 h-5 text-muted-foreground" />
+                    <span>{t('my_account')}</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </Link>

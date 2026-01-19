@@ -103,3 +103,11 @@ export interface ClientNote {
   text: string;
   color: string;
 }
+
+export interface Branch {
+  id: string;
+  alias: string;
+  address: string;
+  city: string;
+  manager: string;
+}
