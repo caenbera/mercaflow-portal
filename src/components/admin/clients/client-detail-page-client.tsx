@@ -1,6 +1,6 @@
+
 "use client";
 
-import { useState } from 'react';
 import type { Client, ClientNote } from '@/types';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/navigation';
@@ -16,25 +16,17 @@ import { clientNotes, clientOrders } from '@/lib/placeholder-data';
 
 import {
   ArrowLeft,
-  BadgeCheck,
-  Building,
-  Calendar,
-  CreditCard,
   Crown,
   Eye,
   FileText,
   Lock,
   Mail,
-  MapPin,
-  MessageSquare,
-  Package,
   Pencil,
   Phone,
   Plus,
   Send,
   User,
-  Star,
-  MoreVertical
+  Star
 } from 'lucide-react';
 
 const formatCurrency = (amount: number) => {
