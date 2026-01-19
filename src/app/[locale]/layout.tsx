@@ -8,14 +8,13 @@ import { Toaster } from '@/components/ui/toaster';
 
 export default async function RootLayout({
   children,
-  params,
+  params: { locale },
 }: Readonly<{
   children: ReactNode;
   params: { locale: string };
 }>) {
-  const locale = params.locale;
   unstable_setRequestLocale(locale);
-  const messages = await getMessages();
+  const messages = await getMessages(locale);
 
   return (
     <html lang={locale} suppressHydrationWarning>
