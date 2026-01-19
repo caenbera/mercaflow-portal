@@ -19,5 +19,7 @@
   "logout": "Logout",
   "picking": "Picking & Packing",
   "warehouseOps": "Warehouse Ops",
-  "my_account": "My Account"
+  "my_account": "My Account",
+  "offers": "Offers & Clearance",
+  "new_badge": "New"
 }

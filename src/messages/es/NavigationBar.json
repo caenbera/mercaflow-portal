@@ -19,5 +19,7 @@
   "logout": "Cerrar Sesión",
   "picking": "Picking & Packing",
   "warehouseOps": "Operaciones",
-  "my_account": "Mi Cuenta"
+  "my_account": "Mi Cuenta",
+  "offers": "Ofertas y Liquidación",
+  "new_badge": "Nuevo"
 }

@@ -11,7 +11,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, UserCircle, MoreHorizontal, ChevronRight, Users, LayoutGrid } from 'lucide-react';
+import { LogOut, UserCircle, MoreHorizontal, ChevronRight, Users, LayoutGrid, Tag } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { NavDefinition } from './app-sidebar';
 
@@ -143,6 +143,16 @@ function MoreMenuSheetContent({ onClose, navConfig }: { onClose: () => void, nav
                     <span>{t('my_account')}</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </Link>
+            <Link href="/client/offers" onClick={onClose} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-muted text-sm font-medium">
+                <div className="flex items-center gap-3">
+                    <Tag className="w-5 h-5 text-muted-foreground" />
+                    <span>{t('offers')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs bg-destructive text-destructive-foreground px-2 py-0.5 rounded-full font-semibold">{t('new_badge')}</span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </div>
             </Link>
             <Link href="#" onClick={onClose} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-muted text-sm font-medium">
                 <div className="flex items-center gap-3">
