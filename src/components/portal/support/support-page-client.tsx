@@ -141,7 +141,7 @@ export function SupportPageClient() {
              <Accordion type="single" collapsible className="w-full space-y-2">
                 {faqs.map((faq, i) => (
                     <AccordionItem key={i} value={`item-${i+1}`} className="bg-card rounded-xl border shadow-sm">
-                        <AccordionTrigger className="p-4 text-sm text-left">{t(faq.q)}</AccordionTrigger>
+                        <AccordionTrigger className="p-4 text-sm text-left">{t(faq.q as any)}</AccordionTrigger>
                         <AccordionContent className="px-4 pb-4">
                            <p className="text-sm text-muted-foreground">
                                 {t.rich(faq.a as any, {

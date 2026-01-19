@@ -78,6 +78,7 @@ export default getRequestConfig(async ({locale}) => {
   }
  
   return {
-    messages: await getMessages(locale)
+    messages: await getMessages(locale),
+    locale,
   };
 });

@@ -97,14 +97,14 @@ function MoreMenuSheetContent({ onClose, navConfig }: { onClose: () => void, nav
 
     return (
         <div className="flex flex-col p-4 max-h-[80vh] overflow-y-auto">
-            <SheetHeader>
+            <SheetHeader className="text-left">
               <SheetTitle>
                 <div className="flex items-center gap-3">
                     <Avatar>
                         <AvatarImage src="/placeholder-user.jpg" alt={userProfile?.businessName} />
                         <AvatarFallback>{userProfile ? getInitials(userProfile.businessName) : 'U'}</AvatarFallback>
                     </Avatar>
-                    <div className="flex flex-col text-left">
+                    <div className="flex flex-col">
                         <span className="font-semibold text-sm">{userProfile?.businessName}</span>
                         <span className="text-xs text-muted-foreground capitalize">{role}</span>
                     </div>

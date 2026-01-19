@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, WithFieldValue } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
-import { Link } from '@/navigation';
+import { Link, useLocale } from '@/navigation';
 import { useTranslations } from 'next-intl';
 import type { UserProfile } from '@/types';
 
@@ -58,6 +58,7 @@ export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const t = useTranslations('Auth');
+  const locale = useLocale();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -99,6 +100,9 @@ export function SignupForm() {
       }
       
       await setDoc(doc(db, "users", user.uid), userData);
+      
+      // Set the language for the verification email
+      auth.languageCode = locale;
       await sendEmailVerification(user);
 
       toast({
