@@ -12,10 +12,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, WithFieldValue } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
 import { Link } from '@/navigation';
 import { useTranslations } from 'next-intl';
+import type { UserProfile } from '@/types';
 
 const SUPER_ADMIN_EMAIL = 'superadmin@thefreshhub.com';
 
@@ -81,7 +82,7 @@ export function SignupForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
-      const userData: any = {
+      const userData: WithFieldValue<Partial<UserProfile>> = {
         uid: user.uid,
         email: values.email,
         createdAt: serverTimestamp(),

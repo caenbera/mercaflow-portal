@@ -1,4 +1,3 @@
-
 "use client";
 
 import { createContext, useState, useEffect, useContext } from 'react';
@@ -43,6 +42,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setRole(profileData.role || 'client');
           } else {
             // User exists in Auth, but not in Firestore. Default to client.
+            // This can happen if the user document is not created yet or was deleted.
+            // For this app, we'll assume a 'client' role if no document is found.
             setUserProfile(null);
             setRole('client');
           }

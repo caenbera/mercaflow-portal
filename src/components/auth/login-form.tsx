@@ -23,6 +23,17 @@ const formSchema = z.object({
   password: z.string().min(1, { message: "Password is required." }),
 });
 
+const getRedirectPath = (role: UserRole): string => {
+  switch (role) {
+    case 'superadmin':
+    case 'admin':
+      return '/admin/dashboard';
+    case 'client':
+    default:
+      return '/client/new-order';
+  }
+};
+
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
@@ -38,17 +49,6 @@ export function LoginForm() {
       password: "",
     },
   });
-
-  const getRedirectPath = (role: UserRole): string => {
-    switch (role) {
-      case 'superadmin':
-      case 'admin':
-        return '/admin/dashboard';
-      case 'client':
-      default:
-        return '/client/new-order';
-    }
-  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
