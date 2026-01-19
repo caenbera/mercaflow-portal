@@ -25,6 +25,7 @@ async function getMessages(locale: string) {
     const suppliersPageMessages = (await import(`./messages/${locale}/SuppliersPage.json`)).default;
     const purchasingPageMessages = (await import(`./messages/${locale}/PurchasingPage.json`)).default;
     const clientsPageMessages = (await import(`./messages/${locale}/ClientsPage.json`)).default;
+    const ordersPageMessages = (await import(`./messages/${locale}/OrdersPage.json`)).default;
 
     return {
       Auth: authMessages,
@@ -46,6 +47,7 @@ async function getMessages(locale: string) {
       SuppliersPage: suppliersPageMessages,
       PurchasingPage: purchasingPageMessages,
       ClientsPage: clientsPageMessages,
+      OrdersPage: ordersPageMessages,
     };
   } catch (error) {
     notFound();

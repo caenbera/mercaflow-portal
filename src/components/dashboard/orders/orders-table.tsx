@@ -11,7 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import type { Order, OrderStatus } from '@/types';
 import { format } from 'date-fns';
-import { MoreHorizontal, Eye } from 'lucide-react';
+import { MoreHorizontal, Eye, Bell, Box, Truck, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -32,15 +32,15 @@ interface OrdersTableProps {
 
 export function OrdersTable({ orders, onViewDetails }: OrdersTableProps) {
   const { toast } = useToast();
-  const t = useTranslations('Dashboard');
+  const t = useTranslations('OrdersPage');
 
   const getStatusBadge = (status: OrderStatus) => {
     switch(status) {
-      case 'pending': return <Badge className="badge-status status-new">{t('status_new')}</Badge>;
-      case 'processing': return <Badge className="badge-status status-prep">{t('status_preparing')}</Badge>;
-      case 'shipped': return <Badge className="badge-status status-route">{t('status_in_route')}</Badge>;
-      case 'delivered': return <Badge className="badge-status status-done">{t('status_delivered')}</Badge>;
-      case 'cancelled': return <Badge className="badge-status status-cancel">{t('status_cancelled')}</Badge>;
+      case 'pending': return <Badge className="badge-status status-new"><Bell className="h-3 w-3" />{t('status_new')}</Badge>;
+      case 'processing': return <Badge className="badge-status status-prep"><Box className="h-3 w-3" />{t('status_preparing')}</Badge>;
+      case 'shipped': return <Badge className="badge-status status-route"><Truck className="h-3 w-3" />{t('status_in_route')}</Badge>;
+      case 'delivered': return <Badge className="badge-status status-done"><CheckCircle className="h-3 w-3" />{t('status_delivered')}</Badge>;
+      case 'cancelled': return <Badge className="badge-status status-cancel"><XCircle className="h-3 w-3" />{t('status_cancelled')}</Badge>;
       default: return <Badge variant="secondary">{status}</Badge>;
     }
   };
@@ -88,7 +88,7 @@ export function OrdersTable({ orders, onViewDetails }: OrdersTableProps) {
               <TableCell className="font-bold">#{order.id.substring(0, 7).toUpperCase()}</TableCell>
               <TableCell>
                 <div className="font-semibold">{order.businessName}</div>
-                <small className="text-muted-foreground">Cliente Recurrente</small>
+                <small className="text-muted-foreground">{t('table_recurrent_client')}</small>
               </TableCell>
               <TableCell className="text-muted-foreground text-sm">{formatDate(order.createdAt)}</TableCell>
               <TableCell className="text-right font-bold">{formatCurrency(order.total)}</TableCell>
@@ -108,18 +108,19 @@ export function OrdersTable({ orders, onViewDetails }: OrdersTableProps) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t('actions_menu_label')}</DropdownMenuLabel>
                       <DropdownMenuItem onSelect={() => onViewDetails(order)}>
-                        View Details
+                        {t('actions_view_details')}
                       </DropdownMenuItem>
                        <DropdownMenuItem onSelect={() => {
                          onViewDetails(order);
+                         setTimeout(() => document.body.classList.add('is-printing'), 100);
                          setTimeout(() => window.print(), 200);
                        }}>
-                        Print
+                        {t('actions_print')}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t('actions_change_status_label')}</DropdownMenuLabel>
                       {availableStatuses.map(status => (
                         <DropdownMenuItem 
                           key={status}
@@ -127,7 +128,7 @@ export function OrdersTable({ orders, onViewDetails }: OrdersTableProps) {
                           onSelect={() => handleStatusChange(order.id, status)}
                           className="capitalize"
                         >
-                          Set to {t(`status_${status.replace('-', '_')}` as any) || status}
+                          {t('actions_set_to', { status: t(`status_${status.replace('-', '_')}` as any) || status })}
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
@@ -139,7 +140,7 @@ export function OrdersTable({ orders, onViewDetails }: OrdersTableProps) {
         ) : (
           <TableRow>
             <TableCell colSpan={6} className="h-24 text-center">
-              No orders found.
+              {t('table_no_orders')}
             </TableCell>
           </TableRow>
         )}

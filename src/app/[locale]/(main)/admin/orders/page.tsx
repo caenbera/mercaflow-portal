@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,7 +32,7 @@ const KpiCard = ({ title, value, icon: Icon, iconBg }: { title: string, value: s
 );
 
 export default function ManageOrdersPage() {
-  const t = useTranslations('Dashboard');
+  const t = useTranslations('OrdersPage');
   const { orders, loading } = useAllOrders();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -60,12 +60,12 @@ export default function ManageOrdersPage() {
       <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold font-headline">{t('orders_page_title')}</h1>
-            <p className="text-muted-foreground">{t('orders_page_subtitle')}</p>
+            <h1 className="text-2xl font-bold font-headline">{t('title')}</h1>
+            <p className="text-muted-foreground">{t('subtitle')}</p>
           </div>
           <Button>
             <PlusCircle className="mr-2 h-4 w-4" />
-            {t('orders_manual_button')}
+            {t('manual_order_button')}
           </Button>
         </div>
 
@@ -104,7 +104,7 @@ export default function ManageOrdersPage() {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                  {date ? format(date, "PPP") : <span>{t('filter_pick_date')}</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
