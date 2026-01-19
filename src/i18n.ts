@@ -22,6 +22,7 @@ async function getMessages(locale: string) {
     const landingPageTestimonialsMessages = (await import(`./messages/${locale}/LandingPageTestimonials.json`)).default;
     const navigationBarMessages = (await import(`./messages/${locale}/NavigationBar.json`)).default;
     const clientNewOrderPageMessages = (await import(`./messages/${locale}/ClientNewOrderPage.json`)).default;
+    const suppliersPageMessages = (await import(`./messages/${locale}/SuppliersPage.json`)).default;
 
     return {
       Auth: authMessages,
@@ -40,6 +41,7 @@ async function getMessages(locale: string) {
       LandingPageTestimonials: landingPageTestimonialsMessages,
       NavigationBar: navigationBarMessages,
       ClientNewOrderPage: clientNewOrderPageMessages,
+      SuppliersPage: suppliersPageMessages,
     };
   } catch (error) {
     notFound();

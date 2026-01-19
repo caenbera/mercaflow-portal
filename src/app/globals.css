@@ -96,16 +96,27 @@
     --sidebar-border: 210 25% 38%;
     --sidebar-ring: 145 63% 49%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
+
   html {
     @apply scroll-smooth;
   }
+
   body {
     @apply bg-background text-foreground;
+    /* Previene rebote en iOS (igual que en el HTML) */
+    overscroll-behavior-y: none;
+  }
+
+  /* 👇 Clase para ocultar scrollbar en contenedores con scroll horizontal 👇 */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;  /* IE y Edge */
+    scrollbar-width: none;     /* Firefox */
   }
 }
