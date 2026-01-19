@@ -27,7 +27,8 @@ import {
   Search,
   Trophy,
   History,
-  DollarSign
+  DollarSign,
+  Leaf
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
