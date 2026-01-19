@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Boxes, CheckCircle, ArrowRight, Bell, Box, Truck, FileText, ExclamationTriangle, Info, X } from 'lucide-react';
+import { Check, Boxes, CheckCircle, ArrowRight, Bell, Box, Truck, FileText, AlertTriangle, Info, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -243,7 +243,7 @@ export function PickingPageClient() {
                       </div>
                       <div className="flex gap-2">
                           <Button variant="destructive" size="icon" className="h-12 w-12 rounded-xl bg-yellow-500 hover:bg-yellow-600" onClick={() => handleOpenShortageModal(item)}>
-                              <ExclamationTriangle />
+                              <AlertTriangle />
                           </Button>
                           <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl border-2 data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground data-[state=checked]:border-accent" data-state={item.status === 'done' ? 'checked' : 'unchecked'} onClick={() => handleCompleteItem(item.id)}>
                               <Check className="h-7 w-7" />
@@ -321,7 +321,7 @@ export function PickingPageClient() {
        <Dialog open={isShortageModalOpen} onOpenChange={setIsShortageModalOpen}>
         <DialogContent>
             <DialogHeader>
-                <DialogTitle className="text-yellow-600 flex items-center gap-2"><ExclamationTriangle/>{t('report_shortage_title')}</DialogTitle>
+                <DialogTitle className="text-yellow-600 flex items-center gap-2"><AlertTriangle/>{t('report_shortage_title')}</DialogTitle>
                 <DialogDescription>
                     {currentItemForShortage?.name} - {t('sku_code')}: #{currentItemForShortage?.sku}
                 </DialogDescription>
@@ -353,3 +353,5 @@ export function PickingPageClient() {
     </div>
   );
 }
+
+    
