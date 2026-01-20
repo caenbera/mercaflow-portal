@@ -17,7 +17,7 @@ import { Link, useRouter } from '@/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import type { UserProfile } from '@/types';
 
-const SUPER_ADMIN_EMAIL = 'superadmin@thefreshhub.com';
+const SUPER_ADMIN_EMAIL = 'caenbera@gmail.com';
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
