@@ -4,13 +4,23 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check for admin roles from the auth token's custom claims
+    // Helper function to get the role from the user's profile document
+    function getUserRole() {
+      // Ensure the user is authenticated before trying to read their profile
+      if (request.auth == null) {
+        return 'guest';
+      }
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    // Helper function to check for admin roles
     function isAdmin() {
-      return request.auth.token.admin == true || request.auth.token.superadmin == true;
+      let userRole = getUserRole();
+      return userRole == 'admin' || userRole == 'superadmin';
     }
     
     function isSuperAdmin() {
-      return request.auth.token.superadmin == true;
+      return getUserRole() == 'superadmin';
     }
 
     // USERS Collection
@@ -50,6 +60,12 @@ service cloud.firestore {
       
       // Only admins can delete orders
       allow delete: if isAdmin();
+    }
+
+    // SUPPLIERS Collection
+    match /suppliers/{supplierId} {
+      // Admins and superadmins can read, create, update, and delete suppliers.
+      allow read, write: if isAdmin();
     }
 
     // ADMIN INVITES Collection
