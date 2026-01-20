@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,8 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, WithFieldValue } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
-import { Link, useLocale } from '@/navigation';
-import { useTranslations } from 'next-intl';
+import { Link, useRouter } from '@/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import type { UserProfile } from '@/types';
 
 const SUPER_ADMIN_EMAIL = 'superadmin@thefreshhub.com';

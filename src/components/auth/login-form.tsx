@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,8 +14,8 @@ import { signInWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerificati
 import { auth, db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import type { UserRole, UserProfile, User } from '@/types';
-import { Link, useLocale } from '@/navigation';
-import { useTranslations } from 'next-intl';
+import { Link, useRouter } from '@/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
