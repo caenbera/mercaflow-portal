@@ -4,13 +4,14 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { FileText, Handshake, PlusCircle, Truck } from 'lucide-react';
-import { suppliers } from '@/lib/placeholder-data';
 import { SupplierCard } from './supplier-card';
 import { AddSupplierDialog } from './add-supplier-dialog';
 import type { Supplier } from '@/types';
 import { Card, CardContent } from "@/components/ui/card";
 import { deleteSupplier } from '@/lib/firestore/suppliers';
 import { useToast } from '@/hooks/use-toast';
+import { useSuppliers } from '@/hooks/use-suppliers';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const KpiCard = ({ title, value, icon: Icon, iconBg, iconColor }: any) => (
   <Card className="shadow-sm">
@@ -26,14 +27,27 @@ const KpiCard = ({ title, value, icon: Icon, iconBg, iconColor }: any) => (
   </Card>
 );
 
+const KpiCardSkeleton = () => (
+    <Card className="shadow-sm">
+        <CardContent className="p-5 flex items-center justify-between">
+            <div>
+                <Skeleton className="h-4 w-24 mb-2" />
+                <Skeleton className="h-8 w-32" />
+            </div>
+            <Skeleton className="w-12 h-12 rounded-xl" />
+        </CardContent>
+    </Card>
+)
+
 export function SuppliersPageClient() {
   const t = useTranslations('SuppliersPage');
+  const { suppliers, loading } = useSuppliers();
   const [activeFilter, setActiveFilter] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const { toast } = useToast();
 
-  const totalPayable = suppliers.reduce((acc, s) => acc + s.finance.pendingBalance, 0);
+  const totalPayable = loading ? 0 : suppliers.reduce((acc, s) => acc + s.finance.pendingBalance, 0);
 
   const filters = [
     { id: 'all', label: t('all') },
@@ -64,7 +78,7 @@ export function SuppliersPageClient() {
       }
   };
 
-  const filteredSuppliers = suppliers.filter(s => activeFilter === 'all' || s.category === activeFilter);
+  const filteredSuppliers = loading ? [] : suppliers.filter(s => activeFilter === 'all' || s.category === activeFilter);
 
   return (
     <>
@@ -83,27 +97,37 @@ export function SuppliersPageClient() {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <KpiCard 
-            title={t('accounts_payable')}
-            value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalPayable)}
-            icon={FileText}
-            iconBg="bg-red-100"
-            iconColor="text-red-600"
-          />
-          <KpiCard 
-            title={t('deliveries_today')}
-            value="3"
-            icon={Truck}
-            iconBg="bg-blue-100"
-            iconColor="text-blue-600"
-          />
-          <KpiCard 
-            title={t('active_suppliers')}
-            value={suppliers.filter(s => s.status === 'active').length}
-            icon={Handshake}
-            iconBg="bg-green-100"
-            iconColor="text-green-600"
-          />
+          {loading ? (
+              <>
+                  <KpiCardSkeleton />
+                  <KpiCardSkeleton />
+                  <KpiCardSkeleton />
+              </>
+          ) : (
+            <>
+              <KpiCard 
+                title={t('accounts_payable')}
+                value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalPayable)}
+                icon={FileText}
+                iconBg="bg-red-100"
+                iconColor="text-red-600"
+              />
+              <KpiCard 
+                title={t('deliveries_today')}
+                value="3"
+                icon={Truck}
+                iconBg="bg-blue-100"
+                iconColor="text-blue-600"
+              />
+              <KpiCard 
+                title={t('active_suppliers')}
+                value={suppliers.filter(s => s.status === 'active').length}
+                icon={Handshake}
+                iconBg="bg-green-100"
+                iconColor="text-green-600"
+              />
+            </>
+          )}
         </div>
 
         {/* Filters */}
@@ -123,14 +147,22 @@ export function SuppliersPageClient() {
 
         {/* Suppliers Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredSuppliers.map(supplier => (
-            <SupplierCard 
-                key={supplier.id} 
-                supplier={supplier} 
-                onEdit={() => handleOpenDialog(supplier)}
-                onDelete={handleDeleteSupplier} 
-            />
-          ))}
+          {loading ? (
+            Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-2xl" />)
+          ) : filteredSuppliers.length > 0 ? (
+            filteredSuppliers.map(supplier => (
+              <SupplierCard 
+                  key={supplier.id} 
+                  supplier={supplier} 
+                  onEdit={() => handleOpenDialog(supplier)}
+                  onDelete={handleDeleteSupplier} 
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-10 text-muted-foreground">
+                <p>No suppliers found for the selected filter.</p>
+            </div>
+          )}
         </div>
       </div>
     </>
