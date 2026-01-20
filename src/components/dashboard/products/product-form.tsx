@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useTranslations } from 'next-intl';
@@ -16,7 +16,7 @@ import { addProduct, updateProduct } from '@/lib/firestore/products';
 import type { Product } from '@/types';
 import { suppliers } from '@/lib/placeholder-data';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Camera, Plus, Check, Undo2, Pencil, Trash2 } from 'lucide-react'; // Iconos nuevos
+import { Camera, Plus, Check, Undo2, Pencil, Trash2, Percent } from 'lucide-react'; 
 import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
@@ -51,28 +51,23 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
   const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
   const [imgUrlInputValue, setImgUrlInputValue] = useState('');
   
-  // ESTADOS PARA GESTIÓN DE CATEGORÍAS
   const [categories, setCategories] = useState(initialCategories);
-  const [isInputMode, setIsInputMode] = useState(false); // true si estamos escribiendo (crear o editar)
-  const [editModeTarget, setEditModeTarget] = useState<string | null>(null); // Guardamos qué categoría estamos editando
+  const [isInputMode, setIsInputMode] = useState(false);
+  const [editModeTarget, setEditModeTarget] = useState<string | null>(null);
   const categoryInputRef = useRef<HTMLInputElement>(null);
+
+  const [margin, setMargin] = useState<string>('');
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      sku: '',
-      category: 'Verduras',
-      unit: 'Caja 20lb',
-      supplierId: '',
-      cost: 0,
-      salePrice: 0,
-      stock: 0,
-      minStock: 10,
-      active: true,
-      photoUrl: '',
+      name: '', sku: '', category: 'Verduras', unit: 'Caja 20lb', supplierId: '',
+      cost: 0, salePrice: 0, stock: 0, minStock: 10, active: true, photoUrl: '',
     },
   });
+
+  const costValue = form.watch('cost');
+  const salePriceValue = form.watch('salePrice');
 
   useEffect(() => {
     if (product) {
@@ -87,10 +82,31 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     }
   }, [product, form, defaultSupplierId]);
 
-  const photoUrl = form.watch('photoUrl');
-  const currentCategory = form.watch('category'); // Observar categoría actual para habilitar botones
+  useEffect(() => {
+    if (costValue > 0 && salePriceValue > costValue) {
+        const calculatedMargin = ((salePriceValue - costValue) / salePriceValue) * 100;
+        setMargin(calculatedMargin.toFixed(2).replace('.00', ''));
+    } else {
+        setMargin('');
+    }
+  }, [costValue, salePriceValue]);
 
-  // Manejo de Imagen
+  const handleMarginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const marginValue = e.target.value;
+    setMargin(marginValue);
+    
+    const marginNum = parseFloat(marginValue);
+    const currentCost = form.getValues('cost');
+
+    if (!isNaN(marginNum) && marginNum < 100 && currentCost > 0) {
+        const newSalePrice = currentCost / (1 - marginNum / 100);
+        form.setValue('salePrice', parseFloat(newSalePrice.toFixed(2)), { shouldValidate: true });
+    }
+  };
+
+  const photoUrl = form.watch('photoUrl');
+  const currentCategory = form.watch('category');
+
   const handleOpenUrlModal = () => {
     setImgUrlInputValue(photoUrl || '');
     setIsUrlModalOpen(true);
@@ -101,23 +117,17 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     setIsUrlModalOpen(false);
   };
   
-  // --- LÓGICA DE CATEGORÍAS ---
-
-  // 1. Iniciar Creación
   const startCreatingCategory = () => {
-    setEditModeTarget(null); // Null significa "Nuevo"
+    setEditModeTarget(null);
     setIsInputMode(true);
-    // Limpiamos el input visualmente (aunque el ref lo manejamos al renderizar)
     if (categoryInputRef.current) categoryInputRef.current.value = "";
     setTimeout(() => categoryInputRef.current?.focus(), 100);
   };
 
-  // 2. Iniciar Edición
   const startEditingCategory = () => {
     if (!currentCategory) return;
-    setEditModeTarget(currentCategory); // Guardamos "Verduras"
+    setEditModeTarget(currentCategory);
     setIsInputMode(true);
-    // Ponemos el valor actual en el input
     setTimeout(() => {
         if(categoryInputRef.current) {
             categoryInputRef.current.value = currentCategory;
@@ -126,7 +136,6 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     }, 100);
   };
 
-  // 3. Guardar (Crear o Renombrar)
   const handleSaveCategory = () => {
     const inputValue = categoryInputRef.current?.value.trim();
     if (!inputValue) {
@@ -135,15 +144,12 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     }
 
     if (editModeTarget) {
-        // MODO EDICIÓN: Renombrar
         setCategories(prev => prev.map(c => c === editModeTarget ? inputValue : c));
-        // Actualizar el valor seleccionado en el formulario
         if (currentCategory === editModeTarget) {
             form.setValue('category', inputValue);
         }
         toast({ title: t('toast_category_updated'), description: inputValue });
     } else {
-        // MODO CREACIÓN: Agregar nuevo
         if (!categories.includes(inputValue)) {
             setCategories(prev => [...prev, inputValue]);
             form.setValue('category', inputValue);
@@ -154,12 +160,11 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     setEditModeTarget(null);
   };
 
-  // 4. Eliminar Categoría
   const handleDeleteCategory = () => {
     if (!currentCategory) return;
     if (confirm(t('confirm_delete_category', { category: currentCategory }))) {
         setCategories(prev => prev.filter(c => c !== currentCategory));
-        form.setValue('category', ''); // Limpiar selección
+        form.setValue('category', '');
         toast({ title: t('toast_category_deleted') });
     }
   };
@@ -196,7 +201,6 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
           
-          {/* SECCIÓN SUPERIOR: IMAGEN + DATOS */}
           <div className="flex flex-col md:flex-row gap-5 items-start">
              <div 
                 className={cn(
@@ -221,7 +225,7 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
                     <FormItem className="md:col-span-3">
                       <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_name')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ej: Tomate Chonto Maduro" className="h-11 font-medium text-base bg-gray-50/50" {...field} />
+                        <Input placeholder={t('form_placeholder_name')} className="h-11 font-medium text-base bg-gray-50/50" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -234,7 +238,7 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
                     <FormItem>
                       <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_sku')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="AUTO" className="h-11 font-mono text-sm bg-gray-50/50" {...field} />
+                        <Input placeholder={t('form_placeholder_sku')} className="h-11 font-mono text-sm bg-gray-50/50" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -243,7 +247,6 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
               </div>
           </div>
           
-          {/* SECCIÓN CATEGORÍA (CON GESTIÓN AVANZADA) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             
             <FormField
@@ -254,7 +257,6 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
                   <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_category')}</FormLabel>
                   <div className="flex items-center gap-2">
                     {isInputMode ? (
-                      // MODO INPUT (Crear o Editar)
                       <>
                         <Input 
                           ref={categoryInputRef} 
@@ -278,13 +280,12 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
                         </Button>
                       </>
                     ) : (
-                      // MODO SELECT (Normal)
                       <>
                         <div className="flex-grow">
                             <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                                 <SelectTrigger className="h-10 bg-white">
-                                <SelectValue placeholder="Seleccionar..." />
+                                <SelectValue placeholder={t('form_placeholder_select_category')} />
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -293,7 +294,6 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
                             </Select>
                         </div>
                         
-                        {/* Botones de Gestión */}
                         <div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border border-gray-200">
                             <Button 
                                 type="button" variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-100 hover:text-blue-600"
@@ -358,7 +358,7 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
 
           <hr className="my-2 border-dashed border-gray-200" />
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr,2fr] gap-5 items-end">
               <FormField
                   control={form.control}
                   name="supplierId"
@@ -379,7 +379,7 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
                   </FormItem>
                   )}
               />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <FormField
                     control={form.control}
                     name="cost"
@@ -396,6 +396,15 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
                     </FormItem>
                     )}
                 />
+                 <FormItem>
+                    <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_margin')}</FormLabel>
+                    <FormControl>
+                        <div className="relative">
+                           <Input type="number" value={margin} onChange={handleMarginChange} className="pl-3 pr-8 h-10 text-right font-bold" placeholder={t('form_placeholder_margin')} />
+                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+                        </div>
+                    </FormControl>
+                </FormItem>
                 <FormField
                     control={form.control}
                     name="salePrice"
@@ -405,7 +414,7 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
                         <FormControl>
                         <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-800 font-bold text-sm">$</span>
-                            <Input type="number" className="pl-6 h-10 font-bold text-lg text-right" placeholder="0.00" step="0.01" {...field} />
+                            <Input type="number" className="pl-6 h-10 font-bold text-lg text-right bg-green-50" placeholder="0.00" step="0.01" {...field} />
                         </div>
                         </FormControl>
                         <FormMessage />
@@ -457,7 +466,7 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
                           />
                       </FormControl>
                        <FormLabel htmlFor="prodActive" className="!m-0 text-sm font-medium cursor-pointer">
-                           {field.value ? "Producto Activo" : "Producto Inactivo"}
+                           {field.value ? t('form_label_active_true') : t('form_label_active_false')}
                         </FormLabel>
                   </FormItem>
                   )}
@@ -473,7 +482,6 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
         </form>
       </Form>
 
-      {/* MODAL URL DE IMAGEN */}
       <Dialog open={isUrlModalOpen} onOpenChange={setIsUrlModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -502,4 +510,3 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     </>
   );
 }
-    

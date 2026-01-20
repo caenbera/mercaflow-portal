@@ -80,5 +80,6 @@
     "toast_category_deleted": "Categoría eliminada",
     "confirm_delete_category": "¿Seguro deseas eliminar la categoría '{category}'?",
     "add_supplier_success_title": "Proveedor Creado",
-    "edit_supplier_success_title": "Proveedor Actualizado"
+    "edit_supplier_success_title": "Proveedor Actualizado",
+    "no_products_yet": "Este proveedor aún no tiene productos en su catálogo."
 }
