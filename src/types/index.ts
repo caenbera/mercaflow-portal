@@ -1,4 +1,4 @@
-import type { Timestamp } from 'firebase/firestore';
+import type { Timestamp, User } from 'firebase/firestore';
 
 export type UserRole = 'client' | 'admin' | 'superadmin' | 'picker';
 
@@ -111,3 +111,6 @@ export interface Branch {
   city: string;
   manager: string;
 }
+
+// Exporting Firebase User type for components
+export type { User };

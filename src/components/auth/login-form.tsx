@@ -11,11 +11,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
-import type { UserRole, UserProfile } from '@/types';
-import { Link } from '@/navigation';
+import type { UserRole, UserProfile, User } from '@/types';
+import { Link, useLocale } from '@/navigation';
 import { useTranslations } from 'next-intl';
 
 const formSchema = z.object({
@@ -39,8 +39,9 @@ export function LoginForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [unverifiedUser, setUnverifiedUser] = useState<User | null>(null);
   const t = useTranslations('Auth');
-
+  const locale = useLocale();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,10 +53,22 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    setUnverifiedUser(null);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
+
+      if (!user.emailVerified) {
+        setUnverifiedUser(user);
+        toast({
+          variant: "destructive",
+          title: t('email_not_verified_title'),
+          description: t('email_not_verified_desc_click'),
+        });
+        return; 
+      }
       
-      const userDocRef = doc(db, 'users', userCredential.user.uid);
+      const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists()) {
@@ -81,6 +94,24 @@ export function LoginForm() {
       });
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleResendVerification() {
+    if (!unverifiedUser) return;
+    setIsLoading(true);
+    try {
+        auth.languageCode = locale;
+        await sendEmailVerification(unverifiedUser);
+        toast({
+            title: t('verification_resent_title'),
+            description: t('verification_resent_desc'),
+        });
+        setUnverifiedUser(null); 
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: t('error_title'), description: error.message || t('unknown_error') });
+    } finally {
+        setIsLoading(false);
     }
   }
 
@@ -186,6 +217,16 @@ export function LoginForm() {
             </Button>
           </form>
         </Form>
+        
+        {unverifiedUser && (
+          <div className="mt-4 text-center">
+              <p className="text-sm text-muted-foreground">{t('resend_prompt')}</p>
+              <Button variant="link" onClick={handleResendVerification} disabled={isLoading}>
+                  {t('resend_button')}
+              </Button>
+          </div>
+        )}
+
         <div className="mt-4 text-center text-sm">
           {t('no_account')}{' '}
           <Link href="/signup" className="underline">
