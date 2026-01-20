@@ -128,10 +128,10 @@ export default function NewOrderPage() {
           productId: product.id,
           productName: product.name,
           quantity,
-          price: product.price,
+          price: product.salePrice,
           photoUrl: product.photoUrl,
         });
-        total += product.price * quantity;
+        total += product.salePrice * quantity;
         totalItems += quantity;
       }
     }
@@ -299,7 +299,7 @@ export default function NewOrderPage() {
                 <div className="flex-grow min-w-0">
                   <p className="font-medium text-sm leading-tight truncate">{p.name}</p>
                   <div className="text-xs text-muted-foreground flex items-center mt-0.5">
-                    <span>{formatCurrency(p.price)} / Un</span>
+                    <span>{formatCurrency(p.salePrice)} / {p.unit}</span>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -311,7 +311,7 @@ export default function NewOrderPage() {
                     </Button>
                   </div>
                   {quantity > 0 && (
-                    <p className="font-bold text-primary text-sm mt-0.5">{formatCurrency(quantity * p.price)}</p>
+                    <p className="font-bold text-primary text-sm mt-0.5">{formatCurrency(quantity * p.salePrice)}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-0.5 bg-gray-100 rounded-full border p-0.5 shrink-0">

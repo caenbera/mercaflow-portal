@@ -15,11 +15,17 @@ export interface UserProfile {
 export interface Product {
   id: string;
   name: string;
+  sku: string;
   description: string;
   photoUrl: string;
-  stock: number;
-  price: number;
   category: string;
+  unit: string;
+  supplierId: string;
+  cost: number;
+  salePrice: number;
+  stock: number;
+  minStock: number;
+  active: boolean;
   createdAt: Timestamp;
 }
 
@@ -29,7 +35,7 @@ export interface OrderItem {
   productId: string;
   productName: string;
   quantity: number;
-  price: number;
+  price: number; // This is the price at the time of order
 }
 
 export interface Order {
