@@ -62,5 +62,15 @@
   "toast_delete_error_title": "Error",
   "toast_delete_error_desc": "Ocurrió un error al eliminar el producto.",
   "toast_new_category_success_title": "Categoría Creada",
-  "toast_new_category_success_desc": "La categoría '{categoryName}' ha sido añadida."
+  "toast_new_category_success_desc": "La categoría '{categoryName}' ha sido añadida.",
+  "toast_category_added": "Categoría creada",
+"toast_category_updated": "Categoría renombrada",
+"toast_category_deleted": "Categoría eliminada",
+"confirm_delete_category": "¿Seguro deseas eliminar la categoría '{category}'?",
+"form_placeholder_edit_category": "Renombrar categoría...",
+"edit_category": "Editar nombre",
+"delete_category": "Eliminar categoría",
+"new_category": "Nueva categoría",
+"save": "Guardar",
+"cancel": "Cancelar"
 }

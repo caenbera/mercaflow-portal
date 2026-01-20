@@ -62,5 +62,15 @@
   "toast_delete_error_title": "Error",
   "toast_delete_error_desc": "An error occurred while deleting the product.",
   "toast_new_category_success_title": "Category Created",
-  "toast_new_category_success_desc": "The category '{categoryName}' has been added."
+  "toast_new_category_success_desc": "The category '{categoryName}' has been added.",
+  "toast_category_added": "Category created",
+  "toast_category_updated": "Category renamed",
+  "toast_category_deleted": "Category deleted",
+  "confirm_delete_category": "Are you sure you want to delete the category '{category}'?",
+  "form_placeholder_edit_category": "Rename category...",
+  "edit_category": "Edit name",
+  "delete_category": "Delete category",
+  "new_category": "New category",
+  "save": "Save",
+  "cancel": "Cancel"
 }

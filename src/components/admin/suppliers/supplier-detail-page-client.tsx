@@ -33,7 +33,7 @@ import {
   LineChart,
   Pencil
 } from 'lucide-react';
-import { AddProductDialog } from './add-product-dialog';
+import { ProductDialog } from '@/components/dashboard/products/product-dialog';
 
 interface SupplierDetailPageClientProps {
     supplier: Supplier;
@@ -59,11 +59,16 @@ const Rating = ({ rating, count }: { rating: number, count?: string }) => (
 
 export function SupplierDetailPageClient({ supplier }: SupplierDetailPageClientProps) {
   const t = useTranslations('SuppliersPage');
-  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
 
   return (
     <>
-    <AddProductDialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen} />
+    <ProductDialog 
+      open={isProductDialogOpen} 
+      onOpenChange={setIsProductDialogOpen} 
+      product={null} 
+      defaultSupplierId={supplier.id}
+    />
     <div className="flex flex-col gap-6">
       <div className="mb-4">
         <Button variant="ghost" asChild className="text-muted-foreground font-semibold px-0">
@@ -163,7 +168,7 @@ export function SupplierDetailPageClient({ supplier }: SupplierDetailPageClientP
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input placeholder={t('search_product_placeholder')} className="pl-8" />
                     </div>
-                    <Button onClick={() => setIsAddProductOpen(true)}>
+                    <Button onClick={() => setIsProductDialogOpen(true)}>
                         <Plus className="mr-2 h-4 w-4" />
                         {t('add_product_button')}
                     </Button>
@@ -231,3 +236,4 @@ export function SupplierDetailPageClient({ supplier }: SupplierDetailPageClientP
     </>
   );
 }
+    
