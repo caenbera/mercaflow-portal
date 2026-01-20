@@ -56,13 +56,13 @@ export function ProductTable({ products, onEdit, onDelete }: ProductTableProps) 
             {products.length > 0 ? (
             products.map((product) => {
                 const margin = product.salePrice > 0 ? ((product.salePrice - product.cost) / product.salePrice) * 100 : 0;
-                let marginClass = 'bg-green-100 text-green-700';
-                if(margin < 30) marginClass = 'bg-yellow-100 text-yellow-700';
-                if(margin < 15) marginClass = 'bg-red-100 text-red-700';
+                let marginClass = 'margin-good';
+                if(margin < 30) marginClass = 'margin-warn';
+                if(margin < 15) marginClass = 'margin-bad';
                 
-                let stockClass = 'text-green-600';
-                if (product.stock === 0) stockClass = 'text-red-600';
-                else if (product.stock <= product.minStock) stockClass = 'text-yellow-600';
+                let stockStatus: 'high' | 'low' | 'out' = 'high';
+                if (product.stock === 0) stockStatus = 'out';
+                else if (product.stock <= product.minStock) stockStatus = 'low';
 
                 return (
                 <TableRow key={product.id}>
@@ -76,26 +76,37 @@ export function ProductTable({ products, onEdit, onDelete }: ProductTableProps) 
                             width="45"
                             />
                             <div>
-                                <div className="font-bold">{product.name}</div>
-                                <div className="text-xs text-muted-foreground">{product.sku}</div>
+                                <div className="font-bold text-foreground">{product.name}</div>
+                                <div className="text-xs text-muted-foreground font-mono">{product.sku}</div>
                             </div>
                         </div>
                     </TableCell>
                     <TableCell>
-                        <Badge variant="outline">{product.category}</Badge>
+                        <Badge variant="outline" className="uppercase text-xs">{product.category}</Badge>
                     </TableCell>
-                    <TableCell className="text-sm">{getSupplierName(product.supplierId)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{getSupplierName(product.supplierId)}</TableCell>
                     <TableCell className="text-right">
-                        <div className="font-semibold">{formatCurrency(product.salePrice)}</div>
+                        <div className="font-semibold text-foreground">{formatCurrency(product.salePrice)}</div>
                         <div className="text-xs text-muted-foreground">{t('price_cost')}: {formatCurrency(product.cost)}</div>
                     </TableCell>
                     <TableCell className="text-center">
-                         <Badge variant="outline" className={cn("font-bold", marginClass)}>{margin.toFixed(0)}%</Badge>
+                         <Badge className={cn("font-bold", marginClass)}>{margin.toFixed(0)}%</Badge>
                     </TableCell>
                     <TableCell>
-                        <div className={cn("font-bold", stockClass)}>{product.stock} {product.unit}</div>
-                         {product.stock > 0 && product.stock <= product.minStock && (
-                            <small className="text-destructive font-bold text-xs">{t('stock_reorder')}</small>
+                        <div className={cn("font-bold flex items-center gap-2", 
+                            { 'text-green-600': stockStatus === 'high' },
+                            { 'text-yellow-600': stockStatus === 'low' },
+                            { 'text-red-600': stockStatus === 'out' },
+                        )}>
+                            <div className={cn("h-2 w-2 rounded-full", 
+                                { 'bg-green-500': stockStatus === 'high' },
+                                { 'bg-yellow-500': stockStatus === 'low' },
+                                { 'bg-red-500': stockStatus === 'out' },
+                            )} />
+                            <span>{product.stock} {product.unit}</span>
+                        </div>
+                         {stockStatus === 'low' && (
+                            <small className="text-destructive font-bold text-xs ml-4">{t('stock_reorder')}</small>
                          )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -107,7 +118,7 @@ export function ProductTable({ products, onEdit, onDelete }: ProductTableProps) 
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuLabel>{t('table_header_actions')}</DropdownMenuLabel>
                             <DropdownMenuItem onSelect={() => onEdit(product)}>{t('actions_edit')}</DropdownMenuItem>
                             <DropdownMenuItem><History className="mr-2 h-4 w-4"/>{t('actions_history')}</DropdownMenuItem>
                              <DropdownMenuSeparator />
@@ -123,7 +134,7 @@ export function ProductTable({ products, onEdit, onDelete }: ProductTableProps) 
             ) : (
             <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center">
-                No products found. Add one to get started!
+                {t('no_products_found')}
                 </TableCell>
             </TableRow>
             )}

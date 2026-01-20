@@ -1,7 +1,6 @@
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -24,12 +23,9 @@ export function ProductDialog({ open, onOpenChange, product }: ProductDialogProp
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{product ? t('dialog_edit_title') : t('dialog_add_title')}</DialogTitle>
-          <DialogDescription>
-            {t('dialog_description')}
-          </DialogDescription>
         </DialogHeader>
         <ProductForm product={product} onSuccess={handleSuccess} />
       </DialogContent>
