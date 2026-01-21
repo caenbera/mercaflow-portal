@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from 'react';
-import type { UserProfile } from '@/types';
+import type { UserProfile, Order, ClientTier } from '@/types';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/navigation';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { clientNotes, clientOrders } from '@/lib/placeholder-data';
+import { clientNotes } from '@/lib/placeholder-data';
 import { ClientFormDialog } from './new-client-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -28,7 +28,9 @@ import {
   Plus,
   Send,
   User,
-  Star
+  Star,
+  Shield,
+  Award
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -36,11 +38,27 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 };
 
+const getTierIcon = (tier?: ClientTier) => {
+    switch (tier) {
+        case 'gold':
+            return <Crown className="h-4 w-4 text-yellow-600 fill-yellow-400" title="Gold Client" />;
+        case 'silver':
+            return <Star className="h-4 w-4 text-slate-500 fill-slate-400" title="Silver Client" />;
+        case 'bronze':
+            return <Shield className="h-4 w-4 text-orange-700 fill-orange-500" title="Bronze Client" />;
+        case 'standard':
+            return <Award className="h-4 w-4 text-blue-600 fill-blue-400" title="Standard Client" />;
+        default:
+            return null;
+    }
+};
+
 interface ClientDetailPageClientProps {
   client: UserProfile;
+  orders: Order[];
 }
 
-export function ClientDetailPageClient({ client }: ClientDetailPageClientProps) {
+export function ClientDetailPageClient({ client, orders }: ClientDetailPageClientProps) {
   const t = useTranslations('ClientsPage');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
@@ -51,6 +69,16 @@ export function ClientDetailPageClient({ client }: ClientDetailPageClientProps) 
   let creditHealthColor = "bg-green-500";
   if (creditUsage > 85) creditHealthColor = "bg-red-500";
   else if (creditUsage > 50) creditHealthColor = "bg-yellow-500";
+
+  const getStatusBadge = (status: string) => {
+    switch(status) {
+      case 'pending': return <Badge className="bg-[#e3f2fd] text-[#2196f3] hover:bg-[#e3f2fd]/80">Nuevo</Badge>;
+      case 'processing': return <Badge className="bg-orange-100 text-orange-600">En Proceso</Badge>;
+      case 'shipped': return <Badge className="bg-[#fff3e0] text-[#ff9800] hover:bg-[#fff3e0]/80">En Ruta</Badge>;
+      case 'delivered': return <Badge className="bg-[#e8f5e9] text-[#2ecc71] hover:bg-[#e8f5e9]/80">Entregado</Badge>;
+      default: return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
 
   return (
     <>
@@ -74,8 +102,11 @@ export function ClientDetailPageClient({ client }: ClientDetailPageClientProps) 
                 <div>
                   <h1 className="text-2xl font-bold font-headline">{client.businessName}</h1>
                   <div className="flex items-center gap-3 mt-1 flex-wrap">
-                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 capitalize">{client.status}</Badge>
-                    {client.tier === 'gold' && <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100"><Crown className="mr-1 h-3 w-3"/>{t('tier_gold')}</Badge>}
+                    <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 capitalize">{client.status}</Badge>
+                    <Badge variant="outline" className="border-yellow-200 bg-yellow-100 text-yellow-800 hover:bg-yellow-100/80">
+                        {getTierIcon(client.tier)}
+                        <span className="ml-1 capitalize">{client.tier}</span>
+                    </Badge>
                      <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -158,18 +189,24 @@ export function ClientDetailPageClient({ client }: ClientDetailPageClientProps) 
                                       </TableRow>
                                   </TableHeader>
                                   <TableBody>
-                                      {clientOrders.map(order => (
+                                      {orders.length > 0 ? orders.map(order => (
                                           <TableRow key={order.id}>
-                                              <TableCell className="font-bold text-primary">{order.id}</TableCell>
-                                              <TableCell>{order.date}</TableCell>
-                                              <TableCell>{order.items} items</TableCell>
+                                              <TableCell className="font-bold text-primary">#{order.id.substring(0,7).toUpperCase()}</TableCell>
+                                              <TableCell>{format(order.createdAt.toDate(), 'dd MMM yyyy')}</TableCell>
+                                              <TableCell>{order.items.length} items</TableCell>
                                               <TableCell className="font-semibold">{formatCurrency(order.total)}</TableCell>
-                                              <TableCell><Badge className="bg-primary">{order.status}</Badge></TableCell>
+                                              <TableCell>{getStatusBadge(order.status)}</TableCell>
                                               <TableCell>
                                                   <Button variant="ghost" size="icon" className="h-8 w-8"><Eye className="h-4 w-4" /></Button>
                                               </TableCell>
                                           </TableRow>
-                                      ))}
+                                      )) : (
+                                        <TableRow>
+                                          <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                                            No orders found for this client.
+                                          </TableCell>
+                                        </TableRow>
+                                      )}
                                   </TableBody>
                               </Table>
                           </TabsContent>

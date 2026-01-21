@@ -122,12 +122,6 @@ export const supplierProducts: SupplierProduct[] = [
     }
 ];
 
-export const clientOrders = [
-    { id: '#ORD-8852', date: 'Hoy, 10:30 AM', items: 15, total: 450.00, status: 'Nuevo' },
-    { id: '#ORD-8820', date: '10 Ene 2024', items: 42, total: 1200.00, status: 'Entregado' },
-    { id: '#ORD-8790', date: '02 Ene 2024', items: 10, total: 320.50, status: 'Entregado' },
-]
-
 export const clientNotes: ClientNote[] = [
     { author: 'Admin', date: '15 Ene 2024', text: 'Cliente solicitó cambio de horario. Solo entregar entre 8 AM y 11 AM por restricción de zona de carga.', color: '#f1c40f' },
     { author: 'Ventas', date: '10 Dic 2023', text: 'Se le aprobó aumento de cupo a $5,000 por buena conducta de pago.', color: '#2ecc71'},

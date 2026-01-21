@@ -5,7 +5,8 @@ import { useParams, notFound } from 'next/navigation';
 import { ClientDetailPageClient } from '@/components/admin/clients/client-detail-page-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getUserProfile } from '@/lib/firestore/users';
-import type { UserProfile } from '@/types';
+import type { UserProfile, Order } from '@/types';
+import { useAllOrders } from '@/hooks/use-all-orders';
 
 function ClientDetailSkeleton() {
     return (
@@ -35,8 +36,10 @@ function ClientDetailSkeleton() {
 export default function ClientDetailPage() {
   const params = useParams();
   const { clientId } = params as { clientId: string };
+  const { orders, loading: ordersLoading } = useAllOrders();
 
   const [client, setClient] = useState<UserProfile | null>(null);
+  const [clientOrders, setClientOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -58,12 +61,20 @@ export default function ClientDetailPage() {
         // Errors are now emitted from getUserProfile and thrown by FirebaseErrorListener.
         console.error("Error fetching client details:", error);
       } finally {
-        setLoading(false);
+        // The main loading state will be set to false once orders are also processed.
       }
     }
 
     fetchData();
   }, [clientId]);
+
+  useEffect(() => {
+    if (!ordersLoading && client) {
+      const filteredOrders = orders.filter(order => order.userId === clientId);
+      setClientOrders(filteredOrders);
+      setLoading(false); // Now we can stop loading
+    }
+  }, [orders, ordersLoading, client, clientId]);
 
   if (loading) {
     return <ClientDetailSkeleton />;
@@ -75,7 +86,7 @@ export default function ClientDetailPage() {
 
   return (
      <div className="p-4 sm:p-6 lg:p-8">
-        <ClientDetailPageClient client={client} />
+        <ClientDetailPageClient client={client} orders={clientOrders} />
     </div>
   );
 }
