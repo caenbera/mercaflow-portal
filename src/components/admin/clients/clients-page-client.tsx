@@ -11,17 +11,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { MoreHorizontal, UserPlus, Search, Crown, Star, Pencil, CheckCircle, History, UserCheck, AlertCircle } from 'lucide-react';
+import { MoreHorizontal, UserPlus, Search, Crown, Star, Pencil, History, CheckCircle, XCircle } from 'lucide-react';
 import type { UserProfile, UserStatus, ClientTier } from '@/types';
 import { ClientFormDialog } from './new-client-dialog';
 import { useUsers } from '@/hooks/use-users';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from '@/navigation';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfile } from '@/lib/firestore/users';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -53,44 +51,17 @@ export function ClientsPageClient() {
     setIsDialogOpen(true);
   };
   
-  const handleStatusChange = async (client: UserProfile, isActive: boolean) => {
-    const newStatus = isActive ? 'active' : 'pending_approval';
+  const handleStatusChange = async (client: UserProfile, newStatus: UserStatus) => {
     try {
       await updateUserProfile(client.uid, { status: newStatus });
       toast({ 
-          title: `Client ${isActive ? 'Activated' : 'Deactivated'}`, 
-          description: `${client.businessName}'s status is now '${newStatus}'.` 
+          title: t('toast_status_updated_title'), 
+          description: t('toast_status_updated_desc', { clientName: client.businessName, newStatus: newStatus })
       });
     } catch (error) {
       toast({ variant: 'destructive', title: "Error", description: "Could not update the client's status." });
     }
   };
-
-  const StatusDisplay = ({ client }: { client: UserProfile }) => {
-    switch(client.status) {
-        case 'active':
-            return <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">Active</Badge>;
-        case 'blocked':
-            return <Badge variant="destructive">Blocked</Badge>;
-        case 'pending_approval':
-             return (
-                <div className="flex items-center gap-2">
-                    <Switch
-                        id={`status-switch-${client.uid}`}
-                        checked={false}
-                        onCheckedChange={(isChecked) => handleStatusChange(client, isChecked)}
-                        aria-label="Activate client"
-                    />
-                    <Label htmlFor={`status-switch-${client.uid}`} className="text-yellow-600 font-semibold text-xs">
-                        Needs Approval
-                    </Label>
-                </div>
-            );
-        default:
-            return <Badge variant="secondary">Unknown</Badge>;
-    }
-  };
-
 
   return (
     <>
@@ -197,15 +168,30 @@ export function ClientsPageClient() {
                                                 <Progress value={creditUsage} className={`h-1.5 mt-1 ${creditColor}`} />
                                             </div>
                                         </TableCell>
-                                        <TableCell><StatusDisplay client={client} /></TableCell>
+                                        <TableCell>
+                                            {client.status === 'active' && <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">{t('status_active')}</Badge>}
+                                            {client.status === 'pending_approval' && <Badge variant="outline" className="bg-yellow-100 text-yellow-600 border-yellow-200">{t('status_pending_approval')}</Badge>}
+                                            {client.status === 'blocked' && <Badge variant="destructive">{t('status_blocked')}</Badge>}
+                                        </TableCell>
                                         <TableCell className="text-right">
                                              <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2"/>{t('action_edit')}</DropdownMenuItem>
-                                                    <DropdownMenuItem><History className="mr-2"/>{t('action_view_orders')}</DropdownMenuItem>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2 h-4 w-4"/>{t('action_edit')}</DropdownMenuItem>
+                                                    <DropdownMenuItem><History className="mr-2 h-4 w-4"/>{t('action_view_orders')}</DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuLabel>{t('change_status_label')}</DropdownMenuLabel>
+                                                    {client.status === 'pending_approval' && (
+                                                        <DropdownMenuItem onSelect={() => handleStatusChange(client, 'active')}><CheckCircle className="mr-2 h-4 w-4" />{t('action_activate')}</DropdownMenuItem>
+                                                    )}
+                                                    {client.status === 'active' && (
+                                                        <DropdownMenuItem onSelect={() => handleStatusChange(client, 'blocked')} className="text-destructive focus:text-destructive"><XCircle className="mr-2 h-4 w-4" />{t('action_block')}</DropdownMenuItem>
+                                                    )}
+                                                     {client.status === 'blocked' && (
+                                                        <DropdownMenuItem onSelect={() => handleStatusChange(client, 'active')}><CheckCircle className="mr-2 h-4 w-4" />{t('action_unblock')}</DropdownMenuItem>
+                                                    )}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>
