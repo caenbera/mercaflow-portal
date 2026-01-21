@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import type { Supplier, Product } from '@/types';
 import { Link } from '@/navigation';
 import { Button } from '@/components/ui/button';
@@ -84,18 +84,17 @@ const InteractiveRating = ({ initialRating, onRate }: { initialRating: number, o
 
 export function SupplierDetailPageClient({ supplier, products: supplierCatalog }: SupplierDetailPageClientProps) {
   const t = useTranslations('SuppliersPage');
+  const locale = useLocale() as 'es' | 'en';
   const { toast } = useToast();
   
   const [isSupplierDialogOpen, setIsSupplierDialogOpen] = useState(false);
   const [currentSupplier, setCurrentSupplier] = useState(supplier);
   
-  // State for product modals
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [isAlertOpen, setAlertOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const handleRatingChange = (newRating: number) => {
-      // In a real app, this would be an async call to update the DB
       setCurrentSupplier(prev => ({...prev, rating: newRating}));
       toast({
           title: t('rating_updated_title'),
@@ -255,7 +254,6 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
                           <TableHead className="pl-6">{t('product')}</TableHead>
                           <TableHead>{t('purchase_unit')}</TableHead>
                           <TableHead>{t('current_cost')}</TableHead>
-                          <TableHead>{t('history')}</TableHead>
                           <TableHead>{t('supplier_stock')}</TableHead>
                           <TableHead className="pr-6 text-right">{t('actions')}</TableHead>
                       </TableRow>
@@ -263,29 +261,22 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
                   <TableBody>
                       {supplierCatalog.length > 0 ? (
                         supplierCatalog.map(product => {
-                          const costChange = product.cost > 0 ? (product.cost - (product.cost * 0.95)) : 0; // Mocking previous cost
+                           const supplierInfo = product.suppliers.find(s => s.supplierId === supplier.id);
+                           const cost = supplierInfo?.cost ?? 0;
+                           const unitText = typeof product.unit === 'object' && product.unit?.[locale] ? product.unit[locale] : (product.unit as any);
                           return (
                           <TableRow key={product.id}>
                               <TableCell className="pl-6 font-medium">
                                   <div className="flex items-center gap-3">
                                       <Image src={product.photoUrl || '/placeholder.svg'} alt={product.name.es} width={40} height={40} className="rounded-md object-cover"/>
                                       <div>
-                                          <div className="font-semibold">{product.name.es}</div>
+                                          <div className="font-semibold">{product.name[locale]}</div>
                                           <div className="text-xs text-muted-foreground">SKU: {product.sku}</div>
                                       </div>
                                   </div>
                               </TableCell>
-                              <TableCell>{product.unit}</TableCell>
-                              <TableCell className="font-semibold">
-                                  <div className="flex items-center gap-1">
-                                      {formatCurrency(product.cost)}
-                                      {costChange > 0 && <ArrowUp className="h-3 w-3 text-destructive" title={`${t('price_increased')} ${formatCurrency(costChange)}`} />}
-                                      {costChange < 0 && <ArrowDown className="h-3 w-3 text-green-600" title={`${t('price_decreased')} ${formatCurrency(Math.abs(costChange))}`} />}
-                                  </div>
-                              </TableCell>
-                              <TableCell className="text-muted-foreground text-xs">
-                                  {costChange !== 0 ? `${t('before')}: ${formatCurrency(product.cost - costChange)}` : t('price_stable')}
-                              </TableCell>
+                              <TableCell>{unitText}</TableCell>
+                              <TableCell className="font-semibold">{formatCurrency(cost)}</TableCell>
                                <TableCell>
                                   <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">{t('available')}</Badge>
                               </TableCell>

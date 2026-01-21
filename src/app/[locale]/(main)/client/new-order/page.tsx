@@ -290,7 +290,7 @@ export default function NewOrderPage() {
                 onClick={() => setActiveCategory(cat.es)}
               >
                 {cat.isFavorite && <Star className="h-3.5 w-3.5 mr-1 text-yellow-400" />}
-                {cat[locale]}
+                {cat[locale] || cat.es}
               </Button>
             ))}
           </div>
@@ -316,6 +316,7 @@ export default function NewOrderPage() {
           filteredProducts.map(p => {
             const quantity = cart[p.id] || 0;
             const hasNote = !!notes[p.id];
+            const unitText = typeof p.unit === 'object' && p.unit?.[locale] ? p.unit[locale] : (p.unit as any);
             return (
               <div key={p.id} className="bg-background border-b p-2 flex items-center gap-2">
                 <Image
@@ -328,7 +329,7 @@ export default function NewOrderPage() {
                 <div className="flex-grow min-w-0">
                   <p className="font-medium text-sm leading-tight truncate">{p.name[locale]}</p>
                   <div className="text-xs text-muted-foreground flex items-center mt-0.5">
-                    <span>{formatCurrency(p.salePrice)} / {p.unit}</span>
+                    <span>{formatCurrency(p.salePrice)} / {unitText}</span>
                     <Button
                       variant="ghost"
                       size="sm"

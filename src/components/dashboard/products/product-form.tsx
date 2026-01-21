@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useTranslations } from 'next-intl';
@@ -12,26 +12,34 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { addProduct, updateProduct } from '@/lib/firestore/products';
-import type { Product, ProductCategory } from '@/types';
+import { addProduct, updateProduct, getProductBySku } from '@/lib/firestore/products';
+import type { Product, ProductCategory, ProductSupplier } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Camera, Plus, Check, Undo2, Pencil, Trash2, Percent } from 'lucide-react'; 
+import { Camera, Plus, Check, Undo2, Pencil, Trash2, Percent, Loader2, Star } from 'lucide-react'; 
 import { cn } from '@/lib/utils';
 import { useSuppliers } from '@/hooks/use-suppliers';
 
+const supplierSchema = z.object({
+  supplierId: z.string().min(1, "Supplier is required."),
+  cost: z.coerce.number().min(0, "Cost cannot be negative."),
+  isPrimary: z.boolean(),
+});
+
 const formSchema = z.object({
+  sku: z.string().min(2, 'SKU must be at least 2 characters.'),
   name: z.object({
     es: z.string().min(2, 'El nombre en español es requerido.'),
     en: z.string().min(2, 'The name in English is required.'),
   }),
-  sku: z.string().min(2, 'SKU must be at least 2 characters.'),
   category: z.object({
     es: z.string().min(1, 'La categoría en español es requerida.'),
     en: z.string().min(1, 'The category in English is required.'),
   }),
-  unit: z.string().min(1, 'Unit is required.'),
-  supplierId: z.string().min(1, 'Supplier is required.'),
-  cost: z.coerce.number().min(0),
+  unit: z.object({
+    es: z.string().min(1, 'La unidad en español es requerida.'),
+    en: z.string().min(1, 'The unit in English is required.'),
+  }),
+  suppliers: z.array(supplierSchema).min(1, "At least one supplier is required."),
   salePrice: z.coerce.number().min(0.01),
   stock: z.coerce.number().int().min(0),
   minStock: z.coerce.number().int().min(0),
@@ -55,58 +63,102 @@ const initialCategories: ProductCategory[] = [
   { es: "Congelados", en: "Frozen" },
 ];
 
+const initialUnits: { es: string, en: string }[] = [
+  { es: "Caja 20lb", en: "20lb Box" },
+  { es: "Caja 40lb", en: "40lb Box" },
+  { es: "Bulto", en: "Sack" },
+  { es: "Kilogramo", en: "Kilogram" },
+  { es: "Bidón", en: "Jug" },
+  { es: "Manojo", en: "Bunch" },
+  { es: "Paq 2kg", en: "2kg Pack" },
+];
+
+function getSupplierLabel(index: number, t: any) {
+    if (index === 0) return t('primary_supplier_label');
+    if (index === 1) return t('secondary_supplier_label');
+    return t('tertiary_supplier_label', {index: index + 1});
+}
+
 export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSkuLoading, setIsSkuLoading] = useState(false);
   const { toast } = useToast();
   const t = useTranslations('ProductsPage');
-  const { suppliers, loading: suppliersLoading } = useSuppliers();
+  const { suppliers: allSuppliers, loading: suppliersLoading } = useSuppliers();
   
   const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
   const [imgUrlInputValue, setImgUrlInputValue] = useState('');
   
   const [categories, setCategories] = useState(initialCategories);
-  const [isInputMode, setIsInputMode] = useState(false);
-  const [editModeTarget, setEditModeTarget] = useState<ProductCategory | null>(null);
+  const [isCategoryInputMode, setIsCategoryInputMode] = useState(false);
+  const [editCategoryTarget, setEditCategoryTarget] = useState<ProductCategory | null>(null);
   const esCategoryInputRef = useRef<HTMLInputElement>(null);
   const enCategoryInputRef = useRef<HTMLInputElement>(null);
 
-  const [margin, setMargin] = useState<string>('');
+  const [units, setUnits] = useState(initialUnits);
+  const [isUnitInputMode, setIsUnitInputMode] = useState(false);
+  const [editUnitTarget, setEditUnitTarget] = useState<{ es: string; en: string } | null>(null);
+  const esUnitInputRef = useRef<HTMLInputElement>(null);
+  const enUnitInputRef = useRef<HTMLInputElement>(null);
+
   const [isMarginInputFocused, setIsMarginInputFocused] = useState(false);
+  const [margin, setMargin] = useState<string>('');
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: { es: '', en: '' }, sku: '', category: initialCategories[0], unit: 'Caja 20lb', supplierId: '',
-      cost: 0, salePrice: 0, stock: 0, minStock: 10, active: true, photoUrl: '',
+      sku: '', name: { es: '', en: '' }, category: { es: '', en: '' }, unit: { es: '', en: '' },
+      suppliers: [], salePrice: 0, stock: 0, minStock: 10, active: true, photoUrl: '',
     },
   });
 
-  const costValue = form.watch('cost');
+  const { fields, append, remove, update } = useFieldArray({
+    control: form.control,
+    name: "suppliers",
+  });
+  
+  const watchedSuppliers = form.watch('suppliers');
+  const primarySupplier = watchedSuppliers.find(s => s.isPrimary);
+  const costValue = primarySupplier?.cost ?? 0;
   const salePriceValue = form.watch('salePrice');
 
   useEffect(() => {
-    if (suppliersLoading) return;
-
     const defaultValues: ProductFormValues = {
-      name: { es: '', en: '' }, sku: '', category: initialCategories[0], unit: 'Caja 20lb',
-      supplierId: defaultSupplierId || '',
-      cost: 0, salePrice: 0, stock: 0, minStock: 10, active: true, photoUrl: '',
+        sku: '',
+        name: { es: '', en: '' },
+        category: initialCategories[0],
+        unit: initialUnits[0],
+        suppliers: [{ supplierId: defaultSupplierId || '', cost: 0, isPrimary: true }],
+        salePrice: 0, stock: 0, minStock: 10, active: true, photoUrl: '',
     };
   
     if (product) {
-      form.reset({ ...product, supplierId: product.supplierId || defaultSupplierId || '' });
+      form.reset({
+        ...product,
+        suppliers: product.suppliers.length > 0 ? product.suppliers : [{ supplierId: '', cost: 0, isPrimary: true }]
+      });
       setImgUrlInputValue(product.photoUrl || '');
     } else {
       form.reset(defaultValues);
       setImgUrlInputValue('');
     }
   }, [product, defaultSupplierId, form, suppliersLoading]);
+
+  // Handle auto-add of new supplier row
+  useEffect(() => {
+    const lastSupplier = watchedSuppliers[watchedSuppliers.length - 1];
+    if (lastSupplier && lastSupplier.supplierId && lastSupplier.cost >= 0) {
+      // Add a new empty supplier field if the last one is filled
+      append({ supplierId: '', cost: 0, isPrimary: false }, { shouldFocus: false });
+    }
+  }, [watchedSuppliers, append]);
   
+  // Recalculate margin when values change
   useEffect(() => {
     if (isMarginInputFocused) return;
     if (costValue > 0 && salePriceValue > costValue) {
         const calculatedMargin = ((salePriceValue - costValue) / salePriceValue) * 100;
-        setMargin(calculatedMargin.toFixed(2).replace('.00', ''));
+        setMargin(calculatedMargin.toFixed(1).replace('.0', ''));
     } else {
         setMargin('');
     }
@@ -116,91 +168,77 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     const marginValue = e.target.value;
     setMargin(marginValue);
     const marginNum = parseFloat(marginValue);
-    const currentCost = form.getValues('cost');
-    if (!isNaN(marginNum) && marginNum < 100 && currentCost > 0) {
-        const newSalePrice = currentCost / (1 - marginNum / 100);
+    if (!isNaN(marginNum) && marginNum < 100 && costValue > 0) {
+        const newSalePrice = costValue / (1 - marginNum / 100);
         form.setValue('salePrice', parseFloat(newSalePrice.toFixed(2)), { shouldValidate: true });
     }
   };
 
+  const handleSkuBlur = async () => {
+    const sku = form.getValues('sku');
+    if (!sku || product) return; // Don't lookup if editing or SKU is empty
+
+    setIsSkuLoading(true);
+    const existingProduct = await getProductBySku(sku);
+    if (existingProduct) {
+        toast({ title: "Producto Existente Encontrado", description: "Datos del producto han sido cargados."});
+        form.reset({
+            ...existingProduct,
+            suppliers: [...existingProduct.suppliers, { supplierId: '', cost: 0, isPrimary: false }]
+        });
+    }
+    setIsSkuLoading(false);
+  }
+
+  const handleSetPrimary = (indexToSet: number) => {
+    watchedSuppliers.forEach((_, index) => {
+        update(index, { ...watchedSuppliers[index], isPrimary: index === indexToSet });
+    });
+  };
+
   const photoUrl = form.watch('photoUrl');
   const currentCategory = form.watch('category');
+  const currentUnit = form.watch('unit');
 
+  // --- Image URL Modal ---
   const handleOpenUrlModal = () => {
     setImgUrlInputValue(photoUrl || '');
     setIsUrlModalOpen(true);
   };
-
   const handleApplyImageUrl = () => {
     form.setValue('photoUrl', imgUrlInputValue);
     setIsUrlModalOpen(false);
   };
   
-  const startCreatingCategory = () => {
-    setEditModeTarget(null);
-    setIsInputMode(true);
-    setTimeout(() => esCategoryInputRef.current?.focus(), 100);
-  };
+  // --- Category Management ---
+  const startCreatingCategory = () => { setEditCategoryTarget(null); setIsCategoryInputMode(true); setTimeout(() => esCategoryInputRef.current?.focus(), 100); };
+  const startEditingCategory = () => { if (!currentCategory) return; setEditCategoryTarget(currentCategory); setIsCategoryInputMode(true); setTimeout(() => { if (esCategoryInputRef.current) esCategoryInputRef.current.value = currentCategory.es; if (enCategoryInputRef.current) enCategoryInputRef.current.value = currentCategory.en; esCategoryInputRef.current?.focus(); }, 100); };
+  const handleSaveCategory = () => { const esValue = esCategoryInputRef.current?.value.trim(); const enValue = enCategoryInputRef.current?.value.trim(); if (!esValue || !enValue) { toast({ variant: 'destructive', title: 'Both category names are required.' }); return; } const newCategory: ProductCategory = { es: esValue, en: enValue }; if (editCategoryTarget) { setCategories(prev => prev.map(c => c.es === editCategoryTarget.es ? newCategory : c)); if (currentCategory.es === editCategoryTarget.es) form.setValue('category', newCategory); toast({ title: t('toast_category_updated'), description: newCategory.es }); } else { if (!categories.some(c => c.es.toLowerCase() === newCategory.es.toLowerCase())) { setCategories(prev => [...prev, newCategory]); form.setValue('category', newCategory); toast({ title: t('toast_category_added'), description: newCategory.es }); } } setIsCategoryInputMode(false); setEditCategoryTarget(null); };
+  const handleDeleteCategory = () => { if (!currentCategory?.es || !confirm(t('confirm_delete_category', { category: currentCategory.es }))) return; const newCategories = categories.filter(c => c.es !== currentCategory.es); setCategories(newCategories); form.setValue('category', newCategories.length > 0 ? newCategories[0] : { es: '', en: '' }); toast({ title: t('toast_category_deleted') }); };
+  const cancelCategoryInput = () => { setIsCategoryInputMode(false); setEditCategoryTarget(null); };
 
-  const startEditingCategory = () => {
-    if (!currentCategory) return;
-    setEditModeTarget(currentCategory);
-    setIsInputMode(true);
-    setTimeout(() => {
-      if (esCategoryInputRef.current) esCategoryInputRef.current.value = currentCategory.es;
-      if (enCategoryInputRef.current) enCategoryInputRef.current.value = currentCategory.en;
-      esCategoryInputRef.current?.focus();
-    }, 100);
-  };
-
-  const handleSaveCategory = () => {
-    const esValue = esCategoryInputRef.current?.value.trim();
-    const enValue = enCategoryInputRef.current?.value.trim();
-
-    if (!esValue || !enValue) {
-      toast({ variant: 'destructive', title: 'Both category names are required.' });
-      return;
-    }
-
-    const newCategory: ProductCategory = { es: esValue, en: enValue };
-
-    if (editModeTarget) {
-      setCategories(prev => prev.map(c => c.es === editModeTarget.es ? newCategory : c));
-      if (currentCategory.es === editModeTarget.es) {
-        form.setValue('category', newCategory);
-      }
-      toast({ title: t('toast_category_updated'), description: newCategory.es });
-    } else {
-      if (!categories.some(c => c.es.toLowerCase() === newCategory.es.toLowerCase())) {
-        setCategories(prev => [...prev, newCategory]);
-        form.setValue('category', newCategory);
-        toast({ title: t('toast_category_added'), description: newCategory.es });
-      }
-    }
-    setIsInputMode(false);
-    setEditModeTarget(null);
-  };
-
-  const handleDeleteCategory = () => {
-    if (!currentCategory || !confirm(t('confirm_delete_category', { category: currentCategory.es }))) return;
-    setCategories(prev => prev.filter(c => c.es !== currentCategory.es));
-    form.setValue('category', initialCategories[0]);
-    toast({ title: t('toast_category_deleted') });
-  };
-
-  const cancelCategoryInput = () => {
-    setIsInputMode(false);
-    setEditModeTarget(null);
-  };
+  // --- Unit Management ---
+  const startCreatingUnit = () => { setEditUnitTarget(null); setIsUnitInputMode(true); setTimeout(() => esUnitInputRef.current?.focus(), 100); };
+  const startEditingUnit = () => { if (!currentUnit) return; setEditUnitTarget(currentUnit); setIsUnitInputMode(true); setTimeout(() => { if (esUnitInputRef.current) esUnitInputRef.current.value = currentUnit.es; if (enUnitInputRef.current) enUnitInputRef.current.value = currentUnit.en; esUnitInputRef.current?.focus(); }, 100); };
+  const handleSaveUnit = () => { const esValue = esUnitInputRef.current?.value.trim(); const enValue = enUnitInputRef.current?.value.trim(); if (!esValue || !enValue) { toast({ variant: 'destructive', title: 'Both unit names are required.' }); return; } const newUnit = { es: esValue, en: enValue }; if (editUnitTarget) { setUnits(prev => prev.map(u => u.es === editUnitTarget.es ? newUnit : u)); if (currentUnit.es === editUnitTarget.es) form.setValue('unit', newUnit); } else { if (!units.some(u => u.es.toLowerCase() === newUnit.es.toLowerCase())) { setUnits(prev => [...prev, newUnit]); form.setValue('unit', newUnit); } } setIsUnitInputMode(false); setEditUnitTarget(null); };
+  const handleDeleteUnit = () => { if (!currentUnit?.es || !confirm(`Are you sure you want to delete the unit '${currentUnit.es}'?`)) return; const newUnits = units.filter(u => u.es !== currentUnit.es); setUnits(newUnits); form.setValue('unit', newUnits.length > 0 ? newUnits[0] : { es: '', en: '' }); };
+  const cancelUnitInput = () => { setIsUnitInputMode(false); setEditUnitTarget(null); };
 
   async function onSubmit(values: ProductFormValues) {
     setIsLoading(true);
+    const finalValues = { ...values, suppliers: values.suppliers.filter(s => s.supplierId) };
+    if (finalValues.suppliers.length === 0) {
+        form.setError("suppliers", { type: "manual", message: "At least one complete supplier entry is required." });
+        setIsLoading(false);
+        return;
+    }
+    
     try {
       if (product) {
-        await updateProduct(product.id, values);
+        await updateProduct(product.id, finalValues);
         toast({ title: t('toast_save_success_title'), description: t('toast_save_success_edit_desc') });
       } else {
-        await addProduct(values);
+        await addProduct(finalValues);
         toast({ title: t('toast_save_success_title'), description: t('toast_save_success_add_desc') });
       }
       onSuccess();
@@ -219,305 +257,88 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-          
-          <div className="flex flex-col md:flex-row gap-5 items-start">
-             <div 
-                className={cn(
-                  "w-24 h-24 rounded-xl border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden shrink-0 transition-all",
-                  photoUrl ? "border-transparent bg-muted" : "border-gray-300 bg-gray-50 hover:border-primary hover:text-primary hover:bg-green-50"
-                )}
-                onClick={handleOpenUrlModal}
-                title={t('form_label_change_image')}
-              >
-                  {photoUrl ? (
-                    <Image src={photoUrl} alt="Preview" width={96} height={96} className="object-cover w-full h-full" />
-                  ) : (
-                    <Camera className="h-8 w-8 text-muted-foreground/50" />
-                  )}
-              </div>
-
-              <div className="flex-grow w-full space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="name.es"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_name_es')}</FormLabel>
-                        <FormControl>
-                          <Input placeholder={t('form_placeholder_name_es')} className="h-11 font-medium text-base bg-gray-50/50" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="name.en"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_name_en')}</FormLabel>
-                        <FormControl>
-                          <Input placeholder={t('form_placeholder_name_en')} className="h-11 font-medium text-base bg-gray-50/50" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            <div className="flex flex-col md:flex-row gap-5 items-start">
+                <div className={cn("w-24 h-24 rounded-xl border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden shrink-0 transition-all", photoUrl ? "border-transparent bg-muted" : "border-gray-300 bg-gray-50 hover:border-primary hover:text-primary hover:bg-green-50")} onClick={handleOpenUrlModal} title={t('form_label_change_image')}>
+                    {photoUrl ? <Image src={photoUrl} alt="Preview" width={96} height={96} className="object-cover w-full h-full" /> : <Camera className="h-8 w-8 text-muted-foreground/50" />}
                 </div>
-                 <FormField
-                    control={form.control}
-                    name="sku"
-                    render={({ field }) => (
+
+                <div className="flex-grow w-full space-y-4">
+                    <FormField control={form.control} name="sku" render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_sku')}</FormLabel>
                         <FormControl>
-                          <Input placeholder={t('form_placeholder_sku')} className="h-11 font-mono text-sm bg-gray-50/50" {...field} />
+                            <div className="relative">
+                                <Input placeholder={t('form_placeholder_sku')} className="h-11 font-mono text-sm bg-gray-50/50 pr-10" {...field} onBlur={handleSkuBlur} disabled={!!product}/>
+                                {isSkuLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+                            </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-              </div>
-          </div>
-          
-          <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_category')}</FormLabel>
-                  <div className="flex items-center gap-2">
-                    {isInputMode ? (
-                      <div className="flex-grow grid grid-cols-2 gap-2 animate-in fade-in zoom-in-95 duration-200">
-                        <Input ref={esCategoryInputRef} placeholder="Nombre en Español" className="border-primary/50 ring-2 ring-primary/10" />
-                        <Input ref={enCategoryInputRef} placeholder="Name in English" className="border-primary/50 ring-2 ring-primary/10" />
-                        <Button type="button" size="icon" className="bg-green-600 hover:bg-green-700 h-10 w-10" onClick={handleSaveCategory} title={t('save')}><Check className="h-4 w-4" /></Button>
-                        <Button type="button" size="icon" variant="ghost" className="text-muted-foreground h-10 w-10" onClick={cancelCategoryInput} title={t('cancel')}><Undo2 className="h-4 w-4" /></Button>
-                      </div>
-                    ) : (
-                      <>
-                        <Select
-                          onValueChange={(value) => {
-                              try {
-                                  const parsedValue = JSON.parse(value);
-                                  field.onChange(parsedValue);
-                              } catch (e) {
-                                  console.error("Failed to parse category value", e);
-                              }
-                          }}
-                          value={field.value ? JSON.stringify(field.value) : ""}
-                        >
-                            <FormControl>
-                                <SelectTrigger className="h-10 bg-white flex-grow">
-                                    <SelectValue placeholder={t('form_placeholder_select_category')}>
-                                        {field.value?.es || t('form_placeholder_select_category')}
-                                    </SelectValue>
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {categories.map(c => <SelectItem key={c.es} value={JSON.stringify(c)}>{c.es}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        
-                        <div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border border-gray-200">
-                            <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentCategory} onClick={startEditingCategory}><Pencil className="h-3.5 w-3.5" /></Button>
-                            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!currentCategory} onClick={handleDeleteCategory}><Trash2 className="h-3.5 w-3.5" /></Button>
-                            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={startCreatingCategory}><Plus className="h-4 w-4" /></Button>
+                    )}/>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="name.es" render={({ field }) => ( <FormItem> <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_name_es')}</FormLabel> <FormControl><Input placeholder={t('form_placeholder_name_es')} className="h-11 font-medium text-base bg-gray-50/50" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                        <FormField control={form.control} name="name.en" render={({ field }) => ( <FormItem> <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_name_en')}</FormLabel> <FormControl><Input placeholder={t('form_placeholder_name_en')} className="h-11 font-medium text-base bg-gray-50/50" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                    </div>
+                </div>
+            </div>
+            
+            {/* Category & Unit Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_category')}</FormLabel><div className="flex items-center gap-2">{isCategoryInputMode ? (<div className="flex-grow grid grid-cols-2 gap-2 animate-in fade-in zoom-in-95 duration-200"><Input ref={esCategoryInputRef} placeholder="Nombre en Español" className="border-primary/50 ring-2 ring-primary/10" /><Input ref={enCategoryInputRef} placeholder="Name in English" className="border-primary/50 ring-2 ring-primary/10" /><Button type="button" size="icon" className="bg-green-600 hover:bg-green-700 h-10 w-10" onClick={handleSaveCategory} title={t('save')}><Check className="h-4 w-4" /></Button><Button type="button" size="icon" variant="ghost" className="text-muted-foreground h-10 w-10" onClick={cancelCategoryInput} title={t('cancel')}><Undo2 className="h-4 w-4" /></Button></div>) : (<><Select onValueChange={(value) => { try { const parsedValue = JSON.parse(value); field.onChange(parsedValue); } catch (e) { console.error("Failed to parse category value", e); } }} value={field.value?.es ? JSON.stringify(field.value) : ""}><FormControl><SelectTrigger className="h-10 bg-white flex-grow"><SelectValue placeholder={t('form_placeholder_select_category')}>{field.value?.es || t('form_placeholder_select_category')}</SelectValue></SelectTrigger></FormControl><SelectContent>{categories.map(c => <SelectItem key={c.es} value={JSON.stringify(c)}>{c.es}</SelectItem>)}</SelectContent></Select><div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border border-gray-200"><Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentCategory?.es} onClick={startEditingCategory}><Pencil className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!currentCategory?.es} onClick={handleDeleteCategory}><Trash2 className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={startCreatingCategory}><Plus className="h-4 w-4" /></Button></div></>)}</div><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="unit" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_unit')}</FormLabel><div className="flex items-center gap-2">{isUnitInputMode ? (<div className="flex-grow grid grid-cols-2 gap-2 animate-in fade-in zoom-in-95 duration-200"><Input ref={esUnitInputRef} placeholder="Unidad en Español" className="border-primary/50 ring-2 ring-primary/10" /><Input ref={enUnitInputRef} placeholder="Unit in English" className="border-primary/50 ring-2 ring-primary/10" /><Button type="button" size="icon" className="bg-green-600 hover:bg-green-700 h-10 w-10" onClick={handleSaveUnit} title={t('save')}><Check className="h-4 w-4" /></Button><Button type="button" size="icon" variant="ghost" className="text-muted-foreground h-10 w-10" onClick={cancelUnitInput} title={t('cancel')}><Undo2 className="h-4 w-4" /></Button></div>) : (<><Select onValueChange={(value) => { try { const parsedValue = JSON.parse(value); field.onChange(parsedValue); } catch (e) { console.error("Failed to parse unit value", e); } }} value={field.value?.es ? JSON.stringify(field.value) : ""}><FormControl><SelectTrigger className="h-10 bg-white flex-grow"><SelectValue placeholder="Selecciona una unidad">{field.value?.es || "Selecciona una unidad"}</SelectValue></SelectTrigger></FormControl><SelectContent>{units.map(u => <SelectItem key={u.es} value={JSON.stringify(u)}>{u.es}</SelectItem>)}</SelectContent></Select><div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border border-gray-200"><Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentUnit?.es} onClick={startEditingUnit}><Pencil className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!currentUnit?.es} onClick={handleDeleteUnit}><Trash2 className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={startCreatingUnit}><Plus className="h-4 w-4" /></Button></div></>)}</div><FormMessage /></FormItem>)}/>
+            </div>
+            
+            <hr className="my-2 border-dashed border-gray-200" />
+            
+            {/* Suppliers Section */}
+            <div className="space-y-4">
+                {fields.map((field, index) => (
+                    <div key={field.id} className={cn("p-3 border rounded-lg", watchedSuppliers[index]?.isPrimary ? "bg-primary/5 border-primary" : "bg-muted/30")}>
+                        <div className="flex justify-between items-center mb-2">
+                             <FormLabel className="text-primary text-xs font-bold uppercase tracking-wider">{getSupplierLabel(index, t)}</FormLabel>
+                             {index > 0 && watchedSuppliers[index]?.supplierId && <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => remove(index)}><Trash2 className="h-3 w-3" /></Button>}
                         </div>
-                      </>
-                    )}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                        <div className="grid grid-cols-[2fr,1fr,auto] gap-4 items-end">
+                            <FormField control={form.control} name={`suppliers.${index}.supplierId`} render={({ field }) => (
+                                <FormItem><Select onValueChange={field.onChange} value={field.value} disabled={suppliersLoading}><FormControl><SelectTrigger className="h-10 bg-white"><SelectValue placeholder={t('form_placeholder_select_supplier')} /></SelectTrigger></FormControl><SelectContent>{allSuppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                            )}/>
+                             <FormField control={form.control} name={`suppliers.${index}.cost`} render={({ field }) => (
+                                <FormItem><FormControl><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span><Input type="number" className="pl-6 h-10 text-right bg-white" placeholder="0.00" step="0.01" {...field} /></div></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <Button type="button" variant="outline" size="sm" onClick={() => handleSetPrimary(index)} disabled={watchedSuppliers[index]?.isPrimary || !watchedSuppliers[index]?.supplierId} className="h-10 bg-white">
+                                <Star className={cn("h-4 w-4 mr-2", watchedSuppliers[index]?.isPrimary ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground")} />
+                                {t('primary_button_label')}
+                            </Button>
+                        </div>
+                    </div>
+                ))}
+                <FormMessage>{form.formState.errors.suppliers?.root?.message}</FormMessage>
+            </div>
 
-            <FormField
-              control={form.control}
-              name="unit"
-              render={({ field }) => (
-                  <FormItem>
-                  <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_unit')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                          <SelectTrigger className="h-10 bg-white">
-                              <SelectValue />
-                          </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                          <SelectItem value="Caja 20lb">Caja 20lb</SelectItem>
-                          <SelectItem value="Caja 40lb">Caja 40lb</SelectItem>
-                          <SelectItem value="Bulto">Bulto</SelectItem>
-                          <SelectItem value="Kg">Kilogramo</SelectItem>
-                          <SelectItem value="Bidón">Bidón</SelectItem>
-                          <SelectItem value="Manojo">Manojo</SelectItem>
-                          <SelectItem value="Paq 2kg">Paq 2kg</SelectItem>
-                      </SelectContent>
-                  </Select>
-                  <FormMessage />
-                  </FormItem>
-              )}
-            />
 
           <hr className="my-2 border-dashed border-gray-200" />
-          
-          <div className="grid grid-cols-1 md:grid-cols-[1fr,2fr] gap-5 items-end">
-              <FormField
-                  control={form.control}
-                  name="supplierId"
-                  render={({ field }) => (
-                  <FormItem>
-                      <FormLabel className="text-primary text-xs font-bold uppercase tracking-wider">{t('form_label_supplier')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={!!defaultSupplierId || suppliersLoading}>
-                          <FormControl>
-                              <SelectTrigger className="h-10 border-primary/30 focus:ring-primary/20 bg-primary/5">
-                                  {suppliersLoading ? <SelectValue placeholder="Loading suppliers..." /> : <SelectValue placeholder={t('form_placeholder_select_supplier')} />}
-                              </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                              {suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                          </SelectContent>
-                      </Select>
-                      <FormMessage />
-                  </FormItem>
-                  )}
-              />
-              <div className="grid grid-cols-3 gap-4">
-                <FormField
-                    control={form.control}
-                    name="cost"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_cost')}</FormLabel>
-                        <FormControl>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                            <Input type="number" className="pl-6 h-10 text-right" placeholder="0.00" step="0.01" {...field} />
-                        </div>
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
+            <div className="grid grid-cols-2 gap-4">
                  <FormItem>
                     <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_margin')}</FormLabel>
-                    <FormControl>
-                        <div className="relative">
-                           <Input 
-                            type="number" 
-                            value={margin} 
-                            onChange={handleMarginChange} 
-                            className="pl-3 pr-8 h-10 text-right font-bold" 
-                            placeholder={t('form_placeholder_margin')}
-                            onFocus={() => setIsMarginInputFocused(true)}
-                            onBlur={() => setIsMarginInputFocused(false)}
-                           />
-                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
-                        </div>
-                    </FormControl>
+                    <FormControl><div className="relative"><Input type="number" value={margin} onChange={handleMarginChange} className="pl-3 pr-8 h-10 text-right font-bold" placeholder={t('form_placeholder_margin')} onFocus={() => setIsMarginInputFocused(true)} onBlur={() => setIsMarginInputFocused(false)}/><span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span></div></FormControl>
                 </FormItem>
-                <FormField
-                    control={form.control}
-                    name="salePrice"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_price')}</FormLabel>
-                        <FormControl>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-800 font-bold text-sm">$</span>
-                            <Input type="number" className="pl-6 h-10 font-bold text-lg text-right bg-green-50" placeholder="0.00" step="0.01" {...field} />
-                        </div>
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-              </div>
-          </div>
-
-          <hr className="my-2 border-dashed border-gray-200" />
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
-            <FormField
-              control={form.control}
-              name="stock"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_stock')}</FormLabel>
-                  <FormControl>
-                    <Input type="number" className="h-10" placeholder="0" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="minStock"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_min_stock')}</FormLabel>
-                  <FormControl>
-                    <Input type="number" className="h-10 border-orange-200 focus:border-orange-400" placeholder="10" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-                  control={form.control}
-                  name="active"
-                  render={({ field }) => (
-                  <FormItem className="flex items-center gap-3 p-2.5 border rounded-lg bg-gray-50 h-10 mt-6 md:mt-0">
-                      <FormControl>
-                          <Switch
-                              id="prodActive"
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                          />
-                      </FormControl>
-                       <FormLabel htmlFor="prodActive" className="!m-0 text-sm font-medium cursor-pointer">
-                           {field.value ? t('form_label_active_true') : t('form_label_active_false')}
-                        </FormLabel>
-                  </FormItem>
-                  )}
-              />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-6 border-t mt-4">
+                <FormField control={form.control} name="salePrice" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_price')}</FormLabel><FormControl><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-800 font-bold text-sm">$</span><Input type="number" className="pl-6 h-10 font-bold text-lg text-right bg-green-50" placeholder="0.00" step="0.01" {...field} /></div></FormControl><FormMessage /></FormItem>)}/>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
+                <FormField control={form.control} name="stock" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_stock')}</FormLabel><FormControl><Input type="number" className="h-10" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="minStock" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_min_stock')}</FormLabel><FormControl><Input type="number" className="h-10 border-orange-200 focus:border-orange-400" placeholder="10" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="active" render={({ field }) => (<FormItem className="flex items-center gap-3 p-2.5 border rounded-lg bg-gray-50 h-10 mt-6 md:mt-0"><FormControl><Switch id="prodActive" checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel htmlFor="prodActive" className="!m-0 text-sm font-medium cursor-pointer">{field.value ? t('form_label_active_true') : t('form_label_active_false')}</FormLabel></FormItem>)}/>
+            </div>
+            <div className="flex justify-end gap-3 pt-6 border-t mt-4">
               <Button type="button" variant="outline" size="lg" onClick={onSuccess}>{t('dialog_cancel')}</Button>
               <Button type="submit" size="lg" disabled={isLoading} className="font-bold px-8">
                   {isLoading ? t('dialog_saving') : t('dialog_save')}
               </Button>
-          </div>
+            </div>
         </form>
       </Form>
-
       <Dialog open={isUrlModalOpen} onOpenChange={setIsUrlModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('form_label_image_url_modal_title')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <Input 
-              value={imgUrlInputValue}
-              onChange={(e) => setImgUrlInputValue(e.target.value)}
-              placeholder="https://..."
-              className="h-11"
-            />
-            <div className="h-40 bg-gray-50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-200">
-              {imgUrlInputValue ? (
-                <Image src={imgUrlInputValue} alt="Preview" width={150} height={150} className="object-contain h-full w-full rounded-lg" />
-              ) : (
-                <span className="text-sm text-muted-foreground">{t('form_label_image_url_modal_preview')}</span>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={handleApplyImageUrl} className="w-full">{t('form_button_apply_image')}</Button>
-          </DialogFooter>
-        </DialogContent>
+        <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>{t('form_label_image_url_modal_title')}</DialogTitle></DialogHeader><div className="space-y-4 py-2"><Input value={imgUrlInputValue} onChange={(e) => setImgUrlInputValue(e.target.value)} placeholder="https://..." className="h-11"/><div className="h-40 bg-gray-50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-200">{imgUrlInputValue ? (<Image src={imgUrlInputValue} alt="Preview" width={150} height={150} className="object-contain h-full w-full rounded-lg" />) : (<span className="text-sm text-muted-foreground">{t('form_label_image_url_modal_preview')}</span>)}</div></div><DialogFooter><Button onClick={handleApplyImageUrl} className="w-full">{t('form_button_apply_image')}</Button></DialogFooter></DialogContent>
       </Dialog>
     </>
   );

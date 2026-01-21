@@ -9,9 +9,12 @@ import {
   getDocs,
   query,
   orderBy,
+  where,
+  limit,
+  getDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import type { Product } from '@/types';
+import type { Product, ProductSupplier } from '@/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -61,7 +64,7 @@ export const deleteProduct = (id: string) => {
 
 export const getProducts = async (): Promise<Product[]> => {
   const productsCollectionRef = collection(db, "products");
-  const q = query(productsCollectionRef, orderBy("name", "asc"));
+  const q = query(productsCollectionRef, orderBy("name.es", "asc"));
   
   try {
     const querySnapshot = await getDocs(q);
@@ -77,5 +80,23 @@ export const getProducts = async (): Promise<Product[]> => {
       });
       errorEmitter.emit('permission-error', permissionError);
       throw e;
+  }
+};
+
+export const getProductBySku = async (sku: string): Promise<Product | null> => {
+  if (!sku) return null;
+  const q = query(collection(db, 'products'), where('sku', '==', sku), limit(1));
+  try {
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+      return null;
+    }
+    const docSnap = querySnapshot.docs[0];
+    return { id: docSnap.id, ...docSnap.data() } as Product;
+  } catch (e) {
+    // Don't emit permission error here, as it's a lookup.
+    // Let form handle null return.
+    console.error("Error fetching product by SKU: ", e);
+    return null;
   }
 };

@@ -17,6 +17,12 @@ export interface ProductCategory {
   en: string;
 }
 
+export interface ProductSupplier {
+  supplierId: string;
+  cost: number;
+  isPrimary: boolean;
+}
+
 export interface Product {
   id: string;
   name: {
@@ -27,9 +33,11 @@ export interface Product {
   description: string;
   photoUrl: string;
   category: ProductCategory;
-  unit: string;
-  supplierId: string;
-  cost: number;
+  unit: {
+    es: string;
+    en: string;
+  };
+  suppliers: ProductSupplier[];
   salePrice: number;
   stock: number;
   minStock: number;

@@ -48,7 +48,6 @@ export default function SupplierDetailPage() {
     async function fetchData() {
       setLoading(true);
       try {
-        // Use Promise.all to fetch supplier and products in parallel for better performance
         const [supplierData, allProductsData] = await Promise.all([
           getSupplier(supplierId),
           getProducts(),
@@ -59,7 +58,9 @@ export default function SupplierDetailPage() {
           return;
         }
 
-        const supplierProducts = allProductsData.filter(p => p.supplierId === supplierData.id);
+        const supplierProducts = allProductsData.filter(p => 
+          p.suppliers && p.suppliers.some(s => s.supplierId === supplierData.id)
+        );
 
         setSupplier(supplierData);
         setProducts(supplierProducts);
