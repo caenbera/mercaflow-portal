@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -178,8 +179,8 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
               <div className="flex items-start gap-3"><CreditCard className="h-5 w-5 text-primary mt-0.5" /> <div>{t('payment_terms')}: {supplier.paymentTerms}</div></div>
               <hr />
               <h4 className="font-bold">{t('contacts_section_title')}</h4>
-              {supplier.contacts.map(contact => (
-                   <div key={contact.id} className="flex justify-between items-start text-xs border-b pb-2 last:border-0">
+              {supplier.contacts.map((contact, index) => (
+                   <div key={contact.id || index} className="flex justify-between items-start text-xs border-b pb-2 last:border-0">
                       <div>
                           <div className="font-semibold text-sm">{contact.name}</div>
                           <div className="text-muted-foreground">{contact.department}</div>
@@ -268,7 +269,7 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
                           <TableRow key={product.id}>
                               <TableCell className="pl-6 font-medium">
                                   <div className="flex items-center gap-3">
-                                      <Image src={product.photoUrl || '/placeholder.svg'} alt={product.name.es} width={40} height={40} className="rounded-md object-cover"/>
+                                      <Image src={product.photoUrl || '/placeholder.svg'} alt={product.name[locale]} width={40} height={40} className="rounded-md object-cover"/>
                                       <div>
                                           <div className="font-semibold">{product.name[locale]}</div>
                                           <div className="text-xs text-muted-foreground">SKU: {product.sku}</div>

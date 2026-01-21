@@ -126,44 +126,57 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
   const primarySupplier = watchedSuppliers.find(s => s.isPrimary);
   const costValue = primarySupplier?.cost ?? 0;
   const salePriceValue = form.watch('salePrice');
-
+  
   useEffect(() => {
     if (suppliersLoading) return;
   
+    let initialValues: ProductFormValues;
+  
     if (product) {
-      // Logic for editing an existing product
-      const existingSuppliers = product.suppliers || [];
-      const suppliersForForm = [...existingSuppliers, { supplierId: '', cost: 0, isPrimary: false }];
-      form.reset({
-          sku: product.sku,
-          name: product.name,
-          category: product.category,
-          unit: product.unit,
-          suppliers: suppliersForForm,
-          salePrice: product.salePrice,
-          stock: product.stock,
-          minStock: product.minStock,
-          active: product.active,
-          photoUrl: product.photoUrl,
-      });
-      setImgUrlInputValue(product.photoUrl || '');
+      // Editing an existing product
+      const suppliersForForm = [...(product.suppliers || [])];
+      // Ensure there's always an empty row for adding a new supplier
+      if (!suppliersForForm.some(s => !s.supplierId)) {
+        suppliersForForm.push({ supplierId: '', cost: 0, isPrimary: false });
+      }
+      
+      initialValues = {
+        sku: product.sku,
+        name: product.name,
+        category: product.category,
+        unit: product.unit,
+        suppliers: suppliersForForm,
+        salePrice: product.salePrice,
+        stock: product.stock,
+        minStock: product.minStock,
+        active: product.active,
+        photoUrl: product.photoUrl || '',
+      };
     } else {
-      // Logic for creating a NEW product
-      const initialSuppliers = [
-        { supplierId: defaultSupplierId || '', cost: 0, isPrimary: true },
-        { supplierId: '', cost: 0, isPrimary: false }
-      ];
-      form.reset({
+      // Creating a new product
+      const initialSuppliers = defaultSupplierId
+        ? [{ supplierId: defaultSupplierId, cost: 0, isPrimary: true }, { supplierId: '', cost: 0, isPrimary: false }]
+        : [{ supplierId: '', cost: 0, isPrimary: true }, { supplierId: '', cost: 0, isPrimary: false }];
+        
+      initialValues = {
         sku: '',
         name: { es: '', en: '' },
         category: initialCategories[0],
         unit: initialUnits[0],
         suppliers: initialSuppliers,
-        salePrice: 0, stock: 0, minStock: 10, active: true, photoUrl: '',
-      });
-      setImgUrlInputValue('');
+        salePrice: 0,
+        stock: 0,
+        minStock: 10,
+        active: true,
+        photoUrl: '',
+      };
     }
-  }, [product, defaultSupplierId, form, suppliersLoading]);
+  
+    form.reset(initialValues);
+    setImgUrlInputValue(initialValues.photoUrl || '');
+  
+  }, [product, defaultSupplierId, suppliersLoading, form.reset]);
+
   
   // Recalculate margin when values change
   useEffect(() => {
@@ -196,22 +209,23 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
       if (existingProduct) {
         toast({ title: "Producto Existente Encontrado", description: "Datos del producto han sido cargados." });
         
-        const existingSuppliers = existingProduct.suppliers || [];
-        const suppliersForForm = [...existingSuppliers, { supplierId: '', cost: 0, isPrimary: false }];
+        const suppliersForForm = [...(existingProduct.suppliers || [])];
+        if (!suppliersForForm.find(s => !s.supplierId)) {
+          suppliersForForm.push({ supplierId: '', cost: 0, isPrimary: false });
+        }
         
-        const productDataForForm: ProductFormValues = {
+        form.reset({
             sku: existingProduct.sku,
             name: existingProduct.name || { es: '', en: '' },
-            category: existingProduct.category || { es: '', en: '' },
-            unit: existingProduct.unit || { es: '', en: '' },
+            category: existingProduct.category || initialCategories[0],
+            unit: existingProduct.unit || initialUnits[0],
             suppliers: suppliersForForm,
             salePrice: existingProduct.salePrice || 0,
             stock: existingProduct.stock || 0,
             minStock: existingProduct.minStock || 0,
             active: existingProduct.active ?? true,
             photoUrl: existingProduct.photoUrl || '',
-        };
-        form.reset(productDataForForm);
+        });
         setImgUrlInputValue(existingProduct.photoUrl || '');
       }
     } catch (error) {
