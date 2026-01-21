@@ -158,16 +158,36 @@ export function PurchasingPageClient() {
   }, []);
 
   const getSupplierName = (id: string) => suppliers.find(s => s.id === id)?.name || 'N/A';
+  
+  const unifiedProducts = useMemo(() => {
+    if (loading) return [];
+    
+    const productMap = products.reduce((acc, product) => {
+        const existing = acc.get(product.sku);
+        if (existing) {
+            // Sum stock from duplicates
+            existing.stock += product.stock;
+            // You could also merge suppliers here if needed, but for now we focus on stock
+        } else {
+            // Deep copy to avoid mutating the original product from the hook
+            acc.set(product.sku, { ...product });
+        }
+        return acc;
+    }, new Map<string, Product>());
+
+    return Array.from(productMap.values());
+  }, [products, loading]);
+
 
   const lowStockSuggestions = useMemo(() => {
     if (loading) return [];
-    return products.filter(p => p.stock <= p.minStock && p.suppliers?.length > 0);
-  }, [products, loading]);
+    return unifiedProducts.filter(p => p.stock <= p.minStock && p.suppliers?.length > 0);
+  }, [unifiedProducts, loading]);
   
   const generalCatalog = useMemo(() => {
     if (loading) return [];
-    const lowStockIds = new Set(lowStockSuggestions.map(p => p.id));
-    let catalog = products.filter(p => !lowStockIds.has(p.id) && p.suppliers?.length > 0);
+    const lowStockSKUs = new Set(lowStockSuggestions.map(p => p.sku));
+    let catalog = unifiedProducts.filter(p => !lowStockSKUs.has(p.sku) && p.suppliers?.length > 0);
 
     if (searchTerm) {
         return catalog.filter(p => 
@@ -176,7 +196,7 @@ export function PurchasingPageClient() {
         );
     }
     return catalog;
-  }, [products, loading, lowStockSuggestions, searchTerm]);
+  }, [unifiedProducts, loading, lowStockSuggestions, searchTerm]);
 
   const handleOpenCompare = (product: Product, current: ProductSupplier, best: ProductSupplier) => {
     setComparisonData({
@@ -246,16 +266,20 @@ export function PurchasingPageClient() {
   };
 
   const renderProductRow = (product: Product) => {
-    const primarySupplier = product.suppliers.find(s => s.isPrimary);
+    if (!product.suppliers || product.suppliers.length === 0) return null;
+
+    const primarySupplier = product.suppliers.find(s => s.isPrimary) || product.suppliers[0];
     if (!primarySupplier) return null;
 
     const bestSupplier = product.suppliers.reduce((best, current) => (current.cost < best.cost ? current : best));
-    const hasOpportunity = bestSupplier.supplierId !== primarySupplier.supplierId;
+    const hasOpportunity = product.suppliers.length > 1 && bestSupplier.supplierId !== primarySupplier.supplierId;
     const unitText = (typeof product.unit === 'object' && product.unit?.[locale]) ? product.unit[locale] : (product.unit as any);
-    const savings = hasOpportunity ? ((1 - bestSupplier.cost / primarySupplier.cost) * 100) : 0;
+    
+    // Savings Formula: ((Primary Cost - Best Cost) / Primary Cost) * 100
+    const savings = hasOpportunity ? ((primarySupplier.cost - bestSupplier.cost) / primarySupplier.cost) * 100 : 0;
 
     return (
-      <TableRow key={product.id}>
+      <TableRow key={product.sku}>
         <TableCell>
             <div className="flex items-center gap-3">
                 <Image src={product.photoUrl || 'https://via.placeholder.com/40'} alt={product.name[locale]} width={40} height={40} className="rounded-md object-cover" />
@@ -469,3 +493,4 @@ export function PurchasingPageClient() {
     
 
     
+

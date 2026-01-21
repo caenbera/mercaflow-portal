@@ -23,10 +23,20 @@ export function ProductsPageClient() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const t = useTranslations('ProductsPage');
 
-  const uniqueProducts = useMemo(() => {
+  const unifiedProducts = useMemo(() => {
     if (loading) return [];
-    // This will ensure only one product per SKU is shown.
-    return Array.from(new Map(products.map(p => [p.sku, p])).values());
+    
+    const productMap = products.reduce((acc, product) => {
+        const existing = acc.get(product.sku);
+        if (existing) {
+            existing.stock += product.stock;
+        } else {
+            acc.set(product.sku, { ...product });
+        }
+        return acc;
+    }, new Map<string, Product>());
+
+    return Array.from(productMap.values());
   }, [products, loading]);
 
 
@@ -125,7 +135,7 @@ export function ProductsPageClient() {
         </div>
       ) : (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <ProductTable products={uniqueProducts} onEdit={handleEdit} onDelete={handleDelete} />
+            <ProductTable products={unifiedProducts} onEdit={handleEdit} onDelete={handleDelete} />
         </div>
       )}
     </div>
