@@ -20,7 +20,10 @@ import { cn } from '@/lib/utils';
 import { useSuppliers } from '@/hooks/use-suppliers';
 
 const formSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters.'),
+  name: z.object({
+    es: z.string().min(2, 'El nombre en español es requerido.'),
+    en: z.string().min(2, 'The name in English is required.'),
+  }),
   sku: z.string().min(2, 'SKU must be at least 2 characters.'),
   category: z.object({
     es: z.string().min(1, 'La categoría en español es requerida.'),
@@ -73,7 +76,7 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '', sku: '', category: initialCategories[0], unit: 'Caja 20lb', supplierId: '',
+      name: { es: '', en: '' }, sku: '', category: initialCategories[0], unit: 'Caja 20lb', supplierId: '',
       cost: 0, salePrice: 0, stock: 0, minStock: 10, active: true, photoUrl: '',
     },
   });
@@ -85,7 +88,7 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     if (suppliersLoading) return;
 
     const defaultValues: ProductFormValues = {
-      name: '', sku: '', category: initialCategories[0], unit: 'Caja 20lb',
+      name: { es: '', en: '' }, sku: '', category: initialCategories[0], unit: 'Caja 20lb',
       supplierId: defaultSupplierId || '',
       cost: 0, salePrice: 0, stock: 0, minStock: 10, active: true, photoUrl: '',
     };
@@ -233,33 +236,48 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
                   )}
               </div>
 
-              <div className="flex-grow grid grid-cols-1 md:grid-cols-4 gap-4 w-full">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-3">
-                      <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_name')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('form_placeholder_name')} className="h-11 font-medium text-base bg-gray-50/50" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="sku"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_sku')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('form_placeholder_sku')} className="h-11 font-mono text-sm bg-gray-50/50" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="flex-grow w-full space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name.es"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_name_es')}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t('form_placeholder_name_es')} className="h-11 font-medium text-base bg-gray-50/50" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="name.en"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_name_en')}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t('form_placeholder_name_en')} className="h-11 font-medium text-base bg-gray-50/50" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                 <FormField
+                    control={form.control}
+                    name="sku"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_sku')}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t('form_placeholder_sku')} className="h-11 font-mono text-sm bg-gray-50/50" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
               </div>
           </div>
           

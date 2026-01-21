@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from '@/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ export function OrderHistoryAccordion({ orders }: OrderHistoryAccordionProps) {
   const t = useTranslations('ClientHistoryPage');
   const router = useRouter();
   const { toast } = useToast();
+  const locale = useLocale();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -76,7 +77,7 @@ export function OrderHistoryAccordion({ orders }: OrderHistoryAccordionProps) {
               <div className="space-y-2">
                 {order.items.map((item, index) => (
                   <div key={index} className="flex justify-between items-center text-sm">
-                    <span className="text-foreground">{item.productName}</span>
+                    <span className="text-foreground">{item.productName[locale as 'es' | 'en']}</span>
                     <span className="text-muted-foreground">{item.quantity}</span>
                   </div>
                 ))}

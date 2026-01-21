@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from 'react';
+import { useLocale } from 'next-intl';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,7 @@ interface OrderDetailsDialogProps {
 
 export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDialogProps) {
   const t = useTranslations('OrdersPage');
+  const locale = useLocale();
 
   const handlePrint = () => {
     document.body.classList.add('is-printing');
@@ -114,7 +116,7 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
                 {order.items.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell className="font-medium">
-                      {item.productName}
+                      {item.productName[locale as 'es' | 'en']}
                       {/* Placeholder for notes */}
                       {index === 0 && <p className="text-xs text-muted-foreground italic">Nota: "Que estén verdes"</p>}
                     </TableCell>

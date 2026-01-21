@@ -19,7 +19,10 @@ export interface ProductCategory {
 
 export interface Product {
   id: string;
-  name: string;
+  name: {
+    es: string;
+    en: string;
+  };
   sku: string;
   description: string;
   photoUrl: string;
@@ -38,7 +41,10 @@ export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | '
 
 export interface OrderItem {
   productId: string;
-  productName: string;
+  productName: {
+    es: string;
+    en: string;
+  };
   quantity: number;
   price: number; // This is the price at the time of order
 }

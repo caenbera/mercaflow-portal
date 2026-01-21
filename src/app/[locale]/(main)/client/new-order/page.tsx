@@ -43,9 +43,9 @@ const CheckoutContent = ({ orderItems, notes, total, deliveryDate, isSubmitting,
       <div className="space-y-2">
         {orderItems.map((item: any) => (
           <div key={item.productId} className="flex gap-2 items-start p-1.5 border-b">
-            <Image src={item.photoUrl} alt={item.productName} width={36} height={36} className="rounded-md object-cover shrink-0" />
+            <Image src={item.photoUrl} alt={item.productName[locale]} width={36} height={36} className="rounded-md object-cover shrink-0" />
             <div className="flex-grow min-w-0">
-              <p className="font-medium text-sm truncate">{item.productName}</p>
+              <p className="font-medium text-sm truncate">{item.productName[locale]}</p>
               <p className="text-xs text-muted-foreground">{item.quantity} x {formatCurrency(item.price)}</p>
               {notes[item.productId] && (
                 <p className="text-xs text-blue-600 bg-blue-50 p-1 rounded mt-1">
@@ -136,11 +136,11 @@ export default function NewOrderPage() {
     let productList = products.filter(p => p.category.es === activeCategory);
     
     if (searchTerm) {
-      return productList.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      return productList.filter(p => p.name[locale].toLowerCase().includes(searchTerm.toLowerCase()));
     }
     
     return productList;
-  }, [activeCategory, searchTerm, products, loading, favoriteProductIds, t]);
+  }, [activeCategory, searchTerm, products, loading, favoriteProductIds, t, locale]);
 
   const { orderItems, total, totalItems } = useMemo(() => {
     const orderItems: (OrderItem & { photoUrl: string })[] = [];
@@ -320,13 +320,13 @@ export default function NewOrderPage() {
               <div key={p.id} className="bg-background border-b p-2 flex items-center gap-2">
                 <Image
                   src={p.photoUrl}
-                  alt={p.name}
+                  alt={p.name[locale]}
                   width={50}
                   height={50}
                   className="rounded-lg object-cover bg-gray-100 shrink-0"
                 />
                 <div className="flex-grow min-w-0">
-                  <p className="font-medium text-sm leading-tight truncate">{p.name}</p>
+                  <p className="font-medium text-sm leading-tight truncate">{p.name[locale]}</p>
                   <div className="text-xs text-muted-foreground flex items-center mt-0.5">
                     <span>{formatCurrency(p.salePrice)} / {p.unit}</span>
                     <Button
@@ -379,7 +379,7 @@ export default function NewOrderPage() {
       <Dialog open={isNoteModalOpen} onOpenChange={setIsNoteModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-sm">{t('addNoteFor')} {currentProductForNote?.name}</DialogTitle>
+            <DialogTitle className="text-sm">{t('addNoteFor')} {currentProductForNote?.name[locale]}</DialogTitle>
           </DialogHeader>
           <Textarea
             value={currentNote}

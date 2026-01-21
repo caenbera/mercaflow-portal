@@ -54,7 +54,7 @@ export function DeleteProductAlert({ open, onOpenChange, product }: DeleteProduc
         <AlertDialogHeader>
           <AlertDialogTitle>{t('delete_alert_title')}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t('delete_alert_description', { productName: product?.name })}
+            {t('delete_alert_description', { productName: product?.name.es })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

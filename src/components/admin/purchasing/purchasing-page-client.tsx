@@ -36,13 +36,13 @@ import { cn } from '@/lib/utils';
 // --- MOCK DATA ---
 const lowStockSuggestions = [
   {
-    product: { name: 'Tomate Chonto', sku: 'TOM-001', image: 'https://i.postimg.cc/TY6YMwmY/tomate_chonto.png' },
+    product: { name: { es: 'Tomate Chonto', en: 'Roma Tomato' }, sku: 'TOM-001', image: 'https://i.postimg.cc/TY6YMwmY/tomate_chonto.png' },
     stock: { current: 12, unit: 'Kg' },
     currentSupplier: { name: 'AgroFresh Farms', price: 12.50, unit: 'Caja' },
     bestOffer: { name: 'GreenValley Corp', price: 11.80, unit: 'Caja' },
   },
   {
-    product: { name: 'Cebolla Blanca', sku: 'ONI-202', image: 'https://i.postimg.cc/TPwHKV88/cebolla_blanca.png' },
+    product: { name: { es: 'Cebolla Blanca', en: 'White Onion' }, sku: 'ONI-202', image: 'https://i.postimg.cc/TPwHKV88/cebolla_blanca.png' },
     stock: { current: 5, unit: 'Bultos' },
     currentSupplier: { name: 'Global Imports', price: 28.00, unit: 'Bulto' },
     bestOffer: null,
@@ -51,12 +51,12 @@ const lowStockSuggestions = [
 
 const generalCatalog = [
     {
-        product: { name: 'Limón Tahití', sku: 'LIM-040', image: 'https://i.postimg.cc/43dFY6CX/limon.png' },
+        product: { name: { es: 'Limón Tahití', en: 'Tahiti Lime' }, sku: 'LIM-040', image: 'https://i.postimg.cc/43dFY6CX/limon.png' },
         stock: { current: 95, unit: 'Cajas', status: 'ok' },
         mainSupplier: { name: 'AgroFresh Farms', price: 59.00 },
     },
     {
-        product: { name: 'Aceite Vegetal 20L', sku: 'OIL-500', image: 'https://i.postimg.cc/7L6Q53vy/aceite20.png' },
+        product: { name: { es: 'Aceite Vegetal 20L', en: 'Vegetable Oil 20L' }, sku: 'OIL-500', image: 'https://i.postimg.cc/7L6Q53vy/aceite20.png' },
         stock: { current: 40, unit: 'Bidones', status: 'ok' },
         mainSupplier: { name: 'Global Imports', price: 35.50 },
     }
@@ -177,7 +177,8 @@ export function PurchasingPageClient() {
   const filteredCatalog = useMemo(() => {
     if (!searchTerm) return generalCatalog;
     return generalCatalog.filter(item => 
-        item.product.name.toLowerCase().includes(searchTerm.toLowerCase())
+        item.product.name.es.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.product.name.en.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [searchTerm]);
 
@@ -279,9 +280,9 @@ export function PurchasingPageClient() {
                                 <TableRow key={item.product.sku}>
                                     <TableCell>
                                         <div className="flex items-center gap-3">
-                                            <Image src={item.product.image} alt={item.product.name} width={40} height={40} className="rounded-md object-cover" />
+                                            <Image src={item.product.image} alt={item.product.name.es} width={40} height={40} className="rounded-md object-cover" />
                                             <div>
-                                                <div className="font-semibold">{item.product.name}</div>
+                                                <div className="font-semibold">{item.product.name.es}</div>
                                                 <div className="text-xs text-muted-foreground">SKU: {item.product.sku}</div>
                                             </div>
                                         </div>
@@ -312,7 +313,7 @@ export function PurchasingPageClient() {
                                     <TableCell className="text-right">
                                         {item.bestOffer ? (
                                             <Button variant="outline" size="sm" onClick={() => handleOpenCompare({
-                                                productName: item.product.name,
+                                                productName: item.product.name.es,
                                                 current: { name: item.currentSupplier.name, price: item.currentSupplier.price },
                                                 best: { name: item.bestOffer.name, price: item.bestOffer.price },
                                             })}>
@@ -320,7 +321,7 @@ export function PurchasingPageClient() {
                                                 {t('compare_button')}
                                             </Button>
                                         ) : (
-                                            <Button size="sm" onClick={() => handleAddToCart(item.product.name, item.currentSupplier.name, item.currentSupplier.price)}>
+                                            <Button size="sm" onClick={() => handleAddToCart(item.product.name.es, item.currentSupplier.name, item.currentSupplier.price)}>
                                                 <Plus className="mr-2 h-4 w-4" />
                                                 {t('add_button')}
                                             </Button>
@@ -367,9 +368,9 @@ export function PurchasingPageClient() {
                                 <TableRow key={item.product.sku}>
                                     <TableCell>
                                          <div className="flex items-center gap-3">
-                                            <Image src={item.product.image} alt={item.product.name} width={40} height={40} className="rounded-md object-cover opacity-70" />
+                                            <Image src={item.product.image} alt={item.product.name.es} width={40} height={40} className="rounded-md object-cover opacity-70" />
                                             <div>
-                                                <div className="font-semibold">{item.product.name}</div>
+                                                <div className="font-semibold">{item.product.name.es}</div>
                                                 <div className="text-xs text-muted-foreground">SKU: {item.product.sku}</div>
                                             </div>
                                         </div>
@@ -382,7 +383,7 @@ export function PurchasingPageClient() {
                                     <TableCell>{item.mainSupplier.name}</TableCell>
                                     <TableCell className="font-semibold">${item.mainSupplier.price.toFixed(2)}</TableCell>
                                     <TableCell className="text-right">
-                                         <Button variant="outline" size="sm" onClick={() => handleAddToCart(item.product.name, item.mainSupplier.name, item.mainSupplier.price)}>
+                                         <Button variant="outline" size="sm" onClick={() => handleAddToCart(item.product.name.es, item.mainSupplier.name, item.mainSupplier.price)}>
                                             <ShoppingCart className="mr-2 h-4 w-4" />
                                             {t('add_to_cart_button')}
                                         </Button>

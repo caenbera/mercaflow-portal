@@ -87,7 +87,7 @@ export function ProductTable({ products, onEdit, onDelete }: ProductTableProps) 
                         <div className="flex items-center gap-4">
                             <div className="h-12 w-12 rounded-lg border border-gray-100 bg-white p-0.5 shrink-0 overflow-hidden">
                                 <Image
-                                    alt={product.name}
+                                    alt={product.name.es}
                                     className="h-full w-full object-cover rounded-md"
                                     height="48"
                                     src={product.photoUrl || 'https://picsum.photos/48'}
@@ -95,8 +95,9 @@ export function ProductTable({ products, onEdit, onDelete }: ProductTableProps) 
                                 />
                             </div>
                             <div>
-                                <div className="font-bold text-slate-800 text-sm leading-tight mb-1">{product.name}</div>
-                                <span className="text-[10px] font-mono font-medium bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200">
+                                <div className="font-bold text-slate-800 text-sm leading-tight">{product.name.es}</div>
+                                <div className="text-xs text-slate-500">{product.name.en}</div>
+                                <span className="text-[10px] font-mono font-medium bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200 mt-1 inline-block">
                                     {product.sku}
                                 </span>
                             </div>

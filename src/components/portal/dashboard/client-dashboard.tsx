@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useOrders } from '@/hooks/use-orders';
 import { useProducts } from '@/hooks/use-products';
 import { useAuth } from '@/context/auth-context';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -56,6 +56,7 @@ export function ClientDashboard() {
   const t = useTranslations('ClientDashboardPage');
   const router = useRouter();
   const { userProfile } = useAuth();
+  const locale = useLocale();
   const { orders, loading: ordersLoading } = useOrders();
   const { products, loading: productsLoading } = useProducts();
 
@@ -193,9 +194,9 @@ export function ClientDashboard() {
                       {loading ? Array.from({length:3}).map((_,i)=><Skeleton key={i} className="h-12 w-full"/>) : (
                           dashboardData.topProducts.map(product => (
                               <div key={product.id} className="flex items-center gap-3 pb-2 border-b last:border-0">
-                                <Image src={product.photoUrl} alt={product.name} width={45} height={45} className="rounded-lg object-cover" data-ai-hint="product image"/>
+                                <Image src={product.photoUrl} alt={product.name[locale as 'es' | 'en']} width={45} height={45} className="rounded-lg object-cover" data-ai-hint="product image"/>
                                 <div className="flex-grow">
-                                    <div className="font-semibold text-sm">{product.name}</div>
+                                    <div className="font-semibold text-sm">{product.name[locale as 'es' | 'en']}</div>
                                     <div className="text-xs text-muted-foreground">{t('units_purchased', {count: product.totalQuantity})}</div>
                                 </div>
                                 <div className="font-bold text-accent text-sm">{formatCurrency(product.totalSpent)}</div>
