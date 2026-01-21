@@ -130,23 +130,16 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
   useEffect(() => {
     if (suppliersLoading) return;
   
-    const defaultValues: ProductFormValues = {
-        sku: '',
-        name: { es: '', en: '' },
-        category: initialCategories[0],
-        unit: initialUnits[0],
-        suppliers: [{ supplierId: defaultSupplierId || '', cost: 0, isPrimary: true }],
-        salePrice: 0, stock: 0, minStock: 10, active: true, photoUrl: '',
-    };
-  
     if (product) {
-      const suppliers = product.suppliers || [];
+      // Logic for editing an existing product
+      const existingSuppliers = product.suppliers || [];
+      const suppliersForForm = [...existingSuppliers, { supplierId: '', cost: 0, isPrimary: false }];
       form.reset({
           sku: product.sku,
           name: product.name,
           category: product.category,
           unit: product.unit,
-          suppliers: suppliers.length > 0 ? [...suppliers, { supplierId: '', cost: 0, isPrimary: false }] : [{ supplierId: defaultSupplierId || '', cost: 0, isPrimary: true }],
+          suppliers: suppliersForForm,
           salePrice: product.salePrice,
           stock: product.stock,
           minStock: product.minStock,
@@ -155,18 +148,22 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
       });
       setImgUrlInputValue(product.photoUrl || '');
     } else {
-      form.reset(defaultValues);
+      // Logic for creating a NEW product
+      const initialSuppliers = [
+        { supplierId: defaultSupplierId || '', cost: 0, isPrimary: true },
+        { supplierId: '', cost: 0, isPrimary: false }
+      ];
+      form.reset({
+        sku: '',
+        name: { es: '', en: '' },
+        category: initialCategories[0],
+        unit: initialUnits[0],
+        suppliers: initialSuppliers,
+        salePrice: 0, stock: 0, minStock: 10, active: true, photoUrl: '',
+      });
       setImgUrlInputValue('');
     }
   }, [product, defaultSupplierId, form, suppliersLoading]);
-
-  // Handle auto-add of new supplier row
-  useEffect(() => {
-    const lastSupplier = watchedSuppliers[watchedSuppliers.length - 1];
-    if (lastSupplier && lastSupplier.supplierId) {
-      append({ supplierId: '', cost: 0, isPrimary: false }, { shouldFocus: false });
-    }
-  }, [watchedSuppliers, append]);
   
   // Recalculate margin when values change
   useEffect(() => {
@@ -199,20 +196,22 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
       if (existingProduct) {
         toast({ title: "Producto Existente Encontrado", description: "Datos del producto han sido cargados." });
         
-        const suppliers = existingProduct.suppliers || [];
-
-        form.reset({
-          sku: existingProduct.sku,
-          name: existingProduct.name,
-          category: existingProduct.category,
-          unit: existingProduct.unit,
-          suppliers: [...suppliers, { supplierId: '', cost: 0, isPrimary: false }],
-          salePrice: existingProduct.salePrice,
-          stock: existingProduct.stock,
-          minStock: existingProduct.minStock,
-          active: existingProduct.active,
-          photoUrl: existingProduct.photoUrl,
-        });
+        const existingSuppliers = existingProduct.suppliers || [];
+        const suppliersForForm = [...existingSuppliers, { supplierId: '', cost: 0, isPrimary: false }];
+        
+        const productDataForForm: ProductFormValues = {
+            sku: existingProduct.sku,
+            name: existingProduct.name || { es: '', en: '' },
+            category: existingProduct.category || { es: '', en: '' },
+            unit: existingProduct.unit || { es: '', en: '' },
+            suppliers: suppliersForForm,
+            salePrice: existingProduct.salePrice || 0,
+            stock: existingProduct.stock || 0,
+            minStock: existingProduct.minStock || 0,
+            active: existingProduct.active ?? true,
+            photoUrl: existingProduct.photoUrl || '',
+        };
+        form.reset(productDataForForm);
         setImgUrlInputValue(existingProduct.photoUrl || '');
       }
     } catch (error) {
@@ -228,6 +227,15 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
         update(index, { ...watchedSuppliers[index], isPrimary: index === indexToSet });
     });
   };
+
+  // This effect ensures a new empty supplier row is added when the last one is filled
+  useEffect(() => {
+    const lastSupplier = watchedSuppliers[watchedSuppliers.length - 1];
+    if (lastSupplier && lastSupplier.supplierId) {
+      append({ supplierId: '', cost: 0, isPrimary: false }, { shouldFocus: false });
+    }
+  }, [watchedSuppliers, append]);
+
 
   const photoUrl = form.watch('photoUrl');
   const currentCategory = form.watch('category');
@@ -325,26 +333,32 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
             
             {/* Suppliers Section */}
             <div className="space-y-2">
-                {fields.map((field, index) => (
-                    <div key={field.id} className={cn("p-3 border rounded-lg", watchedSuppliers[index]?.isPrimary ? "bg-primary/5 border-primary" : "bg-muted/30")}>
-                        <div className="flex justify-between items-center mb-2">
-                             <FormLabel className="text-primary text-xs font-bold uppercase tracking-wider">{getSupplierLabel(index, t)}</FormLabel>
-                             {index > 0 && (watchedSuppliers[index]?.supplierId || watchedSuppliers.length > index + 1) && <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => remove(index)}><Trash2 className="h-3 w-3" /></Button>}
+                {fields.map((field, index) => {
+                    const isLastRow = index === fields.length - 1;
+                    if (isLastRow && field.supplierId) return null; // Should be handled by the auto-add effect
+                    if (!isLastRow && !field.supplierId) return null; // Don't render empty rows in the middle
+
+                    return (
+                        <div key={field.id} className={cn("p-3 border rounded-lg", watchedSuppliers[index]?.isPrimary ? "bg-primary/5 border-primary" : "bg-muted/30")}>
+                            <div className="flex justify-between items-center mb-2">
+                                <FormLabel className="text-primary text-xs font-bold uppercase tracking-wider">{isLastRow ? t('add_supplier_label') : getSupplierLabel(index, t)}</FormLabel>
+                                {!isLastRow && <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => remove(index)}><Trash2 className="h-3 w-3" /></Button>}
+                            </div>
+                            <div className="grid grid-cols-[2fr,1fr,auto] gap-4 items-end">
+                                <FormField control={form.control} name={`suppliers.${index}.supplierId`} render={({ field }) => (
+                                    <FormItem><Select onValueChange={field.onChange} value={field.value} disabled={suppliersLoading}><FormControl><SelectTrigger className="h-10 bg-white"><SelectValue placeholder={t('form_placeholder_select_supplier')} /></SelectTrigger></FormControl><SelectContent>{allSuppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={form.control} name={`suppliers.${index}.cost`} render={({ field }) => (
+                                    <FormItem><FormControl><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span><Input type="number" className="pl-6 h-10 text-right bg-white" placeholder="0.00" step="0.01" {...field} /></div></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <Button type="button" variant="outline" size="sm" onClick={() => handleSetPrimary(index)} disabled={watchedSuppliers[index]?.isPrimary || !watchedSuppliers[index]?.supplierId || isLastRow} className="h-10 bg-white">
+                                    <Star className={cn("h-4 w-4 mr-2", watchedSuppliers[index]?.isPrimary ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground")} />
+                                    {t('primary_button_label')}
+                                </Button>
+                            </div>
                         </div>
-                        <div className="grid grid-cols-[2fr,1fr,auto] gap-4 items-end">
-                            <FormField control={form.control} name={`suppliers.${index}.supplierId`} render={({ field }) => (
-                                <FormItem><Select onValueChange={field.onChange} value={field.value} disabled={suppliersLoading}><FormControl><SelectTrigger className="h-10 bg-white"><SelectValue placeholder={t('form_placeholder_select_supplier')} /></SelectTrigger></FormControl><SelectContent>{allSuppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
-                            )}/>
-                             <FormField control={form.control} name={`suppliers.${index}.cost`} render={({ field }) => (
-                                <FormItem><FormControl><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span><Input type="number" className="pl-6 h-10 text-right bg-white" placeholder="0.00" step="0.01" {...field} /></div></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <Button type="button" variant="outline" size="sm" onClick={() => handleSetPrimary(index)} disabled={watchedSuppliers[index]?.isPrimary || !watchedSuppliers[index]?.supplierId} className="h-10 bg-white">
-                                <Star className={cn("h-4 w-4 mr-2", watchedSuppliers[index]?.isPrimary ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground")} />
-                                {t('primary_button_label')}
-                            </Button>
-                        </div>
-                    </div>
-                ))}
+                    )
+                })}
                 <FormMessage>{form.formState.errors.suppliers?.root?.message}</FormMessage>
             </div>
 
@@ -376,4 +390,3 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     </>
   );
 }
-

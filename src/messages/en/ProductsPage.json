@@ -40,6 +40,7 @@
   "primary_supplier_label": "Primary Supplier",
   "secondary_supplier_label": "Secondary Supplier",
   "tertiary_supplier_label": "Supplier #{index}",
+  "add_supplier_label": "Add Supplier",
   "primary_button_label": "Primary",
   "form_label_cost": "Purchase Cost ($)",
   "form_label_price": "Sale Price ($)",
