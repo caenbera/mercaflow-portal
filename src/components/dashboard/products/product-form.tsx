@@ -7,6 +7,8 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useTranslations } from 'next-intl';
+import { usePathname } from 'next/navigation';
+
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -16,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { addProduct, updateProduct, getProductBySku } from '@/lib/firestore/products';
 import type { Product, ProductCategory, ProductSupplier } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Camera, Plus, Check, Undo2, Pencil, Trash2, Percent, Loader2, Star } from 'lucide-react'; 
+import { Camera, Plus, Check, Undo2, Pencil, Trash2, Percent, Loader2 } from 'lucide-react'; 
 import { cn } from '@/lib/utils';
 import { useSuppliers } from '@/hooks/use-suppliers';
 
@@ -74,16 +76,6 @@ const initialUnits: { es: string, en: string }[] = [
   { es: "Paq 2kg", en: "2kg Pack" },
 ];
 
-function getSupplierLabel(index: number, t: any) {
-    if (index === 0) return t('primary_supplier_label');
-    const lastSupplier = index === 1;
-    if (lastSupplier) {
-        return t('secondary_supplier_label');
-    }
-    return t('tertiary_supplier_label', {index: index + 1});
-}
-
-
 export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSkuLoading, setIsSkuLoading] = useState(false);
@@ -126,17 +118,14 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
   const primarySupplier = watchedSuppliers.find(s => s.isPrimary);
   const costValue = primarySupplier?.cost ?? 0;
   const salePriceValue = form.watch('salePrice');
-  
-  const resetForm = (productData: Product | null) => {
-    let initialValues: ProductFormValues;
-  
+
+  const getCleanProductData = (productData: Product | null): ProductFormValues => {
     if (productData) {
-      const suppliersForForm = [...(productData.suppliers || [])];
-       if (!suppliersForForm.some(s => !s.supplierId)) {
-        suppliersForForm.push({ supplierId: '', cost: 0, isPrimary: false });
-      }
-      
-      initialValues = {
+      const suppliersForForm: ProductSupplier[] = productData.suppliers?.length > 0
+        ? [...productData.suppliers]
+        : (defaultSupplierId ? [{ supplierId: defaultSupplierId, cost: 0, isPrimary: true }] : []);
+
+      return {
         sku: productData.sku,
         name: productData.name,
         category: productData.category,
@@ -150,10 +139,10 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
       };
     } else {
       const initialSuppliers = defaultSupplierId
-        ? [{ supplierId: defaultSupplierId, cost: 0, isPrimary: true }, { supplierId: '', cost: 0, isPrimary: false }]
-        : [{ supplierId: '', cost: 0, isPrimary: true }, { supplierId: '', cost: 0, isPrimary: false }];
+        ? [{ supplierId: defaultSupplierId, cost: 0, isPrimary: true }]
+        : [{ supplierId: '', cost: 0, isPrimary: true }];
         
-      initialValues = {
+      return {
         sku: '',
         name: { es: '', en: '' },
         category: initialCategories[0],
@@ -166,18 +155,15 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
         photoUrl: '',
       };
     }
-  
-    form.reset(initialValues);
-    setImgUrlInputValue(initialValues.photoUrl || '');
   };
   
   useEffect(() => {
-      if (suppliersLoading) return;
-      resetForm(product);
-  }, [product, defaultSupplierId, suppliersLoading]);
+    if (suppliersLoading) return;
+    const initialData = getCleanProductData(product);
+    form.reset(initialData);
+    setImgUrlInputValue(initialData.photoUrl || '');
+  }, [product, defaultSupplierId, suppliersLoading, form]);
   
-  
-  // Recalculate margin when values change
   useEffect(() => {
     if (isMarginInputFocused) return;
     if (costValue > 0 && salePriceValue > costValue) {
@@ -207,7 +193,9 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
       const existingProduct = await getProductBySku(sku);
       if (existingProduct) {
         toast({ title: "Producto Existente Encontrado", description: "Datos del producto han sido cargados." });
-        resetForm(existingProduct);
+        const productDataForForm = getCleanProductData(existingProduct);
+        form.reset(productDataForForm);
+        setImgUrlInputValue(productDataForForm.photoUrl || '');
       }
     } catch (error) {
       console.error("Error in handleSkuBlur:", error);
@@ -219,11 +207,12 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
 
   const handleSetPrimary = (indexToSet: number) => {
     watchedSuppliers.forEach((_, index) => {
+      if (form.getValues(`suppliers.${index}.isPrimary`) !== (index === indexToSet)) {
         update(index, { ...watchedSuppliers[index], isPrimary: index === indexToSet });
+      }
     });
   };
 
-  // This effect ensures a new empty supplier row is added when the last one is filled
   useEffect(() => {
     const lastSupplier = watchedSuppliers[watchedSuppliers.length - 1];
     if (lastSupplier && lastSupplier.supplierId) {
@@ -231,12 +220,10 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     }
   }, [watchedSuppliers, append]);
 
-
   const photoUrl = form.watch('photoUrl');
   const currentCategory = form.watch('category');
   const currentUnit = form.watch('unit');
 
-  // --- Image URL Modal ---
   const handleOpenUrlModal = () => {
     setImgUrlInputValue(photoUrl || '');
     setIsUrlModalOpen(true);
@@ -246,14 +233,12 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     setIsUrlModalOpen(false);
   };
   
-  // --- Category Management ---
   const startCreatingCategory = () => { setEditCategoryTarget(null); setIsCategoryInputMode(true); setTimeout(() => esCategoryInputRef.current?.focus(), 100); };
   const startEditingCategory = () => { if (!currentCategory) return; setEditCategoryTarget(currentCategory); setIsCategoryInputMode(true); setTimeout(() => { if (esCategoryInputRef.current) esCategoryInputRef.current.value = currentCategory.es; if (enCategoryInputRef.current) enCategoryInputRef.current.value = currentCategory.en; esCategoryInputRef.current?.focus(); }, 100); };
   const handleSaveCategory = () => { const esValue = esCategoryInputRef.current?.value.trim(); const enValue = enCategoryInputRef.current?.value.trim(); if (!esValue || !enValue) { toast({ variant: 'destructive', title: 'Both category names are required.' }); return; } const newCategory: ProductCategory = { es: esValue, en: enValue }; if (editCategoryTarget) { setCategories(prev => prev.map(c => c.es === editCategoryTarget.es ? newCategory : c)); if (currentCategory.es === editCategoryTarget.es) form.setValue('category', newCategory); toast({ title: t('toast_category_updated'), description: newCategory.es }); } else { if (!categories.some(c => c.es.toLowerCase() === newCategory.es.toLowerCase())) { setCategories(prev => [...prev, newCategory]); form.setValue('category', newCategory); toast({ title: t('toast_category_added'), description: newCategory.es }); } } setIsCategoryInputMode(false); setEditCategoryTarget(null); };
   const handleDeleteCategory = () => { if (!currentCategory?.es || !confirm(t('confirm_delete_category', { category: currentCategory.es }))) return; const newCategories = categories.filter(c => c.es !== currentCategory.es); setCategories(newCategories); form.setValue('category', newCategories.length > 0 ? newCategories[0] : { es: '', en: '' }); toast({ title: t('toast_category_deleted') }); };
   const cancelCategoryInput = () => { setIsCategoryInputMode(false); setEditCategoryTarget(null); };
 
-  // --- Unit Management ---
   const startCreatingUnit = () => { setEditUnitTarget(null); setIsUnitInputMode(true); setTimeout(() => esUnitInputRef.current?.focus(), 100); };
   const startEditingUnit = () => { if (!currentUnit) return; setEditUnitTarget(currentUnit); setIsUnitInputMode(true); setTimeout(() => { if (esUnitInputRef.current) esUnitInputRef.current.value = currentUnit.es; if (enUnitInputRef.current) enUnitInputRef.current.value = currentUnit.en; esUnitInputRef.current?.focus(); }, 100); };
   const handleSaveUnit = () => { const esValue = esUnitInputRef.current?.value.trim(); const enValue = enUnitInputRef.current?.value.trim(); if (!esValue || !enValue) { toast({ variant: 'destructive', title: 'Both unit names are required.' }); return; } const newUnit = { es: esValue, en: enValue }; if (editUnitTarget) { setUnits(prev => prev.map(u => u.es === editUnitTarget.es ? newUnit : u)); if (currentUnit.es === editUnitTarget.es) form.setValue('unit', newUnit); } else { if (!units.some(u => u.es.toLowerCase() === newUnit.es.toLowerCase())) { setUnits(prev => [...prev, newUnit]); form.setValue('unit', newUnit); } } setIsUnitInputMode(false); setEditUnitTarget(null); };
@@ -318,7 +303,6 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
                 </div>
             </div>
             
-            {/* Category & Unit Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_category')}</FormLabel><div className="flex items-center gap-2">{isCategoryInputMode ? (<div className="flex-grow grid grid-cols-2 gap-2 animate-in fade-in zoom-in-95 duration-200"><Input ref={esCategoryInputRef} placeholder="Nombre en Español" className="border-primary/50 ring-2 ring-primary/10" /><Input ref={enCategoryInputRef} placeholder="Name in English" className="border-primary/50 ring-2 ring-primary/10" /><Button type="button" size="icon" className="bg-green-600 hover:bg-green-700 h-10 w-10" onClick={handleSaveCategory} title={t('save')}><Check className="h-4 w-4" /></Button><Button type="button" size="icon" variant="ghost" className="text-muted-foreground h-10 w-10" onClick={cancelCategoryInput} title={t('cancel')}><Undo2 className="h-4 w-4" /></Button></div>) : (<><Select onValueChange={(value) => { if (!value) return; try { const parsedValue = JSON.parse(value); field.onChange(parsedValue); } catch (e) { console.error("Failed to parse category value", e); } }} value={field.value?.es ? JSON.stringify(field.value) : ""}><FormControl><SelectTrigger className="h-10 bg-white flex-grow"><SelectValue placeholder={t('form_placeholder_select_category')}>{field.value?.es || t('form_placeholder_select_category')}</SelectValue></SelectTrigger></FormControl><SelectContent>{categories.map(c => <SelectItem key={c.es} value={JSON.stringify(c)}>{c.es}</SelectItem>)}</SelectContent></Select><div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border border-gray-200"><Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentCategory?.es} onClick={startEditingCategory}><Pencil className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!currentCategory?.es} onClick={handleDeleteCategory}><Trash2 className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={startCreatingCategory}><Plus className="h-4 w-4" /></Button></div></>)}</div><FormMessage /></FormItem>)}/>
                 <FormField control={form.control} name="unit" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_unit')}</FormLabel><div className="flex items-center gap-2">{isUnitInputMode ? (<div className="flex-grow grid grid-cols-2 gap-2 animate-in fade-in zoom-in-95 duration-200"><Input ref={esUnitInputRef} placeholder="Unidad en Español" className="border-primary/50 ring-2 ring-primary/10" /><Input ref={enUnitInputRef} placeholder="Unit in English" className="border-primary/50 ring-2 ring-primary/10" /><Button type="button" size="icon" className="bg-green-600 hover:bg-green-700 h-10 w-10" onClick={handleSaveUnit} title={t('save')}><Check className="h-4 w-4" /></Button><Button type="button" size="icon" variant="ghost" className="text-muted-foreground h-10 w-10" onClick={cancelUnitInput} title={t('cancel')}><Undo2 className="h-4 w-4" /></Button></div>) : (<><Select onValueChange={(value) => { if (!value) return; try { const parsedValue = JSON.parse(value); field.onChange(parsedValue); } catch (e) { console.error("Failed to parse unit value", e); } }} value={field.value?.es ? JSON.stringify(field.value) : ""}><FormControl><SelectTrigger className="h-10 bg-white flex-grow"><SelectValue placeholder="Selecciona una unidad">{field.value?.es || "Selecciona una unidad"}</SelectValue></SelectTrigger></FormControl><SelectContent>{units.map(u => <SelectItem key={u.es} value={JSON.stringify(u)}>{u.es}</SelectItem>)}</SelectContent></Select><div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border border-gray-200"><Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentUnit?.es} onClick={startEditingUnit}><Pencil className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!currentUnit?.es} onClick={handleDeleteUnit}><Trash2 className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={startCreatingUnit}><Plus className="h-4 w-4" /></Button></div></>)}</div><FormMessage /></FormItem>)}/>
@@ -326,37 +310,40 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
             
             <hr className="my-2 border-dashed border-gray-200" />
             
-            {/* Suppliers Section */}
             <div className="space-y-2">
                 {fields.map((field, index) => {
                     const isLastRow = index === fields.length - 1;
-                    if (isLastRow && field.supplierId) return null; // Should be handled by the auto-add effect
-                    if (!isLastRow && !field.supplierId) return null; // Don't render empty rows in the middle
+                    if (isLastRow && field.supplierId) return null;
+                    if (!isLastRow && !field.supplierId) return null;
 
                     return (
                         <div key={field.id} className={cn("p-3 border rounded-lg", watchedSuppliers[index]?.isPrimary ? "bg-primary/5 border-primary" : "bg-muted/30")}>
                             <div className="flex justify-between items-center mb-2">
-                                <FormLabel className="text-primary text-xs font-bold uppercase tracking-wider">{isLastRow ? t('add_supplier_label') : getSupplierLabel(index, t)}</FormLabel>
-                                {!isLastRow && <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => remove(index)}><Trash2 className="h-3 w-3" /></Button>}
+                                <FormLabel className="text-primary text-xs font-bold uppercase tracking-wider">{isLastRow ? t('add_supplier_label') : `Proveedor #${index + 1}`}</FormLabel>
+                                {(!isLastRow && fields.length > 2) && <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => remove(index)}><Trash2 className="h-3 w-3" /></Button>}
                             </div>
-                            <div className="grid grid-cols-[2fr,1fr,auto] gap-4 items-end">
+                            <div className="grid grid-cols-[2fr,1fr,auto] gap-4 items-center">
                                 <FormField control={form.control} name={`suppliers.${index}.supplierId`} render={({ field }) => (
                                     <FormItem><Select onValueChange={field.onChange} value={field.value} disabled={suppliersLoading}><FormControl><SelectTrigger className="h-10 bg-white"><SelectValue placeholder={t('form_placeholder_select_supplier')} /></SelectTrigger></FormControl><SelectContent>{allSuppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name={`suppliers.${index}.cost`} render={({ field }) => (
                                     <FormItem><FormControl><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span><Input type="number" className="pl-6 h-10 text-right bg-white" placeholder="0.00" step="0.01" {...field} /></div></FormControl><FormMessage /></FormItem>
                                 )}/>
-                                <Button type="button" variant="outline" size="sm" onClick={() => handleSetPrimary(index)} disabled={watchedSuppliers[index]?.isPrimary || !watchedSuppliers[index]?.supplierId || isLastRow} className="h-10 bg-white">
-                                    <Star className={cn("h-4 w-4 mr-2", watchedSuppliers[index]?.isPrimary ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground")} />
-                                    {t('primary_button_label')}
-                                </Button>
+                                <div className="flex flex-col items-center">
+                                    <FormLabel htmlFor={`isPrimary-${index}`} className="text-xs text-muted-foreground mb-1">{t('primary_button_label')}</FormLabel>
+                                    <Switch
+                                      id={`isPrimary-${index}`}
+                                      checked={watchedSuppliers[index]?.isPrimary}
+                                      onCheckedChange={(checked) => checked && handleSetPrimary(index)}
+                                      disabled={!watchedSuppliers[index]?.supplierId || isLastRow}
+                                    />
+                                </div>
                             </div>
                         </div>
                     )
                 })}
                 <FormMessage>{form.formState.errors.suppliers?.root?.message}</FormMessage>
             </div>
-
 
           <hr className="my-2 border-dashed border-gray-200" />
             <div className="grid grid-cols-2 gap-4">
@@ -385,3 +372,5 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     </>
   );
 }
+
+    

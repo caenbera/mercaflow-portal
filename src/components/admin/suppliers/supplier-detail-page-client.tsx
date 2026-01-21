@@ -38,7 +38,6 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
-
 interface SupplierDetailPageClientProps {
     supplier: Supplier;
     products: Product[];
@@ -264,14 +263,15 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
                         supplierCatalog.map(product => {
                            const supplierInfo = product.suppliers.find(s => s.supplierId === supplier.id);
                            const cost = supplierInfo?.cost ?? 0;
+                           const productName = product.name?.[locale] || product.name?.es || (product.name as any);
                            const unitText = typeof product.unit === 'object' && product.unit?.[locale] ? product.unit[locale] : (product.unit as any);
                           return (
                           <TableRow key={product.id}>
                               <TableCell className="pl-6 font-medium">
                                   <div className="flex items-center gap-3">
-                                      <Image src={product.photoUrl || '/placeholder.svg'} alt={product.name[locale]} width={40} height={40} className="rounded-md object-cover"/>
+                                      <Image src={product.photoUrl || '/placeholder.svg'} alt={productName} width={40} height={40} className="rounded-md object-cover"/>
                                       <div>
-                                          <div className="font-semibold">{product.name[locale]}</div>
+                                          <div className="font-semibold">{productName}</div>
                                           <div className="text-xs text-muted-foreground">SKU: {product.sku}</div>
                                       </div>
                                   </div>
@@ -302,3 +302,5 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
     </>
   );
 }
+
+    

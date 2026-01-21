@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -18,7 +19,6 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { addSupplier, updateSupplier } from '@/lib/firestore/suppliers';
 
-// In a real app, this would come from the DB or a config file
 const initialCategories = ["Frutas y Verduras", "Empaques y Desechables", "Lácteos y Huevos", "Secos y Abarrotes", "Logística"];
 
 const contactSchema = z.object({
@@ -63,7 +63,7 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
     defaultValues: {
         name: '', category: '', email: '', address: '', deliveryDays: '',
         paymentTerms: 'Net 15', notes: '',
-        contacts: [{ department: 'Ventas', name: '', phone: '', isWhatsapp: true }]
+        contacts: [{ id: `contact-${Date.now()}`, department: 'Ventas', name: '', phone: '', isWhatsapp: true }]
     },
   });
 
@@ -77,20 +77,19 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
       form.reset({
         ...supplier,
         notes: supplier.notes || '',
-        contacts: supplier.contacts.map(c => ({...c}))
+        contacts: supplier.contacts.map(c => ({...c, id: c.id || `contact-${Math.random()}`}))
       });
     } else if (open) {
       form.reset({
         name: '', category: '', email: '', address: '', deliveryDays: '',
         paymentTerms: 'Net 15', notes: '',
-        contacts: [{ department: 'Ventas', name: '', phone: '', isWhatsapp: true }]
+        contacts: [{ id: `contact-${Date.now()}`, department: 'Ventas', name: '', phone: '', isWhatsapp: true }]
       });
     }
   }, [open, supplier, form]);
 
   const currentCategory = form.watch('category');
 
-  // --- CATEGORY MANAGEMENT ---
   const startCreatingCategory = () => {
     setEditModeTarget(null);
     setIsInputMode(true);
@@ -152,7 +151,7 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
             description: values.name,
         });
       } else {
-        await addSupplier(values as any); // The values from form match the required data
+        await addSupplier(values as any);
         toast({
             title: t('add_supplier_success_title'),
             description: values.name,
@@ -270,7 +269,7 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
                         <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => remove(index)}><Trash2 className="h-4 w-4"/></Button>
                     </div>
                   ))}
-                  <Button type="button" variant="outline" size="sm" onClick={() => append({ department: 'Ventas', name: '', phone: '', isWhatsapp: false })}>
+                  <Button type="button" variant="outline" size="sm" onClick={() => append({ id: `contact-${Date.now()}`, department: 'Ventas', name: '', phone: '', isWhatsapp: false })}>
                     <Plus className="mr-2 h-4 w-4" /> {t('add_contact_button')}
                   </Button>
                 </div>
@@ -287,3 +286,5 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
     </Dialog>
   );
 }
+
+    
