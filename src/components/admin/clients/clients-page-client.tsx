@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { MoreHorizontal, UserPlus, Search, Crown, Star, Pencil, CheckCircle, History } from 'lucide-react';
+import { MoreHorizontal, UserPlus, Search, Crown, Star, Pencil, CheckCircle, History, UserCheck, AlertCircle } from 'lucide-react';
 import type { UserProfile, UserStatus, ClientTier } from '@/types';
 import { ClientFormDialog } from './new-client-dialog';
 import { useUsers } from '@/hooks/use-users';
@@ -20,6 +20,8 @@ import { Link } from '@/navigation';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfile } from '@/lib/firestore/users';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -34,16 +36,6 @@ const getTierIcon = (tier?: ClientTier) => {
     }
 };
 
-const getStatusBadge = (status: UserStatus | undefined) => {
-    switch (status) {
-        case 'active': return <Badge variant="outline" className="bg-green-100 text-green-700">Active</Badge>;
-        case 'blocked': return <Badge variant="destructive">Blocked</Badge>;
-        case 'pending_approval': return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 animate-pulse">Pending Approval</Badge>;
-        default: return <Badge variant="secondary">Unknown</Badge>;
-    }
-}
-
-
 export function ClientsPageClient() {
   const t = useTranslations('ClientsPage');
   const { users, loading } = useUsers();
@@ -51,19 +43,54 @@ export function ClientsPageClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<UserProfile | null>(null);
 
+  const clientUsers = useMemo(() => {
+    return users.filter(user => user.role === 'client');
+  }, [users]);
+  
+
   const handleEdit = (client: UserProfile) => {
     setSelectedClient(client);
     setIsDialogOpen(true);
   };
   
-  const handleActivate = async (client: UserProfile) => {
+  const handleStatusChange = async (client: UserProfile, isActive: boolean) => {
+    const newStatus = isActive ? 'active' : 'pending_approval';
     try {
-      await updateUserProfile(client.uid, { status: 'active' });
-      toast({ title: "Client Activated", description: `${client.businessName} can now make purchases.` });
+      await updateUserProfile(client.uid, { status: newStatus });
+      toast({ 
+          title: `Client ${isActive ? 'Activated' : 'Deactivated'}`, 
+          description: `${client.businessName}'s status is now '${newStatus}'.` 
+      });
     } catch (error) {
-      toast({ variant: 'destructive', title: "Error", description: "Could not activate the client." });
+      toast({ variant: 'destructive', title: "Error", description: "Could not update the client's status." });
     }
   };
+
+  const StatusDisplay = ({ client }: { client: UserProfile }) => {
+    switch(client.status) {
+        case 'active':
+            return <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">Active</Badge>;
+        case 'blocked':
+            return <Badge variant="destructive">Blocked</Badge>;
+        case 'pending_approval':
+             return (
+                <div className="flex items-center gap-2">
+                    <Switch
+                        id={`status-switch-${client.uid}`}
+                        checked={false}
+                        onCheckedChange={(isChecked) => handleStatusChange(client, isChecked)}
+                        aria-label="Activate client"
+                    />
+                    <Label htmlFor={`status-switch-${client.uid}`} className="text-yellow-600 font-semibold text-xs">
+                        Needs Approval
+                    </Label>
+                </div>
+            );
+        default:
+            return <Badge variant="secondary">Unknown</Badge>;
+    }
+  };
+
 
   return (
     <>
@@ -74,10 +101,6 @@ export function ClientsPageClient() {
             <h1 className="text-2xl font-bold font-headline">{t('title')}</h1>
             <p className="text-muted-foreground">{t('subtitle')}</p>
           </div>
-          {/* <Button onClick={() => setIsDialogOpen(true)}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            {t('new_client_button')}
-          </Button> */}
         </div>
 
         {/* Filters */}
@@ -134,8 +157,8 @@ export function ClientsPageClient() {
                                     <TableCell colSpan={5}><Skeleton className="h-10 w-full"/></TableCell>
                                 </TableRow>
                              ))
-                         ) : users.length > 0 ? (
-                            users.map(client => {
+                         ) : clientUsers.length > 0 ? (
+                            clientUsers.map(client => {
                                 const creditLimit = client.creditLimit || 0;
                                 const creditUsed = 0; // TODO: Calculate this from orders/invoices
                                 const creditUsage = creditLimit > 0 ? Math.round((creditUsed / creditLimit) * 100) : 0;
@@ -174,16 +197,13 @@ export function ClientsPageClient() {
                                                 <Progress value={creditUsage} className={`h-1.5 mt-1 ${creditColor}`} />
                                             </div>
                                         </TableCell>
-                                        <TableCell>{getStatusBadge(client.status)}</TableCell>
+                                        <TableCell><StatusDisplay client={client} /></TableCell>
                                         <TableCell className="text-right">
                                              <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent>
-                                                    {client.status === 'pending_approval' && (
-                                                        <DropdownMenuItem onSelect={() => handleActivate(client)}><CheckCircle className="mr-2"/>Activate Client</DropdownMenuItem>
-                                                    )}
                                                     <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2"/>{t('action_edit')}</DropdownMenuItem>
                                                     <DropdownMenuItem><History className="mr-2"/>{t('action_view_orders')}</DropdownMenuItem>
                                                 </DropdownMenuContent>

@@ -71,7 +71,7 @@ export function ClientFormDialog({ open, onOpenChange, client }: ClientFormDialo
   });
 
   useEffect(() => {
-    if (client) {
+    if (open && client) {
       form.reset({
         businessName: client.businessName || '',
         contactPerson: client.contactPerson || '',
@@ -85,7 +85,7 @@ export function ClientFormDialog({ open, onOpenChange, client }: ClientFormDialo
        if (client.priceList && !priceLists.includes(client.priceList)) {
         setPriceLists(prev => [...prev, client.priceList!]);
       }
-    } else {
+    } else if (open) {
         form.reset({
           businessName: '', contactPerson: '', phone: '', address: '',
           tier: 'standard', creditLimit: 0, paymentTerms: 'Net 15', priceList: 'Standard'
@@ -103,8 +103,6 @@ export function ClientFormDialog({ open, onOpenChange, client }: ClientFormDialo
   
   const onSubmit = async (values: FormValues) => {
     if (!client) {
-        // TODO: Implement user creation flow, which requires creating an auth user.
-        // For now, this dialog only supports editing.
         toast({ variant: 'destructive', title: 'Action Not Supported', description: 'Creating new clients from the admin panel is not yet implemented.'});
         return;
     }
