@@ -41,11 +41,20 @@ export const addProduct = (productData: ProductInput) => {
 
 export const updateProduct = (id: string, productData: ProductUpdateInput) => {
   const productDoc = doc(db, 'products', id);
-  updateDoc(productDoc, productData).catch(async (serverError) => {
+  const dataToUpdate = { ...productData };
+  // Firestore cannot store `undefined`, so we remove keys that might be undefined
+  // This can happen if a non-required field is cleared in the form
+  Object.keys(dataToUpdate).forEach(key => {
+    if ((dataToUpdate as any)[key] === undefined) {
+      delete (dataToUpdate as any)[key];
+    }
+  });
+
+  updateDoc(productDoc, dataToUpdate).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: productDoc.path,
       operation: 'update',
-      requestResourceData: productData,
+      requestResourceData: dataToUpdate,
     });
     errorEmitter.emit('permission-error', permissionError);
   });

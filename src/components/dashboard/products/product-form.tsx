@@ -98,7 +98,6 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
   const esUnitInputRef = useRef<HTMLInputElement>(null);
   const enUnitInputRef = useRef<HTMLInputElement>(null);
 
-  const [isMarginInputFocused, setIsMarginInputFocused] = useState(false);
   const [margin, setMargin] = useState<string>('');
 
   const form = useForm<ProductFormValues>({
@@ -124,28 +123,24 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     return 0;
   }, [watchedSuppliers]);
 
-  useEffect(() => {
-    if (isMarginInputFocused) return;
-    if (primarySupplierCost > 0 && salePriceValue > primarySupplierCost) {
-        const calculatedMargin = ((salePriceValue - primarySupplierCost) / primarySupplierCost) * 100;
-        setMargin(calculatedMargin.toFixed(1).replace('.0', ''));
-    } else {
-        setMargin('');
-    }
-  }, [primarySupplierCost, salePriceValue, isMarginInputFocused]);
-  
   const getInitialFormData = (): ProductFormValues => {
     if (product) {
+       // This is an existing product, handle both old and new data structures
+      const suppliersArray = product.suppliers && product.suppliers.length > 0
+        ? product.suppliers
+        : ('supplierId' in product && product.supplierId)
+          ? [{ supplierId: (product as any).supplierId, cost: (product as any).cost || 0, isPrimary: true }]
+          : [];
       return {
         ...product,
         photoUrl: product.photoUrl || '',
-        suppliers: product.suppliers?.length > 0 ? product.suppliers : [{ supplierId: '', cost: 0, isPrimary: true }]
+        suppliers: suppliersArray
       };
     }
     const supplierContextId = pathname.includes('/suppliers/') ? pathname.split('/suppliers/')[1].split('/')[0] : defaultSupplierId;
     return {
       sku: '', name: { es: '', en: '' }, category: { es: '', en: '' }, unit: { es: '', en: '' },
-      suppliers: supplierContextId ? [{ supplierId: supplierContextId, cost: 0, isPrimary: true }] : [{ supplierId: '', cost: 0, isPrimary: true }],
+      suppliers: supplierContextId ? [{ supplierId: supplierContextId, cost: 0, isPrimary: true }] : [],
       salePrice: 0, stock: 0, minStock: 10, active: true, photoUrl: '',
     };
   };
@@ -155,6 +150,15 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     const initialData = getInitialFormData();
     form.reset(initialData);
     setImgUrlInputValue(initialData.photoUrl || '');
+    // When resetting, we also need to recalculate the initial margin
+    const primaryCost = initialData.suppliers.find(s => s.isPrimary)?.cost || initialData.suppliers[0]?.cost || 0;
+    const salePrice = initialData.salePrice;
+    if (primaryCost > 0 && salePrice > primaryCost) {
+      const calculatedMargin = ((salePrice - primaryCost) / primaryCost) * 100;
+      setMargin(calculatedMargin.toFixed(1).replace('.0', ''));
+    } else {
+      setMargin('');
+    }
   }, [product, defaultSupplierId, pathname, suppliersLoading]);
 
 
@@ -168,7 +172,12 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
       if (existingProduct) {
         toast({ title: "Producto Existente Encontrado", description: "Datos del producto han sido cargados." });
         
-        const existingSuppliers = existingProduct.suppliers || [];
+        const existingSuppliers = existingProduct.suppliers && existingProduct.suppliers.length > 0
+          ? existingProduct.suppliers
+          : ('supplierId' in existingProduct && (existingProduct as any).supplierId)
+            ? [{ supplierId: (existingProduct as any).supplierId, cost: (existingProduct as any).cost || 0, isPrimary: true }]
+            : [];
+        
         const supplierContextId = pathname.includes('/suppliers/') ? pathname.split('/suppliers/')[1].split('/')[0] : defaultSupplierId;
 
         let suppliersForForm = [...existingSuppliers];
@@ -176,13 +185,24 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
         if (supplierContextId && !suppliersForForm.some(s => s.supplierId === supplierContextId)) {
           suppliersForForm.push({ supplierId: supplierContextId, cost: 0, isPrimary: suppliersForForm.length === 0 });
         }
+        
+        if (suppliersForForm.length === 0 && supplierContextId) {
+             suppliersForForm.push({ supplierId: supplierContextId, cost: 0, isPrimary: true });
+        }
+
 
         form.reset({
           ...existingProduct,
           photoUrl: existingProduct.photoUrl || '',
-          suppliers: suppliersForForm.length > 0 ? suppliersForForm : [{ supplierId: '', cost: 0, isPrimary: true }]
+          suppliers: suppliersForForm
         });
         setImgUrlInputValue(existingProduct.photoUrl || '');
+      } else {
+          // SKU not found, but we might be in a supplier context
+          const supplierContextId = pathname.includes('/suppliers/') ? pathname.split('/suppliers/')[1].split('/')[0] : defaultSupplierId;
+           if(supplierContextId) {
+               replace([{ supplierId: supplierContextId, cost: 0, isPrimary: true }]);
+           }
       }
     } catch (error) {
       console.error("Error in handleSkuBlur:", error);
@@ -201,6 +221,18 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
         form.setValue('salePrice', parseFloat(newSalePrice.toFixed(2)), { shouldValidate: true });
     }
   };
+
+  const handleSalePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const salePrice = parseFloat(e.target.value);
+    form.setValue('salePrice', isNaN(salePrice) ? 0 : salePrice, { shouldValidate: true });
+
+    if (!isNaN(salePrice) && primarySupplierCost > 0 && salePrice > primarySupplierCost) {
+        const newMargin = ((salePrice - primarySupplierCost) / primarySupplierCost) * 100;
+        setMargin(newMargin.toFixed(1).replace('.0', ''));
+    } else {
+        setMargin('');
+    }
+  }
 
   const handleSetPrimary = (indexToSet: number) => {
     const currentSuppliers = form.getValues('suppliers');
@@ -227,13 +259,13 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
   const startCreatingCategory = () => { setEditCategoryTarget(null); setIsCategoryInputMode(true); setTimeout(() => esCategoryInputRef.current?.focus(), 100); };
   const startEditingCategory = () => { if (!currentCategory?.es) return; setEditCategoryTarget(currentCategory); setIsCategoryInputMode(true); setTimeout(() => { if (esCategoryInputRef.current) esCategoryInputRef.current.value = currentCategory.es; if (enCategoryInputRef.current) enCategoryInputRef.current.value = currentCategory.en; esCategoryInputRef.current?.focus(); }, 100); };
   const handleSaveCategory = () => { const esValue = esCategoryInputRef.current?.value.trim(); const enValue = enCategoryInputRef.current?.value.trim(); if (!esValue || !enValue) { toast({ variant: 'destructive', title: 'Both category names are required.' }); return; } const newCategory: ProductCategory = { es: esValue, en: enValue }; if (editCategoryTarget) { setCategories(prev => prev.map(c => c.es === editCategoryTarget.es ? newCategory : c)); if (currentCategory.es === editCategoryTarget.es) form.setValue('category', newCategory); toast({ title: t('toast_category_updated'), description: newCategory.es }); } else { if (!categories.some(c => c.es.toLowerCase() === newCategory.es.toLowerCase())) { setCategories(prev => [...prev, newCategory]); form.setValue('category', newCategory); toast({ title: t('toast_category_added'), description: newCategory.es }); } } setIsCategoryInputMode(false); setEditCategoryTarget(null); };
-  const handleDeleteCategory = () => { if (!currentCategory?.es || !confirm(t('confirm_delete_category', { category: currentCategory.es }))) return; const newCategories = categories.filter(c => c.es !== currentCategory.es); setCategories(newCategories); form.setValue('category', newCategories.length > 0 ? newCategories[0] : { es: '', en: '' }); toast({ title: t('toast_category_deleted') }); };
+  const handleDeleteCategory = () => { if (!currentCategory?.es || !confirm(t('confirm_delete_category', { category: currentCategory.es }))) return; const newCategories = categories.filter(c => c.es !== currentCategory.es); setCategories(newCategories); form.setValue('category', { es: '', en: '' }); toast({ title: t('toast_category_deleted') }); };
   const cancelCategoryInput = () => { setIsCategoryInputMode(false); setEditCategoryTarget(null); };
 
   const startCreatingUnit = () => { setEditUnitTarget(null); setIsUnitInputMode(true); setTimeout(() => esUnitInputRef.current?.focus(), 100); };
   const startEditingUnit = () => { if (!currentUnit?.es) return; setEditUnitTarget(currentUnit); setIsUnitInputMode(true); setTimeout(() => { if (esUnitInputRef.current) esUnitInputRef.current.value = currentUnit.es; if (enUnitInputRef.current) enUnitInputRef.current.value = currentUnit.en; esUnitInputRef.current?.focus(); }, 100); };
   const handleSaveUnit = () => { const esValue = esUnitInputRef.current?.value.trim(); const enValue = enUnitInputRef.current?.value.trim(); if (!esValue || !enValue) { toast({ variant: 'destructive', title: 'Both unit names are required.' }); return; } const newUnit = { es: esValue, en: enValue }; if (editUnitTarget) { setUnits(prev => prev.map(u => u.es === editUnitTarget.es ? newUnit : u)); if (currentUnit.es === editUnitTarget.es) form.setValue('unit', newUnit); } else { if (!units.some(u => u.es.toLowerCase() === newUnit.es.toLowerCase())) { setUnits(prev => [...prev, newUnit]); form.setValue('unit', newUnit); } } setIsUnitInputMode(false); setEditUnitTarget(null); };
-  const handleDeleteUnit = () => { if (!currentUnit?.es || !confirm(`Are you sure you want to delete the unit '${currentUnit.es}'?`)) return; const newUnits = units.filter(u => u.es !== currentUnit.es); setUnits(newUnits); form.setValue('unit', newUnits.length > 0 ? newUnits[0] : { es: '', en: '' }); };
+  const handleDeleteUnit = () => { if (!currentUnit?.es || !confirm(`Are you sure you want to delete the unit '${currentUnit.es}'?`)) return; const newUnits = units.filter(u => u.es !== currentUnit.es); setUnits(newUnits); form.setValue('unit', { es: '', en: '' }); };
   const cancelUnitInput = () => { setIsUnitInputMode(false); setEditUnitTarget(null); };
 
   async function onSubmit(values: ProductFormValues) {
@@ -302,7 +334,12 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
             <hr className="my-2 border-dashed border-gray-200" />
             
             <div className="space-y-2">
-                <FormLabel className="text-slate-800 font-bold">{t('primary_supplier_label')}</FormLabel>
+                <FormLabel className="text-slate-800 font-bold">{t('suppliers_title')}</FormLabel>
+                {fields.length === 0 && (
+                    <div className="text-center py-4 px-3 bg-gray-50 rounded-lg border-2 border-dashed">
+                        <p className="text-sm text-muted-foreground">{t('no_suppliers_yet')}</p>
+                    </div>
+                )}
                 {fields.map((field, index) => (
                     <div key={field.id} className={cn("p-3 border rounded-lg grid grid-cols-[2fr,1fr,auto] gap-4 items-center", watchedSuppliers[index]?.isPrimary ? "bg-primary/5 border-primary" : "bg-muted/30")}>
                         <FormField control={form.control} name={`suppliers.${index}.supplierId`} render={({ field }) => (
@@ -338,9 +375,9 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
             <div className="grid grid-cols-2 gap-4">
                  <FormItem>
                     <FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_margin')}</FormLabel>
-                    <FormControl><div className="relative"><Input type="number" value={margin} onChange={handleMarginChange} className="pl-3 pr-8 h-10 text-right font-bold" placeholder={t('form_placeholder_margin')} onFocus={() => setIsMarginInputFocused(true)} onBlur={() => setIsMarginInputFocused(false)}/><span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span></div></FormControl>
+                    <FormControl><div className="relative"><Input type="number" value={margin} onChange={handleMarginChange} className="pl-3 pr-8 h-10 text-right font-bold" placeholder={t('form_placeholder_margin')}/><span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span></div></FormControl>
                 </FormItem>
-                <FormField control={form.control} name="salePrice" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_price')}</FormLabel><FormControl><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-800 font-bold text-sm">$</span><Input type="number" className="pl-6 h-10 font-bold text-lg text-right bg-green-50" placeholder="0.00" step="0.01" {...field} /></div></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="salePrice" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_price')}</FormLabel><FormControl><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-800 font-bold text-sm">$</span><Input type="number" className="pl-6 h-10 font-bold text-lg text-right bg-green-50" placeholder="0.00" step="0.01" {...field} onChange={e => { field.onChange(e); handleSalePriceChange(e); }} /></div></FormControl><FormMessage /></FormItem>)}/>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
                 <FormField control={form.control} name="stock" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_stock')}</FormLabel><FormControl><Input type="number" className="h-10" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>)}/>

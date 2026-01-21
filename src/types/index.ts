@@ -30,8 +30,8 @@ export interface Product {
     en: string;
   };
   sku: string;
-  description: string;
-  photoUrl: string;
+  description?: string;
+  photoUrl?: string;
   category: ProductCategory;
   unit: {
     es: string;

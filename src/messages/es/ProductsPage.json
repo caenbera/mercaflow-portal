@@ -36,7 +36,8 @@
   "form_placeholder_new_category": "Nombre nueva categoría",
   "form_button_save_category": "Guardar Categoría",
   "form_label_unit": "Unidad de Medida",
-  "form_label_supplier": "Proveedor Principal",
+  "suppliers_title": "Proveedores",
+  "no_suppliers_yet": "Agrega un proveedor para definir costos y precios.",
   "form_placeholder_select_supplier": "Selecciona un proveedor",
   "primary_supplier_label": "Proveedor Principal",
   "secondary_supplier_label": "Proveedor Secundario",
@@ -86,5 +87,3 @@
   "save": "Guardar",
   "cancel": "Cancelar"
 }
-
-    

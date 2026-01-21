@@ -36,7 +36,8 @@
   "form_placeholder_new_category": "New category name",
   "form_button_save_category": "Save Category",
   "form_label_unit": "Unit of Measurement",
-  "form_label_supplier": "Main Supplier",
+  "suppliers_title": "Suppliers",
+  "no_suppliers_yet": "Add a supplier to set costs and prices.",
   "form_placeholder_select_supplier": "Select a supplier",
   "primary_supplier_label": "Primary Supplier",
   "secondary_supplier_label": "Secondary Supplier",
@@ -86,5 +87,3 @@
   "save": "Save",
   "cancel": "Cancel"
 }
-
-    
