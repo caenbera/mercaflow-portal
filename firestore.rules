@@ -29,11 +29,13 @@ service cloud.firestore {
       
       allow read: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
       
-      // Users can update their own data.
-      // Superadmins can update only the 'role' field of other users.
-      allow update: if isAuthed() && 
-                    (request.auth.uid == userId || 
-                    (isSuperAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])));
+      // A user can update their own data (but not their role).
+      // An admin can update a client's data (but not their role).
+      // Only a superadmin can change a user's role.
+      allow update: if isAuthed() && (
+                    ((request.auth.uid == userId || (hasAdminRole() && resource.data.role == 'client')) && !('role' in request.resource.data.diff(resource.data).affectedKeys())) ||
+                    (isSuperAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']))
+                  );
       
       allow delete: if isSuperAdmin();
     }
