@@ -127,33 +127,28 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
   const costValue = primarySupplier?.cost ?? 0;
   const salePriceValue = form.watch('salePrice');
   
-  useEffect(() => {
-    if (suppliersLoading) return;
-  
+  const resetForm = (productData: Product | null) => {
     let initialValues: ProductFormValues;
   
-    if (product) {
-      // Editing an existing product
-      const suppliersForForm = [...(product.suppliers || [])];
-      // Ensure there's always an empty row for adding a new supplier
-      if (!suppliersForForm.some(s => !s.supplierId)) {
+    if (productData) {
+      const suppliersForForm = [...(productData.suppliers || [])];
+       if (!suppliersForForm.some(s => !s.supplierId)) {
         suppliersForForm.push({ supplierId: '', cost: 0, isPrimary: false });
       }
       
       initialValues = {
-        sku: product.sku,
-        name: product.name,
-        category: product.category,
-        unit: product.unit,
+        sku: productData.sku,
+        name: productData.name,
+        category: productData.category,
+        unit: productData.unit,
         suppliers: suppliersForForm,
-        salePrice: product.salePrice,
-        stock: product.stock,
-        minStock: product.minStock,
-        active: product.active,
-        photoUrl: product.photoUrl || '',
+        salePrice: productData.salePrice,
+        stock: productData.stock,
+        minStock: productData.minStock,
+        active: productData.active,
+        photoUrl: productData.photoUrl || '',
       };
     } else {
-      // Creating a new product
       const initialSuppliers = defaultSupplierId
         ? [{ supplierId: defaultSupplierId, cost: 0, isPrimary: true }, { supplierId: '', cost: 0, isPrimary: false }]
         : [{ supplierId: '', cost: 0, isPrimary: true }, { supplierId: '', cost: 0, isPrimary: false }];
@@ -174,9 +169,13 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
   
     form.reset(initialValues);
     setImgUrlInputValue(initialValues.photoUrl || '');
+  };
   
-  }, [product, defaultSupplierId, suppliersLoading, form.reset]);
-
+  useEffect(() => {
+      if (suppliersLoading) return;
+      resetForm(product);
+  }, [product, defaultSupplierId, suppliersLoading]);
+  
   
   // Recalculate margin when values change
   useEffect(() => {
@@ -208,25 +207,7 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
       const existingProduct = await getProductBySku(sku);
       if (existingProduct) {
         toast({ title: "Producto Existente Encontrado", description: "Datos del producto han sido cargados." });
-        
-        const suppliersForForm = [...(existingProduct.suppliers || [])];
-        if (!suppliersForForm.find(s => !s.supplierId)) {
-          suppliersForForm.push({ supplierId: '', cost: 0, isPrimary: false });
-        }
-        
-        form.reset({
-            sku: existingProduct.sku,
-            name: existingProduct.name || { es: '', en: '' },
-            category: existingProduct.category || initialCategories[0],
-            unit: existingProduct.unit || initialUnits[0],
-            suppliers: suppliersForForm,
-            salePrice: existingProduct.salePrice || 0,
-            stock: existingProduct.stock || 0,
-            minStock: existingProduct.minStock || 0,
-            active: existingProduct.active ?? true,
-            photoUrl: existingProduct.photoUrl || '',
-        });
-        setImgUrlInputValue(existingProduct.photoUrl || '');
+        resetForm(existingProduct);
       }
     } catch (error) {
       console.error("Error in handleSkuBlur:", error);
@@ -339,8 +320,8 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
             
             {/* Category & Unit Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_category')}</FormLabel><div className="flex items-center gap-2">{isCategoryInputMode ? (<div className="flex-grow grid grid-cols-2 gap-2 animate-in fade-in zoom-in-95 duration-200"><Input ref={esCategoryInputRef} placeholder="Nombre en Español" className="border-primary/50 ring-2 ring-primary/10" /><Input ref={enCategoryInputRef} placeholder="Name in English" className="border-primary/50 ring-2 ring-primary/10" /><Button type="button" size="icon" className="bg-green-600 hover:bg-green-700 h-10 w-10" onClick={handleSaveCategory} title={t('save')}><Check className="h-4 w-4" /></Button><Button type="button" size="icon" variant="ghost" className="text-muted-foreground h-10 w-10" onClick={cancelCategoryInput} title={t('cancel')}><Undo2 className="h-4 w-4" /></Button></div>) : (<><Select onValueChange={(value) => { try { const parsedValue = JSON.parse(value); field.onChange(parsedValue); } catch (e) { console.error("Failed to parse category value", e); } }} value={field.value?.es ? JSON.stringify(field.value) : ""}><FormControl><SelectTrigger className="h-10 bg-white flex-grow"><SelectValue placeholder={t('form_placeholder_select_category')}>{field.value?.es || t('form_placeholder_select_category')}</SelectValue></SelectTrigger></FormControl><SelectContent>{categories.map(c => <SelectItem key={c.es} value={JSON.stringify(c)}>{c.es}</SelectItem>)}</SelectContent></Select><div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border border-gray-200"><Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentCategory?.es} onClick={startEditingCategory}><Pencil className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!currentCategory?.es} onClick={handleDeleteCategory}><Trash2 className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={startCreatingCategory}><Plus className="h-4 w-4" /></Button></div></>)}</div><FormMessage /></FormItem>)}/>
-                <FormField control={form.control} name="unit" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_unit')}</FormLabel><div className="flex items-center gap-2">{isUnitInputMode ? (<div className="flex-grow grid grid-cols-2 gap-2 animate-in fade-in zoom-in-95 duration-200"><Input ref={esUnitInputRef} placeholder="Unidad en Español" className="border-primary/50 ring-2 ring-primary/10" /><Input ref={enUnitInputRef} placeholder="Unit in English" className="border-primary/50 ring-2 ring-primary/10" /><Button type="button" size="icon" className="bg-green-600 hover:bg-green-700 h-10 w-10" onClick={handleSaveUnit} title={t('save')}><Check className="h-4 w-4" /></Button><Button type="button" size="icon" variant="ghost" className="text-muted-foreground h-10 w-10" onClick={cancelUnitInput} title={t('cancel')}><Undo2 className="h-4 w-4" /></Button></div>) : (<><Select onValueChange={(value) => { try { const parsedValue = JSON.parse(value); field.onChange(parsedValue); } catch (e) { console.error("Failed to parse unit value", e); } }} value={field.value?.es ? JSON.stringify(field.value) : ""}><FormControl><SelectTrigger className="h-10 bg-white flex-grow"><SelectValue placeholder="Selecciona una unidad">{field.value?.es || "Selecciona una unidad"}</SelectValue></SelectTrigger></FormControl><SelectContent>{units.map(u => <SelectItem key={u.es} value={JSON.stringify(u)}>{u.es}</SelectItem>)}</SelectContent></Select><div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border border-gray-200"><Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentUnit?.es} onClick={startEditingUnit}><Pencil className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!currentUnit?.es} onClick={handleDeleteUnit}><Trash2 className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={startCreatingUnit}><Plus className="h-4 w-4" /></Button></div></>)}</div><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_category')}</FormLabel><div className="flex items-center gap-2">{isCategoryInputMode ? (<div className="flex-grow grid grid-cols-2 gap-2 animate-in fade-in zoom-in-95 duration-200"><Input ref={esCategoryInputRef} placeholder="Nombre en Español" className="border-primary/50 ring-2 ring-primary/10" /><Input ref={enCategoryInputRef} placeholder="Name in English" className="border-primary/50 ring-2 ring-primary/10" /><Button type="button" size="icon" className="bg-green-600 hover:bg-green-700 h-10 w-10" onClick={handleSaveCategory} title={t('save')}><Check className="h-4 w-4" /></Button><Button type="button" size="icon" variant="ghost" className="text-muted-foreground h-10 w-10" onClick={cancelCategoryInput} title={t('cancel')}><Undo2 className="h-4 w-4" /></Button></div>) : (<><Select onValueChange={(value) => { if (!value) return; try { const parsedValue = JSON.parse(value); field.onChange(parsedValue); } catch (e) { console.error("Failed to parse category value", e); } }} value={field.value?.es ? JSON.stringify(field.value) : ""}><FormControl><SelectTrigger className="h-10 bg-white flex-grow"><SelectValue placeholder={t('form_placeholder_select_category')}>{field.value?.es || t('form_placeholder_select_category')}</SelectValue></SelectTrigger></FormControl><SelectContent>{categories.map(c => <SelectItem key={c.es} value={JSON.stringify(c)}>{c.es}</SelectItem>)}</SelectContent></Select><div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border border-gray-200"><Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentCategory?.es} onClick={startEditingCategory}><Pencil className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!currentCategory?.es} onClick={handleDeleteCategory}><Trash2 className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={startCreatingCategory}><Plus className="h-4 w-4" /></Button></div></>)}</div><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="unit" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_unit')}</FormLabel><div className="flex items-center gap-2">{isUnitInputMode ? (<div className="flex-grow grid grid-cols-2 gap-2 animate-in fade-in zoom-in-95 duration-200"><Input ref={esUnitInputRef} placeholder="Unidad en Español" className="border-primary/50 ring-2 ring-primary/10" /><Input ref={enUnitInputRef} placeholder="Unit in English" className="border-primary/50 ring-2 ring-primary/10" /><Button type="button" size="icon" className="bg-green-600 hover:bg-green-700 h-10 w-10" onClick={handleSaveUnit} title={t('save')}><Check className="h-4 w-4" /></Button><Button type="button" size="icon" variant="ghost" className="text-muted-foreground h-10 w-10" onClick={cancelUnitInput} title={t('cancel')}><Undo2 className="h-4 w-4" /></Button></div>) : (<><Select onValueChange={(value) => { if (!value) return; try { const parsedValue = JSON.parse(value); field.onChange(parsedValue); } catch (e) { console.error("Failed to parse unit value", e); } }} value={field.value?.es ? JSON.stringify(field.value) : ""}><FormControl><SelectTrigger className="h-10 bg-white flex-grow"><SelectValue placeholder="Selecciona una unidad">{field.value?.es || "Selecciona una unidad"}</SelectValue></SelectTrigger></FormControl><SelectContent>{units.map(u => <SelectItem key={u.es} value={JSON.stringify(u)}>{u.es}</SelectItem>)}</SelectContent></Select><div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border border-gray-200"><Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentUnit?.es} onClick={startEditingUnit}><Pencil className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!currentUnit?.es} onClick={handleDeleteUnit}><Trash2 className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={startCreatingUnit}><Plus className="h-4 w-4" /></Button></div></>)}</div><FormMessage /></FormItem>)}/>
             </div>
             
             <hr className="my-2 border-dashed border-gray-200" />
