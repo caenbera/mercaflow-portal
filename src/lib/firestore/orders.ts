@@ -7,32 +7,46 @@ import {
   doc,
   getDoc,
   serverTimestamp,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { Order, UserProfile, RewardRule } from '@/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-// We will create this file in the next step
-// import { awardPointsForOrder } from './rewards';
+import { awardPointsForOrder } from './rewards';
 
 type OrderInput = Omit<Order, 'id' | 'createdAt'>;
 type OrderUpdateInput = Partial<Omit<Order, 'id' | 'createdAt' | 'userId'>>;
 
 const ordersCollection = collection(db, 'orders');
 
-export const addOrder = (orderData: OrderInput) => {
+export const addOrder = async (orderData: OrderInput) => {
   const dataWithTimestamp = {
     ...orderData,
     createdAt: serverTimestamp(),
   };
-  addDoc(ordersCollection, dataWithTimestamp).catch(async (serverError) => {
+  try {
+    const docRef = await addDoc(ordersCollection, dataWithTimestamp);
+    
+    // --- REWARDS LOGIC (for order creation, e.g., points per dollar) ---
+    // This is a simplified version. A real app might wait for 'delivered' status.
+    const userDoc = await getDoc(doc(db, 'users', orderData.userId)));
+    if (userDoc.exists()) {
+      const userProfile = { uid: userDoc.id, ...userDoc.data() } as UserProfile;
+      // In a real app, you would fetch rules and all orders here.
+      // For now, let's assume simple logic is handled on delivery.
+    }
+    return docRef;
+
+  } catch (serverError: any) {
     const permissionError = new FirestorePermissionError({
       path: ordersCollection.path,
       operation: 'create',
       requestResourceData: dataWithTimestamp,
     });
     errorEmitter.emit('permission-error', permissionError);
-  });
+    throw serverError; // Re-throw to be caught by the calling function
+  }
 };
 
 export const updateOrder = async (id: string, orderData: OrderUpdateInput) => {
@@ -54,17 +68,13 @@ export const updateOrder = async (id: string, orderData: OrderUpdateInput) => {
     if (orderData.status === 'delivered' && currentStatus !== 'delivered') {
       const order = { id, ...orderSnapshot.data() } as Order;
       
-      // Fetch user profile to get current points
       const userDoc = await getDoc(doc(db, 'users', order.userId));
       if (userDoc.exists()) {
           const userProfile = { uid: userDoc.id, ...userDoc.data() } as UserProfile;
-          // In a real app, you would fetch rules and all orders here.
           // For now, we'll use a simplified logic: 1 point per dollar.
           const pointsToAward = Math.floor(order.total);
-
+          // A more complex system would use the awardPointsForOrder function.
           if (pointsToAward > 0) {
-            // awardPointsForOrder would be a more complex function as discussed
-            // but for now, we just update the user's points directly.
             const userRef = doc(db, 'users', userProfile.uid);
             const activityRef = doc(collection(db, 'users', userProfile.uid, 'rewardsActivity'));
             const batch = writeBatch(db);
@@ -86,6 +96,8 @@ export const updateOrder = async (id: string, orderData: OrderUpdateInput) => {
       requestResourceData: orderData,
     });
     errorEmitter.emit('permission-error', permissionError);
+    // We don't re-throw here to avoid double-toasting if the calling function has a catch block.
+    // The error is already emitted globally.
   }
 };
 

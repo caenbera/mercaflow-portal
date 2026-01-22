@@ -12,7 +12,9 @@ import { Flame, Minus, Plus, Zap } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOffers } from '@/hooks/use-offers';
 import { useOfferCategories } from '@/hooks/use-offer-categories';
-import type { Offer, OfferCategory } from '@/types';
+import type { Offer } from '@/types';
+import { useCart } from '@/context/cart-context';
+import { getFinalPrice } from '@/lib/pricing';
 
 const OfferCardSkeleton = () => (
   <Card className="overflow-hidden shadow-sm">
@@ -37,10 +39,10 @@ export function OffersPageClient() {
   const { toast } = useToast();
   const { offers, loading: offersLoading } = useOffers();
   const { categories, loading: categoriesLoading } = useOfferCategories();
+  const { cart, addToCart } = useCart();
 
   const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 59, seconds: 59 });
   const [activeFilter, setActiveFilter] = useState('all');
-  const [cart, setCart] = useState<{ [key: string]: number }>({});
   
   const loading = offersLoading || categoriesLoading;
 
@@ -64,14 +66,8 @@ export function OffersPageClient() {
   const formatTime = (time: number) => time.toString().padStart(2, '0');
   const countdownString = `${formatTime(timeLeft.hours)}:${formatTime(timeLeft.minutes)}:${formatTime(timeLeft.seconds)}`;
 
-  const handleUpdateQty = (offerId: string, delta: number) => {
-    setCart(prev => {
-      const newCart = { ...prev };
-      const currentQty = newCart[offerId] || 0;
-      const newQty = currentQty + delta;
-      newCart[offerId] = Math.max(0, newQty);
-      return newCart;
-    });
+  const handleAddToCart = (offer: Offer, delta: number) => {
+    addToCart(offer.productId, delta, offer);
     if (delta > 0) {
       toast({ title: t('toast_added'), description: t('toast_added_desc') });
     }
@@ -91,17 +87,6 @@ export function OffersPageClient() {
         return `${t('discount_fixed_price')}: ${formatCurrency(offer.value)}`;
       default:
         return 'OFERTA';
-    }
-  };
-  
-  const getFinalPrice = (offer: Offer) => {
-    switch (offer.type) {
-        case 'percentage':
-            return offer.originalPrice * (1 - offer.value / 100);
-        case 'fixedPrice':
-            return offer.value;
-        default:
-            return offer.originalPrice; // Combo/Liquidation price should be set differently if needed
     }
   };
 
@@ -154,8 +139,8 @@ export function OffersPageClient() {
             Array.from({length: 3}).map((_,i) => <OfferCardSkeleton key={i} />)
         ) : filteredOffers.length > 0 ? (
             filteredOffers.map(offer => {
-            const qty = cart[offer.id] || 0;
-            const finalPrice = getFinalPrice(offer);
+            const qty = cart[offer.productId]?.quantity || 0;
+            const finalPrice = getFinalPrice({ salePrice: offer.originalPrice } as any, null, offer);
             
             return (
                 <Card key={offer.id} className="overflow-hidden shadow-sm border-destructive/20 relative">
@@ -184,11 +169,11 @@ export function OffersPageClient() {
                 <div className="bg-muted/50 p-2 border-t flex justify-between items-center">
                     <span className="text-xs font-semibold text-muted-foreground">{t('add_to_order_label')}</span>
                     <div className="flex items-center gap-1 bg-background rounded-full border p-0.5">
-                        <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full" onClick={() => handleUpdateQty(offer.id, -1)}>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full" onClick={() => handleAddToCart(offer, -1)}>
                             <Minus className="h-4 w-4"/>
                         </Button>
                         <Input readOnly value={qty || ''} placeholder="0" className="h-7 w-8 text-center bg-transparent border-none p-0 text-sm font-bold focus-visible:ring-0 focus-visible:ring-offset-0"/>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full" onClick={() => handleUpdateQty(offer.id, 1)}>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full" onClick={() => handleAddToCart(offer, 1)}>
                             <Plus className="h-4 w-4"/>
                         </Button>
                     </div>
