@@ -2,14 +2,13 @@
   "title": "Flash Sales",
   "subtitle": "Offers expire in:",
   "filter_all": "All",
-  "filter_expiring": "Expiring Soon",
-  "filter_volume": "Volume",
-  "filter_new": "New",
   "unit_label": "Unit",
-  "stock_left": "Only {count} boxes left!",
   "stock_few": "Few units left",
-  "stock_weekly_offer": "Weekly Offer",
   "add_to_order_label": "Add to order:",
   "discount_liquidation": "CLEARANCE",
-  "discount_combo": "COMBO"
+  "discount_combo": "COMBO",
+  "discount_fixed_price": "SALE",
+  "no_offers": "There are no offers in this category at the moment.",
+  "toast_added": "Product added",
+  "toast_added_desc": "Item added to your order."
 }

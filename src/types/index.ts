@@ -150,6 +150,31 @@ export interface AdminInvite {
   status: 'pending' | 'claimed';
 }
 
+export interface OfferCategory {
+  id: string;
+  name: {
+    es: string;
+    en: string;
+  };
+}
+
+export type OfferType = 'percentage' | 'fixedPrice' | 'liquidation' | 'combo';
+
+export interface Offer {
+  id: string;
+  productId: string;
+  productName: { es: string; en: string; };
+  productPhotoUrl?: string;
+  productUnit: { es: string; en: string; };
+  originalPrice: number;
+  type: OfferType;
+  value: number; // For percentage or fixed price
+  comboProductIds?: string[];
+  category: OfferCategory['name'];
+  expiresAt: Timestamp;
+  createdAt: Timestamp;
+}
+
 
 // Exporting Firebase User type for components
 export type { User };

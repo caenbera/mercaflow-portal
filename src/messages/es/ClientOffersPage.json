@@ -2,14 +2,13 @@
   "title": "Flash Sales",
   "subtitle": "Las ofertas expiran en:",
   "filter_all": "Todos",
-  "filter_expiring": "Por Vencer",
-  "filter_volume": "Volumen",
-  "filter_new": "Nuevos",
   "unit_label": "Unidad",
-  "stock_left": "¡Solo quedan {count} cajas!",
   "stock_few": "Quedan pocos",
-  "stock_weekly_offer": "Oferta Semanal",
   "add_to_order_label": "Añadir al pedido:",
   "discount_liquidation": "LIQUIDACIÓN",
-  "discount_combo": "COMBO"
+  "discount_combo": "COMBO",
+  "discount_fixed_price": "OFERTA",
+  "no_offers": "No hay ofertas en esta categoría en este momento.",
+  "toast_added": "Producto agregado",
+  "toast_added_desc": "El ítem se ha añadido a tu pedido."
 }

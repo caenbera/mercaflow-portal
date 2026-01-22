@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { Pencil, History, Trash2, Truck } from 'lucide-react';
+import { Pencil, History, Trash2, Truck, Flame } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,9 +24,10 @@ interface ProductTableProps {
   products: Product[];
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
+  onOffer: (product: Product) => void;
 }
 
-export function ProductTable({ products, onEdit, onDelete }: ProductTableProps) {
+export function ProductTable({ products, onEdit, onDelete, onOffer }: ProductTableProps) {
   const t = useTranslations('ProductsPage');
   const locale = useLocale() as 'es' | 'en';
   const { suppliers: allSuppliers } = useSuppliers();
@@ -166,6 +167,21 @@ export function ProductTable({ products, onEdit, onDelete }: ProductTableProps) 
                     <TableCell className="pr-6 text-right">
                         <div className="flex justify-end gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                             <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button 
+                                            size="icon" 
+                                            variant="ghost" 
+                                            className="h-8 w-8 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                                            onClick={() => onOffer(product)}
+                                        >
+                                            <Flame className="h-4 w-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{t('actions_offer')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Button 

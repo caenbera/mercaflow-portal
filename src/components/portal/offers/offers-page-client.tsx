@@ -2,66 +2,47 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Flame, Minus, Plus, Zap } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useOffers } from '@/hooks/use-offers';
+import { useOfferCategories } from '@/hooks/use-offer-categories';
+import type { Offer, OfferCategory } from '@/types';
 
-
-const MOCK_OFFERS = [
-    {
-        id: 101,
-        name: "Tomate Maduro (Salsa)",
-        unit: "Caja 20lb",
-        oldPrice: 18.50,
-        newPrice: 12.95,
-        discount: "-30%",
-        stockLeft: 15,
-        stockMsg: "¡Solo quedan 4 cajas!",
-        stockMsgKey: "stock_left",
-        stockMsgValues: { count: 4 },
-        img: "https://i.postimg.cc/TY6YMwmY/tomate_chonto.png"
-    },
-    {
-        id: 102,
-        name: "Limón Amarillo (Imperfecto)",
-        unit: "Bulto",
-        oldPrice: 45.00,
-        newPrice: 29.99,
-        discount: "LIQUIDACIÓN",
-        discountKey: "discount_liquidation",
-        stockLeft: 40,
-        stockMsg: "Quedan pocos",
-        stockMsgKey: "stock_few",
-        img: "https://i.postimg.cc/43dFY6CX/limon.png"
-    },
-    {
-        id: 103,
-        name: "Combo Salsa Verde",
-        unit: "Tomatillo + Cilantro + Chile",
-        oldPrice: 60.00,
-        newPrice: 49.50,
-        discount: "COMBO",
-        discountKey: "discount_combo",
-        stockLeft: 80,
-        stockMsg: "Oferta Semanal",
-        stockMsgKey: "stock_weekly_offer",
-        img: "https://i.postimg.cc/BQBZq0cs/tomatillo.png"
-    }
-];
-
-const FILTERS = ['all', 'expiring', 'volume', 'new'];
+const OfferCardSkeleton = () => (
+  <Card className="overflow-hidden shadow-sm">
+    <div className="p-3 flex gap-3">
+      <Skeleton className="h-[80px] w-[80px] rounded-md shrink-0" />
+      <div className="flex-grow space-y-2">
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-6 w-1/2" />
+        <Skeleton className="h-4 w-full" />
+      </div>
+    </div>
+    <div className="bg-muted/50 p-2 border-t flex justify-between items-center">
+      <Skeleton className="h-4 w-20" />
+      <Skeleton className="h-9 w-24 rounded-full" />
+    </div>
+  </Card>
+);
 
 export function OffersPageClient() {
   const t = useTranslations('ClientOffersPage');
+  const locale = useLocale() as 'es' | 'en';
   const { toast } = useToast();
+  const { offers, loading: offersLoading } = useOffers();
+  const { categories, loading: categoriesLoading } = useOfferCategories();
+
   const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 59, seconds: 59 });
   const [activeFilter, setActiveFilter] = useState('all');
-  const [cart, setCart] = useState<{[key: number]: number}>({});
+  const [cart, setCart] = useState<{ [key: string]: number }>({});
+  
+  const loading = offersLoading || categoriesLoading;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -71,8 +52,8 @@ export function OffersPageClient() {
         if (seconds < 0) { seconds = 59; minutes--; }
         if (minutes < 0) { minutes = 59; hours--; }
         if (hours < 0) {
-            hours = 0; minutes = 0; seconds = 0;
-            clearInterval(timer);
+          hours = 0; minutes = 0; seconds = 0;
+          clearInterval(timer);
         }
         return { hours, minutes, seconds };
       });
@@ -83,20 +64,51 @@ export function OffersPageClient() {
   const formatTime = (time: number) => time.toString().padStart(2, '0');
   const countdownString = `${formatTime(timeLeft.hours)}:${formatTime(timeLeft.minutes)}:${formatTime(timeLeft.seconds)}`;
 
-  const handleUpdateQty = (id: number, delta: number) => {
+  const handleUpdateQty = (offerId: string, delta: number) => {
     setCart(prev => {
-        const newCart = {...prev};
-        const currentQty = newCart[id] || 0;
-        const newQty = currentQty + delta;
-        newCart[id] = Math.max(0, newQty);
-        return newCart;
+      const newCart = { ...prev };
+      const currentQty = newCart[offerId] || 0;
+      const newQty = currentQty + delta;
+      newCart[offerId] = Math.max(0, newQty);
+      return newCart;
     });
-    if(delta > 0) {
-        toast({ title: "Product added", description: "Item added to your order." });
+    if (delta > 0) {
+      toast({ title: t('toast_added'), description: t('toast_added_desc') });
     }
   };
 
   const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+
+  const getDiscountLabel = (offer: Offer) => {
+    switch (offer.type) {
+      case 'percentage':
+        return `-${offer.value}%`;
+      case 'liquidation':
+        return t('discount_liquidation');
+      case 'combo':
+        return t('discount_combo');
+      case 'fixedPrice':
+        return `${t('discount_fixed_price')}: ${formatCurrency(offer.value)}`;
+      default:
+        return 'OFERTA';
+    }
+  };
+  
+  const getFinalPrice = (offer: Offer) => {
+    switch (offer.type) {
+        case 'percentage':
+            return offer.originalPrice * (1 - offer.value / 100);
+        case 'fixedPrice':
+            return offer.value;
+        default:
+            return offer.originalPrice; // Combo/Liquidation price should be set differently if needed
+    }
+  };
+
+  const filteredOffers = activeFilter === 'all'
+    ? offers
+    : offers.filter(offer => offer.category.en.toLowerCase() === activeFilter);
+
 
   return (
     <div className="pb-20 md:pb-4">
@@ -111,65 +123,83 @@ export function OffersPageClient() {
 
       {/* Filters */}
       <div className="py-4 px-2 overflow-x-auto hide-scrollbar whitespace-nowrap">
-        {FILTERS.map(filter => (
-          <Button 
-            key={filter}
-            variant={activeFilter === filter ? 'destructive' : 'outline'}
+        <Button 
+            variant={activeFilter === 'all' ? 'destructive' : 'outline'}
             className="rounded-full mr-2"
             size="sm"
-            onClick={() => setActiveFilter(filter)}
+            onClick={() => setActiveFilter('all')}
           >
-            {t(`filter_${filter}` as any)}
-          </Button>
-        ))}
+            {t('filter_all')}
+        </Button>
+        {loading ? (
+            <Skeleton className="h-8 w-24 inline-block rounded-full" />
+        ) : (
+            categories.map(cat => (
+            <Button 
+                key={cat.id}
+                variant={activeFilter === cat.name.en.toLowerCase() ? 'destructive' : 'outline'}
+                className="rounded-full mr-2"
+                size="sm"
+                onClick={() => setActiveFilter(cat.name.en.toLowerCase())}
+            >
+                {cat.name[locale]}
+            </Button>
+            ))
+        )}
       </div>
 
       {/* Offers List */}
       <div className="px-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-        {MOCK_OFFERS.map(offer => {
-          const qty = cart[offer.id] || 0;
-          return (
-            <Card key={offer.id} className="overflow-hidden shadow-sm border-destructive/20 relative">
-              <div className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground font-extrabold text-xs px-2 py-1 rounded-md shadow-md">
-                {offer.discountKey ? t(offer.discountKey as any) : offer.discount}
-              </div>
+        {loading ? (
+            Array.from({length: 3}).map((_,i) => <OfferCardSkeleton key={i} />)
+        ) : filteredOffers.length > 0 ? (
+            filteredOffers.map(offer => {
+            const qty = cart[offer.id] || 0;
+            const finalPrice = getFinalPrice(offer);
+            
+            return (
+                <Card key={offer.id} className="overflow-hidden shadow-sm border-destructive/20 relative">
+                <div className="absolute top-2 left-2 z-10 bg-destructive text-destructive-foreground font-extrabold text-xs px-2 py-1 rounded-md shadow-md">
+                    {getDiscountLabel(offer)}
+                </div>
 
-              <div className="p-3 flex gap-3">
-                <Image src={offer.img} alt={offer.name} width={80} height={80} className="rounded-md object-cover bg-muted shrink-0" />
-                <div className="flex-grow">
-                  <h3 className="font-bold text-sm leading-tight">{offer.name}</h3>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-destructive font-extrabold text-lg">{formatCurrency(offer.newPrice)}</span>
-                    <span className="text-muted-foreground text-xs line-through">{formatCurrency(offer.oldPrice)}</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">{t('unit_label')}: {offer.unit}</div>
-                  
-                   {/* Stock Bar */}
-                    <Progress value={offer.stockLeft} className="h-1.5 my-2" />
+                <div className="p-3 flex gap-3">
+                    <Image src={offer.productPhotoUrl || 'https://via.placeholder.com/80'} alt={offer.productName[locale]} width={80} height={80} className="rounded-md object-cover bg-muted shrink-0" />
+                    <div className="flex-grow">
+                    <h3 className="font-bold text-sm leading-tight">{offer.productName[locale]}</h3>
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-destructive font-extrabold text-lg">{formatCurrency(finalPrice)}</span>
+                        <span className="text-muted-foreground text-xs line-through">{formatCurrency(offer.originalPrice)}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">{t('unit_label')}: {offer.productUnit[locale]}</div>
+                    
+                    <Progress value={75} className="h-1.5 my-2" />
                     <div className="text-xs font-semibold text-amber-600 flex items-center gap-1">
                         <Zap className="h-3 w-3"/>
-                        {offer.stockMsgValues ? t(offer.stockMsgKey as any, offer.stockMsgValues as any) : t(offer.stockMsgKey as any)}
+                        {t('stock_few')}
+                    </div>
                     </div>
                 </div>
-              </div>
-              
-              <div className="bg-muted/50 p-2 border-t flex justify-between items-center">
-                 <span className="text-xs font-semibold text-muted-foreground">{t('add_to_order_label')}</span>
-                 <div className="flex items-center gap-1 bg-background rounded-full border p-0.5">
-                    <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full" onClick={() => handleUpdateQty(offer.id, -1)}>
-                        <Minus className="h-4 w-4"/>
-                    </Button>
-                     <Input readOnly value={qty || ''} placeholder="0" className="h-7 w-8 text-center bg-transparent border-none p-0 text-sm font-bold focus-visible:ring-0 focus-visible:ring-offset-0"/>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full" onClick={() => handleUpdateQty(offer.id, 1)}>
-                        <Plus className="h-4 w-4"/>
-                    </Button>
-                 </div>
-              </div>
-            </Card>
-          )
-        })}
+                
+                <div className="bg-muted/50 p-2 border-t flex justify-between items-center">
+                    <span className="text-xs font-semibold text-muted-foreground">{t('add_to_order_label')}</span>
+                    <div className="flex items-center gap-1 bg-background rounded-full border p-0.5">
+                        <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full" onClick={() => handleUpdateQty(offer.id, -1)}>
+                            <Minus className="h-4 w-4"/>
+                        </Button>
+                        <Input readOnly value={qty || ''} placeholder="0" className="h-7 w-8 text-center bg-transparent border-none p-0 text-sm font-bold focus-visible:ring-0 focus-visible:ring-offset-0"/>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full" onClick={() => handleUpdateQty(offer.id, 1)}>
+                            <Plus className="h-4 w-4"/>
+                        </Button>
+                    </div>
+                </div>
+                </Card>
+            )
+            })
+        ) : (
+            <p className="col-span-full text-center text-muted-foreground py-10">{t('no_offers')}</p>
+        )}
       </div>
-
     </div>
   );
 }

@@ -5,14 +5,13 @@ import { useState, useMemo } from 'react';
 import { Plus, Search, Filter } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
-// Nota: Ya no usamos Card/CardHeader aquí para dar más libertad al layout, 
-// usamos divs directos para el estilo "Dashboard Limpio"
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useProducts } from '@/hooks/use-products';
 import { ProductTable } from './product-table';
 import { ProductDialog } from './product-dialog';
 import { DeleteProductAlert } from './delete-product-alert';
+import { OfferDialog } from './offer-dialog';
 import type { Product } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -20,6 +19,7 @@ export function ProductsPageClient() {
   const { products, loading } = useProducts();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
+  const [offerDialogOpen, setOfferDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const t = useTranslations('ProductsPage');
 
@@ -54,6 +54,11 @@ export function ProductsPageClient() {
     setSelectedProduct(product);
     setAlertOpen(true);
   };
+  
+  const handleOffer = (product: Product) => {
+    setSelectedProduct(product);
+    setOfferDialogOpen(true);
+  };
 
   return (
     <div className="flex flex-col gap-6 p-6 lg:p-8 min-h-screen bg-slate-50/30">
@@ -67,6 +72,11 @@ export function ProductsPageClient() {
       <DeleteProductAlert
         open={alertOpen}
         onOpenChange={setAlertOpen}
+        product={selectedProduct}
+      />
+      <OfferDialog
+        open={offerDialogOpen}
+        onOpenChange={setOfferDialogOpen}
         product={selectedProduct}
       />
 
@@ -135,7 +145,7 @@ export function ProductsPageClient() {
         </div>
       ) : (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <ProductTable products={unifiedProducts} onEdit={handleEdit} onDelete={handleDelete} />
+            <ProductTable products={unifiedProducts} onEdit={handleEdit} onDelete={handleDelete} onOffer={handleOffer} />
         </div>
       )}
     </div>

@@ -23,6 +23,20 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
     }
 
+    // Helper function for roles with procurement responsibilities.
+    function hasPurchasingPermissions() {
+      return isAuthed() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'purchaser'];
+    }
+
+    // Helper function for roles with picking/packing responsibilities.
+    function hasPickingPermissions() {
+      return isAuthed() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['picker', 'admin', 'superadmin'];
+    }
+
     // USERS Collection
     match /users/{userId} {
       allow create: if isAuthed() && request.auth.uid == userId;
@@ -50,21 +64,21 @@ service cloud.firestore {
     // PRODUCTS Collection
     match /products/{productId} {
       allow read: if isAuthed();
-      allow write: if hasAdminRole();
+      allow write: if hasPurchasingPermissions();
     }
 
     // ORDERS Collection
     match /orders/{orderId} {
       allow create: if isAuthed() && request.resource.data.userId == request.auth.uid;
-      allow read: if isAuthed() && (resource.data.userId == request.auth.uid || hasAdminRole());
-      allow update: if hasAdminRole();
+      allow read: if isAuthed() && (resource.data.userId == request.auth.uid || hasPickingPermissions());
+      allow update: if hasPickingPermissions();
       allow delete: if hasAdminRole();
     }
     
     // SUPPLIERS Collection
     match /suppliers/{supplierId} {
-      // Admins and superadmins need to be able to read and write.
-      allow read, write: if hasAdminRole();
+      // Admins, superadmins, and purchasers need to be able to read and write.
+      allow read, write: if hasPurchasingPermissions();
     }
     
     // BRANCHES sub-collection inside USERS
@@ -91,6 +105,19 @@ service cloud.firestore {
 
     // PRICE LISTS Collection
     match /pricelists/{priceListId} {
+      allow read: if isAuthed();
+      allow write: if hasAdminRole();
+    }
+
+    // OFFERS Collection
+    match /offers/{offerId} {
+      allow read: if isAuthed();
+      // Only admins/superadmins can create, update, or delete offers
+      allow write: if hasAdminRole();
+    }
+    
+    // OFFER CATEGORIES Collection
+    match /offerCategories/{categoryId} {
       allow read: if isAuthed();
       allow write: if hasAdminRole();
     }
