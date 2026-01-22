@@ -27,6 +27,7 @@ import { redeemReward } from '@/lib/firestore/rewards';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import type { RewardRule } from '@/types';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 type IconName = keyof typeof LucideIcons;
 
@@ -189,30 +190,38 @@ export function RewardsPageClient() {
         </div>
 
         <div className="px-4 mt-6">
-          <h3 className="text-sm font-bold text-muted-foreground uppercase mb-3 px-1">{t('how_to_earn_title')}</h3>
-          <div className="space-y-3">
-            {loading ? (
-                <Skeleton className="h-20 w-full rounded-xl"/>
-            ) : activeRules.length > 0 ? (
-              activeRules.map((rule) => (
-                <div key={rule.id} className="bg-card rounded-xl p-3 flex items-center gap-4 shadow-sm border">
-                   <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 bg-blue-100 text-blue-600">
-                    <Zap className="h-6 w-6" />
-                  </div>
-                  <div className="flex-grow">
-                    <h6 className="font-bold text-sm text-foreground">{rule.name}</h6>
-                    <p className="text-xs text-muted-foreground">{generateRuleDescription(rule)}</p>
-                  </div>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="item-1" className="border-none">
+              <AccordionTrigger className="bg-card rounded-xl shadow-sm border p-4 hover:no-underline">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase">{t('how_to_earn_title')}</h3>
+              </AccordionTrigger>
+              <AccordionContent className="pt-2">
+                <div className="space-y-3">
+                  {loading ? (
+                    <Skeleton className="h-20 w-full rounded-xl"/>
+                  ) : activeRules.length > 0 ? (
+                    activeRules.map((rule) => (
+                      <div key={rule.id} className="bg-card rounded-xl p-3 flex items-center gap-4 shadow-sm border">
+                        <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 bg-blue-100 text-blue-600">
+                          <Zap className="h-6 w-6" />
+                        </div>
+                        <div className="flex-grow">
+                          <h6 className="font-bold text-sm text-foreground">{rule.name}</h6>
+                          <p className="text-xs text-muted-foreground">{generateRuleDescription(rule)}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="bg-card rounded-xl p-3 flex items-center justify-center gap-4 shadow-sm border min-h-16">
+                      <p className="text-sm text-center text-muted-foreground">{t('no_active_rules')}</p>
+                    </div>
+                  )}
                 </div>
-              ))
-            ) : (
-                <div className="bg-card rounded-xl p-3 flex items-center justify-center gap-4 shadow-sm border min-h-16">
-                    <p className="text-sm text-center text-muted-foreground">{t('no_active_rules')}</p>
-                </div>
-            )
-            }
-          </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
+
 
         <div className="px-4 mt-6">
           <h3 className="text-sm font-bold text-muted-foreground uppercase mb-3 px-1">{t('redeem_rewards_title')}</h3>
