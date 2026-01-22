@@ -23,6 +23,13 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
     }
 
+    // Helper function for roles with procurement responsibilities.
+    function hasPurchasingPermissions() {
+      return isAuthed() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'purchaser'];
+    }
+
     // USERS Collection
     match /users/{userId} {
       allow create: if isAuthed() && request.auth.uid == userId;
@@ -50,7 +57,7 @@ service cloud.firestore {
     // PRODUCTS Collection
     match /products/{productId} {
       allow read: if isAuthed();
-      allow write: if hasAdminRole();
+      allow write: if hasPurchasingPermissions();
     }
 
     // ORDERS Collection
@@ -63,8 +70,8 @@ service cloud.firestore {
     
     // SUPPLIERS Collection
     match /suppliers/{supplierId} {
-      // Admins and superadmins need to be able to read and write.
-      allow read, write: if hasAdminRole();
+      // Admins, superadmins, and purchasers need to be able to read and write.
+      allow read, write: if hasPurchasingPermissions();
     }
     
     // BRANCHES sub-collection inside USERS
@@ -75,8 +82,18 @@ service cloud.firestore {
 
     // ADMIN INVITES Collection
     match /adminInvites/{email} {
-      allow create, read: if isSuperAdmin();
-      allow update, delete: if false;
+      // Superadmins can manage invites.
+      allow read, create, delete: if isSuperAdmin();
+      
+      // Unauthenticated users can check for their own invite during signup by email.
+      allow get: if request.auth == null;
+      
+      // An authenticated user can "claim" their invite by updating its status.
+      // This is safe because they must be authenticated with the email that matches the document ID.
+      // It only allows the status field to be changed to 'claimed'.
+      allow update: if isAuthed() && request.auth.token.email == email
+                      && request.resource.data.status == 'claimed'
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
     }
 
     // PRICE LISTS Collection
