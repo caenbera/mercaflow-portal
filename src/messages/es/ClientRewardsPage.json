@@ -1,9 +1,11 @@
+
 {
   "title": "Mis Puntos y Recompensas",
   "points_label": "Puntos",
   "tier_gold": "Nivel Oro",
-  "next_level_progress": "Faltan {points} pts para Platino",
-  "points_rule": "Ganas 1 punto por cada $1 dólar en compras.",
+  "next_level_progress": "Faltan {points} pts para el siguiente nivel",
+  "max_level": "¡Has alcanzado el nivel más alto!",
+  "points_rule": "Ganas puntos con cada pedido completado.",
   "redeem_rewards_title": "Canjear Recompensas",
   "reward_credit_title": "$20 USD Crédito",
   "reward_credit_desc": "Aplicable en tu próxima factura",
@@ -14,7 +16,7 @@
   "points_abbr": "PTS",
   "recent_activity_title": "Actividad Reciente",
   "activity_order_label": "Pedido #{orderId}",
-  "activity_redeem_label": "Canje Cupón $20",
+  "activity_redeem_label": "Canje de {rewardName}",
   "points_earned": "+{points} pts",
   "points_spent": "-{points} pts",
   "redeem_confirm_title": "¿Confirmar canje?",
@@ -24,5 +26,6 @@
   "redeem_success_title": "¡Canje Exitoso!",
   "redeem_success_desc": "El beneficio se ha aplicado a tu cuenta.",
   "not_enough_points_title": "Puntos Insuficientes",
-  "not_enough_points_desc": "Necesitas {cost} puntos para canjear este premio."
+  "not_enough_points_desc": "Necesitas {cost} puntos para canjear este premio.",
+  "no_activity": "No hay actividad reciente."
 }

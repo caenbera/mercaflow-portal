@@ -59,6 +59,12 @@ service cloud.firestore {
         // Admins and superadmins can manage notes for any user.
         allow read, write: if hasAdminRole();
       }
+
+      // REWARDS ACTIVITY sub-collection inside USERS
+      match /rewardsActivity/{activityId} {
+        allow read: if request.auth.uid == userId || hasAdminRole();
+        allow write: if hasAdminRole(); // Only admins (via triggered logic) can grant points
+      }
     }
 
     // PRODUCTS Collection
@@ -119,6 +125,22 @@ service cloud.firestore {
     // OFFER CATEGORIES Collection
     match /offerCategories/{categoryId} {
       allow read: if isAuthed();
+      allow write: if hasAdminRole();
+    }
+
+    // REWARDS SYSTEM
+    match /rewardTiers/{tierId} {
+      allow read: if isAuthed();
+      allow write: if hasAdminRole();
+    }
+    
+    match /rewards/{rewardId} {
+      allow read: if isAuthed();
+      allow write: if hasAdminRole();
+    }
+
+    match /rewardRules/{ruleId} {
+      allow read: if hasAdminRole();
       allow write: if hasAdminRole();
     }
   }

@@ -19,7 +19,8 @@ export interface UserProfile {
   tier?: ClientTier;
   creditLimit?: number;
   paymentTerms?: string; 
-  priceList?: string; 
+  priceList?: string;
+  rewardPoints?: number;
 }
 
 
@@ -176,6 +177,56 @@ export interface Offer {
   comboProductIds?: string[];
   category: OfferCategory['name'];
   expiresAt: Timestamp;
+  createdAt: Timestamp;
+}
+
+export interface RewardTier {
+  id: string;
+  name: string;
+  minPoints: number;
+  iconName: string;
+}
+
+export interface Reward {
+  id:string;
+  name: string;
+  description: string;
+  pointCost: number;
+  iconName: string;
+  color: string;
+}
+
+export type RewardRuleType =
+  | 'pointsPerDollar'
+  | 'bonusForAmount'
+  | 'fixedPointsPerOrder'
+  | 'bonusForProduct'
+  | 'multiplierPerDay'
+  | 'firstOrderBonus'
+  | 'anniversaryBonus'
+  | 'bonusForVariety'
+  | 'bonusForCategory'
+  | 'consecutiveBonus';
+
+export interface RewardRule {
+  id: string;
+  name: string;
+  ruleType: RewardRuleType;
+  points?: number;      // For fixed points, bonus
+  amount?: number;      // For dollar thresholds
+  perAmount?: number;   // For pointsPerDollar
+  multiplier?: number;  // For multipliers
+  productId?: string;   // For product-specific bonus
+  category?: ProductCategory; // For category-specific bonus
+  dayOfWeek?: number;   // For day-specific multiplier
+  weeks?: number;       // For consecutive bonus
+  isActive: boolean;
+}
+
+export interface RewardActivity {
+  id: string;
+  description: string;
+  points: number;
   createdAt: Timestamp;
 }
 

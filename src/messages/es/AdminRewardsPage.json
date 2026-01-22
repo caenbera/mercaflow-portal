@@ -1,0 +1,14 @@
+
+{
+  "title": "Programa de Recompensas",
+  "subtitle": "Configura y gestiona tu sistema de lealtad de clientes.",
+  "tabs_rules": "Reglas",
+  "tabs_rewards": "Recompensas",
+  "tabs_tiers": "Niveles",
+  "rules_title": "Reglas para Ganar Puntos",
+  "rules_desc": "Define cómo tus clientes ganan puntos. Las reglas se evalúan cuando se completa un pedido.",
+  "rewards_title": "Recompensas Canjeables",
+  "rewards_desc": "Crea el catálogo de premios que los clientes pueden canjear por sus puntos.",
+  "tiers_title": "Niveles de Cliente",
+  "tiers_desc": "Crea niveles de lealtad basados en los puntos acumulados."
+}

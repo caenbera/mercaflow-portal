@@ -1,0 +1,14 @@
+
+{
+  "title": "Rewards Program",
+  "subtitle": "Configure and manage your customer loyalty system.",
+  "tabs_rules": "Rules",
+  "tabs_rewards": "Rewards",
+  "tabs_tiers": "Tiers",
+  "rules_title": "Point Earning Rules",
+  "rules_desc": "Define how your customers earn points. Rules are evaluated when an order is completed.",
+  "rewards_title": "Redeemable Rewards",
+  "rewards_desc": "Create the catalog of prizes customers can exchange their points for.",
+  "tiers_title": "Customer Tiers",
+  "tiers_desc": "Create loyalty levels based on accumulated points."
+}

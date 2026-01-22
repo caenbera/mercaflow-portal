@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -6,7 +7,9 @@ import { RoleGuard } from '@/components/auth/role-guard';
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <RoleGuard allowedRoles={['admin', 'superadmin', 'picker', 'purchaser']}>
-      {children}
+      <div className="bg-slate-50/30 min-h-full">
+        {children}
+      </div>
     </RoleGuard>
   );
 }

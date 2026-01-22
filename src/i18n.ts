@@ -1,3 +1,4 @@
+
 import {getRequestConfig} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {locales} from './i18n-config';
@@ -35,6 +36,7 @@ async function getMessages(locale: string) {
     const supportPageMessages = (await import(`./messages/${locale}/SupportPage.json`)).default;
     const clientInvoicesPageMessages = (await import(`./messages/${locale}/ClientInvoicesPage.json`)).default;
     const productsPageMessages = (await import(`./messages/${locale}/ProductsPage.json`)).default;
+    const adminRewardsPageMessages = (await import(`./messages/${locale}/AdminRewardsPage.json`)).default;
 
 
     return {
@@ -67,6 +69,7 @@ async function getMessages(locale: string) {
       SupportPage: supportPageMessages,
       ClientInvoicesPage: clientInvoicesPageMessages,
       ProductsPage: productsPageMessages,
+      AdminRewardsPage: adminRewardsPageMessages,
     };
   } catch (error) {
     notFound();

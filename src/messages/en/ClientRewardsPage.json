@@ -1,9 +1,11 @@
+
 {
   "title": "My Points & Rewards",
   "points_label": "Points",
   "tier_gold": "Gold Tier",
-  "next_level_progress": "{points} pts to Platinum",
-  "points_rule": "You earn 1 point for every $1 spent.",
+  "next_level_progress": "{points} pts to next level",
+  "max_level": "You've reached the highest level!",
+  "points_rule": "You earn points with every completed order.",
   "redeem_rewards_title": "Redeem Rewards",
   "reward_credit_title": "$20 USD Credit",
   "reward_credit_desc": "Applicable on your next invoice",
@@ -14,7 +16,7 @@
   "points_abbr": "PTS",
   "recent_activity_title": "Recent Activity",
   "activity_order_label": "Order #{orderId}",
-  "activity_redeem_label": "Redeemed $20 Coupon",
+  "activity_redeem_label": "Redeemed {rewardName}",
   "points_earned": "+{points} pts",
   "points_spent": "-{points} pts",
   "redeem_confirm_title": "Confirm Redemption?",
@@ -24,5 +26,6 @@
   "redeem_success_title": "Redemption Successful!",
   "redeem_success_desc": "The benefit has been applied to your account.",
   "not_enough_points_title": "Not Enough Points",
-  "not_enough_points_desc": "You need {cost} points to redeem this reward."
+  "not_enough_points_desc": "You need {cost} points to redeem this reward.",
+  "no_activity": "No recent activity."
 }
