@@ -8,6 +8,9 @@ import {
   getDoc,
   serverTimestamp,
   writeBatch,
+  getDocs,
+  query,
+  where,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { Order, UserProfile, RewardRule } from '@/types';
@@ -27,15 +30,6 @@ export const addOrder = async (orderData: OrderInput) => {
   };
   try {
     const docRef = await addDoc(ordersCollection, dataWithTimestamp);
-    
-    // --- REWARDS LOGIC (for order creation, e.g., points per dollar) ---
-    // This is a simplified version. A real app might wait for 'delivered' status.
-    const userDoc = await getDoc(doc(db, 'users', orderData.userId)));
-    if (userDoc.exists()) {
-      const userProfile = { uid: userDoc.id, ...userDoc.data() } as UserProfile;
-      // In a real app, you would fetch rules and all orders here.
-      // For now, let's assume simple logic is handled on delivery.
-    }
     return docRef;
 
   } catch (serverError: any) {
@@ -53,40 +47,33 @@ export const updateOrder = async (id: string, orderData: OrderUpdateInput) => {
   const orderDoc = doc(db, 'orders', id);
   
   try {
-    // We get the order state BEFORE updating it
     const orderSnapshot = await getDoc(orderDoc);
     if (!orderSnapshot.exists()) {
       throw new Error("Order not found");
     }
     const currentStatus = orderSnapshot.data().status;
 
-    // Perform the update
     await updateDoc(orderDoc, orderData);
 
-    // --- REWARDS LOGIC ---
-    // If the status is being updated TO 'delivered' from something else
     if (orderData.status === 'delivered' && currentStatus !== 'delivered') {
       const order = { id, ...orderSnapshot.data() } as Order;
       
       const userDoc = await getDoc(doc(db, 'users', order.userId));
       if (userDoc.exists()) {
           const userProfile = { uid: userDoc.id, ...userDoc.data() } as UserProfile;
-          // For now, we'll use a simplified logic: 1 point per dollar.
-          const pointsToAward = Math.floor(order.total);
-          // A more complex system would use the awardPointsForOrder function.
-          if (pointsToAward > 0) {
-            const userRef = doc(db, 'users', userProfile.uid);
-            const activityRef = doc(collection(db, 'users', userProfile.uid, 'rewardsActivity'));
-            const batch = writeBatch(db);
+          
+          // Fetch all active rules
+          const rulesQuery = query(collection(db, 'rewardRules'), where('isActive', '==', true));
+          const rulesSnapshot = await getDocs(rulesQuery);
+          const allRules = rulesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as RewardRule);
 
-            batch.update(userRef, { rewardPoints: (userProfile.rewardPoints || 0) + pointsToAward });
-            batch.set(activityRef, {
-                description: `Order #${order.id.substring(0, 6)}`,
-                points: pointsToAward,
-                createdAt: serverTimestamp()
-            });
-            await batch.commit();
-          }
+          // Fetch all user's orders for complex rules
+          const userOrdersQuery = query(collection(db, 'orders'), where('userId', '==', order.userId));
+          const userOrdersSnapshot = await getDocs(userOrdersQuery);
+          const allOrders = userOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Order);
+
+          // Award points using the rule engine
+          await awardPointsForOrder(order, userProfile, allRules, allOrders);
       }
     }
   } catch(serverError: any) {
@@ -96,8 +83,6 @@ export const updateOrder = async (id: string, orderData: OrderUpdateInput) => {
       requestResourceData: orderData,
     });
     errorEmitter.emit('permission-error', permissionError);
-    // We don't re-throw here to avoid double-toasting if the calling function has a catch block.
-    // The error is already emitted globally.
   }
 };
 

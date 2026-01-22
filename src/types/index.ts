@@ -21,6 +21,7 @@ export interface UserProfile {
   paymentTerms?: string; 
   priceList?: string;
   rewardPoints?: number;
+  creditBalance?: number;
 }
 
 
