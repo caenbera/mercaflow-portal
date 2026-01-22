@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useState, useMemo } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRewardData } from '@/hooks/useRewardData';
 import { useProducts } from '@/hooks/use-products';
 import { deleteRule, manageRule } from '@/lib/firestore/rewards';
@@ -21,6 +21,7 @@ export function ManageRulesTab() {
   const { products, loading: productsLoading } = useProducts();
   const { toast } = useToast();
   const locale = useLocale();
+  const t = useTranslations('AdminRewardsPage');
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<RewardRule | null>(null);
@@ -52,39 +53,40 @@ export function ManageRulesTab() {
     if (!deletingRule) return;
     try {
       await deleteRule(deletingRule.id);
-      toast({ title: 'Rule deleted' });
+      toast({ title: t('toast_rule_deleted') });
       setDeletingRule(null);
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Error deleting rule' });
+      toast({ variant: 'destructive', title: t('toast_rule_delete_error') });
     }
   };
 
   const handleToggleActive = async (rule: RewardRule) => {
     try {
         await manageRule(rule.id, { isActive: !rule.isActive });
-        toast({ title: 'Rule status updated.' });
+        toast({ title: t('toast_rule_status_updated') });
     } catch (error) {
-        toast({ variant: 'destructive', title: 'Error updating rule status.' });
+        toast({ variant: 'destructive', title: t('toast_rule_status_error') });
     }
   }
 
   const generateRuleDescription = (rule: RewardRule) => {
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     switch (rule.ruleType) {
-        case 'pointsPerDollar': return `Award ${rule.points} point(s) for every $${rule.perAmount} spent.`;
-        case 'bonusForAmount': return `Award a bonus of ${rule.points} points if order total is over $${rule.amount}.`;
-        case 'fixedPointsPerOrder': return `Award ${rule.points} points for every completed order.`;
+        case 'pointsPerDollar': return t('rule_desc_pointsPerDollar', { points: rule.points, perAmount: rule.perAmount });
+        case 'bonusForAmount': return t('rule_desc_bonusForAmount', { points: rule.points, amount: rule.amount });
+        case 'fixedPointsPerOrder': return t('rule_desc_fixedPointsPerOrder', { points: rule.points });
         case 'bonusForProduct':
-            const productName = products.find(p => p.id === rule.productId)?.name[locale as 'es'|'en'] || 'a specific product';
-            return `Award ${rule.points} bonus points if order includes ${productName}.`;
+            const productName = products.find(p => p.id === rule.productId)?.name[locale as 'es'|'en'] || t('rule_desc_bonusForProduct_fallback');
+            return t('rule_desc_bonusForProduct', { points: rule.points, productName });
         case 'multiplierPerDay':
-            const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][rule.dayOfWeek || 0];
-            return `Multiply all earned points by x${rule.multiplier} on ${dayName}s.`;
-        case 'firstOrderBonus': return `Award a one-time bonus of ${rule.points} points for a client's first order.`;
-        case 'anniversaryBonus': return `Award ${rule.points} points on the client's signup anniversary month.`;
-        case 'bonusForVariety': return `Award ${rule.points} bonus points if order contains more than ${rule.amount} different items.`;
-        case 'bonusForCategory': return `Award ${rule.points} bonus points if order includes items from the '${rule.category?.es}' category.`;
-        case 'consecutiveBonus': return `Award ${rule.points} bonus points if client orders for ${rule.weeks} consecutive weeks.`;
-        default: return 'A misconfigured rule.';
+            const dayName = dayNames[rule.dayOfWeek || 0];
+            return t('rule_desc_multiplierPerDay', { multiplier: rule.multiplier, dayName });
+        case 'firstOrderBonus': return t('rule_desc_firstOrderBonus', { points: rule.points });
+        case 'anniversaryBonus': return t('rule_desc_anniversaryBonus', { points: rule.points });
+        case 'bonusForVariety': return t('rule_desc_bonusForVariety', { points: rule.points, amount: rule.amount });
+        case 'bonusForCategory': return t('rule_desc_bonusForCategory', { points: rule.points, categoryName: rule.category?.es });
+        case 'consecutiveBonus': return t('rule_desc_consecutiveBonus', { points: rule.points, weeks: rule.weeks });
+        default: return t('rule_desc_misconfigured');
     }
   }
   
@@ -100,12 +102,12 @@ export function ManageRulesTab() {
       <AlertDialog open={!!deletingRule} onOpenChange={(open) => !open && setDeletingRule(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>This will permanently delete the rule "{deletingRule?.name}".</AlertDialogDescription>
+            <AlertDialogTitle>{t('delete_reward_confirm_title')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('delete_rule_confirm_desc', { ruleName: deletingRule?.name })}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogCancel>{t('cancel_button')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">{t('delete_confirm_action')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -114,13 +116,13 @@ export function ManageRulesTab() {
         <div className="flex justify-end">
           <Button onClick={handleCreate}>
             <Plus className="mr-2 h-4 w-4" />
-            Add Rule
+            {t('add_rule_button')}
           </Button>
         </div>
         {loading
           ? <div className="space-y-3"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></div>
           : rules.length === 0
-            ? <p className="text-center text-muted-foreground py-8">No rules created yet. Click "Add Rule" to start.</p>
+            ? <p className="text-center text-muted-foreground py-8">{t('no_rules_message')}</p>
             : (
               <div className="space-y-3">
                 {rules.map(rule => (

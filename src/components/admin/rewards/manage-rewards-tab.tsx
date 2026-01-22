@@ -22,6 +22,7 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import type { Reward } from '@/types';
 import * as LucideIcons from 'lucide-react';
 import { RewardDialog } from './RewardDialog';
+import { useTranslations } from 'next-intl';
 
 type IconName = keyof typeof LucideIcons;
 
@@ -36,6 +37,7 @@ const Icon = ({ name, className }: { name: IconName; className?: string }) => {
 export function ManageRewardsTab() {
   const { rewards, loading } = useRewardData();
   const { toast } = useToast();
+  const t = useTranslations('AdminRewardsPage');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [rewardToEdit, setRewardToEdit] = useState<Reward | null>(null);
   const [rewardToDelete, setRewardToDelete] = useState<Reward | null>(null);
@@ -54,10 +56,10 @@ export function ManageRewardsTab() {
     if (!rewardToDelete) return;
     try {
       await deleteReward(rewardToDelete.id);
-      toast({ title: 'Reward deleted' });
+      toast({ title: t('toast_reward_deleted') });
       setRewardToDelete(null);
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Error deleting reward' });
+      toast({ variant: 'destructive', title: t('toast_reward_delete_error') });
     }
   };
 
@@ -71,12 +73,12 @@ export function ManageRewardsTab() {
       <AlertDialog open={!!rewardToDelete} onOpenChange={(open) => !open && setRewardToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>This will permanently delete the reward "{rewardToDelete?.name}".</AlertDialogDescription>
+                <AlertDialogTitle>{t('delete_reward_confirm_title')}</AlertDialogTitle>
+                <AlertDialogDescription>{t('delete_reward_confirm_desc', { rewardName: rewardToDelete?.name })}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                <AlertDialogCancel>{t('cancel_button')}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">{t('delete_confirm_action')}</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -85,7 +87,7 @@ export function ManageRewardsTab() {
         <div className="flex justify-end">
           <Button onClick={handleCreate}>
             <Plus className="mr-2 h-4 w-4" />
-            Create Reward
+            {t('create_reward_button')}
           </Button>
         </div>
 
@@ -109,7 +111,7 @@ export function ManageRewardsTab() {
                   </div>
                   <div className="flex gap-2 mt-4">
                       <Button variant="outline" size="sm" className="w-full" onClick={() => handleEdit(reward)}>
-                          <Edit className="mr-2 h-3 w-3" /> Edit
+                          <Edit className="mr-2 h-3 w-3" /> {t('edit_button')}
                       </Button>
                       <Button variant="outline" size="icon" className="text-destructive" onClick={() => setRewardToDelete(reward)}>
                           <Trash2 className="h-4 w-4" />
