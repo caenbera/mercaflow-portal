@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Edit, Trash2, Cog } from 'lucide-react';
-import type { RewardRule, RewardRuleType, Product } from '@/types';
+import type { RewardRule, RewardRuleType, Product, ProductCategory } from '@/types';
 import { useLocale } from 'next-intl';
 
 const ruleTypes: RewardRuleType[] = [
@@ -231,7 +231,7 @@ export function ManageRulesTab() {
   }
 
   return (
-    <>
+    <React.Fragment>
       <RuleDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} rule={editingRule} products={products} />
       <AlertDialog open={!!deletingRule} onOpenChange={(open) => !open && setDeletingRule(null)}>
         <AlertDialogContent>
@@ -245,6 +245,7 @@ export function ManageRulesTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
       <CardContent className="space-y-4">
         <div className="flex justify-end">
           <Button onClick={handleCreate}>
@@ -279,10 +280,6 @@ export function ManageRulesTab() {
             )
         }
       </CardContent>
-    </>
+    </React.Fragment>
   );
 }
-
-    
-
-    

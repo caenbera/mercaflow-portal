@@ -229,7 +229,7 @@ export function ManageRewardsTab() {
   };
 
   return (
-    <>
+    <React.Fragment>
       <RewardDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} reward={rewardToEdit} />
       <AlertDialog open={!!rewardToDelete} onOpenChange={(open) => !open && setRewardToDelete(null)}>
         <AlertDialogContent>
@@ -281,7 +281,6 @@ export function ManageRewardsTab() {
             ))}
       </div>
     </CardContent>
-    </>
+    </React.Fragment>
   );
 }
-

@@ -184,7 +184,7 @@ export function ManageTiersTab() {
   };
 
   return (
-    <>
+    <React.Fragment>
       <TierDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} tier={tierToEdit} />
       <AlertDialog open={!!tierToDelete} onOpenChange={(open) => !open && setTierToDelete(null)}>
         <AlertDialogContent>
@@ -230,6 +230,6 @@ export function ManageTiersTab() {
             ))}
       </div>
     </CardContent>
-    </>
+    </React.Fragment>
   );
 }
