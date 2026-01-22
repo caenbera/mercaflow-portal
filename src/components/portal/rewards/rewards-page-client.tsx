@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/navigation';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -17,15 +16,17 @@ import {
   AlertDialogHeader, 
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Crown, PiggyBank, Truck, Utensils, Check } from 'lucide-react';
+import { ArrowLeft, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/auth-context';
 import { useRewardData } from '@/hooks/useRewardData';
+import { useProducts } from '@/hooks/use-products';
 import { useRewardActivity } from '@/hooks/useRewardActivity';
 import * as LucideIcons from 'lucide-react';
 import { redeemReward } from '@/lib/firestore/rewards';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import type { RewardRule } from '@/types';
 
 type IconName = keyof typeof LucideIcons;
 
@@ -43,12 +44,14 @@ export function RewardsPageClient() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, userProfile, loading: authLoading } = useAuth();
-  const { rewards, tiers, loading: rewardsLoading } = useRewardData();
+  const { rewards, tiers, rules, loading: rewardsLoading } = useRewardData();
   const { activities, loading: activityLoading } = useRewardActivity(user?.uid);
-  
+  const { products, loading: productsLoading } = useProducts();
+  const locale = useLocale();
+
   const [selectedReward, setSelectedReward] = useState<{id: string; name: string, pointCost: number} | null>(null);
 
-  const loading = authLoading || rewardsLoading || activityLoading;
+  const loading = authLoading || rewardsLoading || activityLoading || productsLoading;
   const points = userProfile?.rewardPoints || 0;
 
   const { currentTier, nextTier, progressToNextTier } = useMemo(() => {
@@ -76,6 +79,36 @@ export function RewardsPageClient() {
 
     return { currentTier: current, nextTier: next, progressToNextTier: progress };
   }, [points, tiers, loading]);
+
+  const generateRuleDescription = (rule: RewardRule) => {
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayNamesEs = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const finalDayNames = locale === 'es' ? dayNamesEs : dayNames;
+
+    switch (rule.ruleType) {
+        case 'pointsPerDollar': return t('rule_desc_pointsPerDollar', { points: rule.points, perAmount: rule.perAmount });
+        case 'bonusForAmount': return t('rule_desc_bonusForAmount', { points: rule.points, amount: rule.amount });
+        case 'fixedPointsPerOrder': return t('rule_desc_fixedPointsPerOrder', { points: rule.points });
+        case 'bonusForProduct':
+            const productName = products.find(p => p.id === rule.productId)?.name[locale as 'es'|'en'] || t('rule_desc_bonusForProduct_fallback');
+            return t('rule_desc_bonusForProduct', { points: rule.points, productName });
+        case 'multiplierPerDay':
+            const dayName = finalDayNames[rule.dayOfWeek || 0];
+            return t('rule_desc_multiplierPerDay', { multiplier: rule.multiplier, dayName });
+        case 'firstOrderBonus': return t('rule_desc_firstOrderBonus', { points: rule.points });
+        case 'anniversaryBonus': return t('rule_desc_anniversaryBonus', { points: rule.points });
+        case 'bonusForVariety': return t('rule_desc_bonusForVariety', { points: rule.points, amount: rule.amount });
+        case 'bonusForCategory': return t('rule_desc_bonusForCategory', { points: rule.points, categoryName: rule.category?.[locale as 'es'|'en'] });
+        case 'consecutiveBonus': return t('rule_desc_consecutiveBonus', { points: rule.points, weeks: rule.weeks });
+        default: return t('rule_desc_misconfigured');
+    }
+  }
+
+  const activeRules = useMemo(() => {
+    if (loading) return [];
+    return rules.filter(rule => rule.isActive);
+  }, [rules, loading]);
+
 
   const handleRedeemClick = (reward: {id: string, name: string, pointCost: number}) => {
     if (points >= reward.pointCost) {
@@ -153,6 +186,32 @@ export function RewardsPageClient() {
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-3">{t('points_rule')}</p>
+        </div>
+
+        <div className="px-4 mt-6">
+          <h3 className="text-sm font-bold text-muted-foreground uppercase mb-3 px-1">{t('how_to_earn_title')}</h3>
+          <div className="space-y-3">
+            {loading ? (
+                <Skeleton className="h-20 w-full rounded-xl"/>
+            ) : activeRules.length > 0 ? (
+              activeRules.map((rule) => (
+                <div key={rule.id} className="bg-card rounded-xl p-3 flex items-center gap-4 shadow-sm border">
+                   <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 bg-blue-100 text-blue-600">
+                    <Zap className="h-6 w-6" />
+                  </div>
+                  <div className="flex-grow">
+                    <h6 className="font-bold text-sm text-foreground">{rule.name}</h6>
+                    <p className="text-xs text-muted-foreground">{generateRuleDescription(rule)}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+                <div className="bg-card rounded-xl p-3 flex items-center justify-center gap-4 shadow-sm border min-h-16">
+                    <p className="text-sm text-center text-muted-foreground">{t('no_active_rules')}</p>
+                </div>
+            )
+            }
+          </div>
         </div>
 
         <div className="px-4 mt-6">

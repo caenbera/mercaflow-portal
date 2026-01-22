@@ -1,4 +1,3 @@
-
 {
   "title": "My Points & Rewards",
   "points_label": "Points",
@@ -27,5 +26,19 @@
   "redeem_success_desc": "The benefit has been applied to your account.",
   "not_enough_points_title": "Not Enough Points",
   "not_enough_points_desc": "You need {cost} points to redeem this reward.",
-  "no_activity": "No recent activity."
+  "no_activity": "No recent activity.",
+  "how_to_earn_title": "How to Earn Points",
+  "no_active_rules": "There are no active ways to earn points right now.",
+  "rule_desc_pointsPerDollar": "Earn {points} point(s) for every ${perAmount} spent.",
+  "rule_desc_bonusForAmount": "Get a bonus of {points} points on orders over ${amount}.",
+  "rule_desc_fixedPointsPerOrder": "Earn {points} fixed points for every completed order.",
+  "rule_desc_bonusForProduct": "Earn {points} bonus points when you buy {productName}.",
+  "rule_desc_bonusForProduct_fallback": "a specific product",
+  "rule_desc_multiplierPerDay": "Get a x{multiplier} point multiplier on {dayName}s.",
+  "rule_desc_firstOrderBonus": "Get a one-time bonus of {points} points on your first order.",
+  "rule_desc_anniversaryBonus": "Earn {points} points during your sign-up anniversary month.",
+  "rule_desc_bonusForVariety": "Earn {points} bonus points if your order has more than {amount} different items.",
+  "rule_desc_bonusForCategory": "Earn {points} bonus points for buying products from the '{categoryName}' category.",
+  "rule_desc_consecutiveBonus": "Get a bonus of {points} points for ordering for {weeks} consecutive weeks.",
+  "rule_desc_misconfigured": "A misconfigured rule."
 }
