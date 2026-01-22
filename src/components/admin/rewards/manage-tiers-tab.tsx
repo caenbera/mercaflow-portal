@@ -21,7 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import type { RewardTier } from '@/types';
 import * as LucideIcons from 'lucide-react';
-import { TierDialog } from './TierDialog'; // Import the new dialog component
+import { TierDialog } from './TierDialog';
 
 type IconName = keyof typeof LucideIcons;
 
@@ -62,8 +62,12 @@ export function ManageTiersTab() {
   };
 
   return (
-    <React.Fragment>
-      <TierDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} tier={tierToEdit} />
+    <>
+      <TierDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        tier={tierToEdit}
+      />
       <AlertDialog open={!!tierToDelete} onOpenChange={(open) => !open && setTierToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
@@ -76,6 +80,7 @@ export function ManageTiersTab() {
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
       <CardContent className="space-y-4">
         <div className="flex justify-end">
           <Button onClick={handleCreate}>
@@ -90,11 +95,11 @@ export function ManageTiersTab() {
             : tiers.map((tier) => (
                 <Card key={tier.id} className="p-3 flex items-center justify-between shadow-sm">
                   <div className="flex items-center gap-4">
-                     <Icon name={tier.iconName as IconName} className="h-6 w-6 text-amber-500" />
-                     <div>
-                       <h3 className="font-bold">{tier.name}</h3>
-                       <p className="text-sm text-muted-foreground">Requires {tier.minPoints.toLocaleString()} points</p>
-                     </div>
+                      <Icon name={tier.iconName as IconName} className="h-6 w-6 text-amber-500" />
+                      <div>
+                        <h3 className="font-bold">{tier.name}</h3>
+                        <p className="text-sm text-muted-foreground">Requires {tier.minPoints.toLocaleString()} points</p>
+                      </div>
                   </div>
                   <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => handleEdit(tier)}>
@@ -108,6 +113,6 @@ export function ManageTiersTab() {
               ))}
         </div>
       </CardContent>
-    </React.Fragment>
+    </>
   );
 }

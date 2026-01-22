@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useState, useMemo } from 'react';
+import { useLocale } from 'next-intl';
 import { useRewardData } from '@/hooks/useRewardData';
 import { useProducts } from '@/hooks/use-products';
 import { deleteRule, manageRule } from '@/lib/firestore/rewards';
@@ -12,9 +13,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import type { RewardRule, ProductCategory } from '@/types';
-import { useLocale } from 'next-intl';
-import { RuleDialog } from './RuleDialog'; // Import the new dialog component
+import type { RewardRule } from '@/types';
+import { RuleDialog } from './RuleDialog';
 
 export function ManageRulesTab() {
   const { rules, loading: rulesLoading } = useRewardData();
@@ -25,7 +25,7 @@ export function ManageRulesTab() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<RewardRule | null>(null);
   const [deletingRule, setDeletingRule] = useState<RewardRule | null>(null);
-
+  
   const loading = rulesLoading || productsLoading;
   
   const productCategories = useMemo(() => {
@@ -37,7 +37,6 @@ export function ManageRulesTab() {
     });
     return Array.from(uniqueCategories.values());
   }, [products]);
-
 
   const handleEdit = (rule: RewardRule) => {
     setEditingRule(rule);
@@ -88,15 +87,15 @@ export function ManageRulesTab() {
         default: return 'A misconfigured rule.';
     }
   }
-
+  
   return (
-    <React.Fragment>
-      <RuleDialog 
-        open={isDialogOpen} 
-        onOpenChange={setIsDialogOpen} 
-        rule={editingRule} 
+    <>
+      <RuleDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        rule={editingRule}
         products={products}
-        productCategories={productCategories}
+        categories={productCategories}
       />
       <AlertDialog open={!!deletingRule} onOpenChange={(open) => !open && setDeletingRule(null)}>
         <AlertDialogContent>
@@ -145,6 +144,6 @@ export function ManageRulesTab() {
             )
         }
       </CardContent>
-    </React.Fragment>
+    </>
   );
 }

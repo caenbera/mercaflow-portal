@@ -1,22 +1,16 @@
 'use client';
 
 import * as React from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { manageReward } from '@/lib/firestore/rewards';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { manageReward } from '@/lib/firestore/rewards';
 import type { Reward } from '@/types';
 
 const rewardSchema = z.object({
@@ -38,19 +32,17 @@ const colorOptions = [
   { value: 'bg-purple-100 text-purple-600', name: 'Purple' },
 ];
 
-export function RewardDialog({
-  open,
-  onOpenChange,
-  reward,
-}: {
+interface RewardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   reward: Reward | null;
-}) {
+}
+
+export function RewardDialog({ open, onOpenChange, reward }: RewardDialogProps) {
   const { toast } = useToast();
   const form = useForm<RewardFormValues>({
     resolver: zodResolver(rewardSchema),
-    defaultValues: reward || {
+    defaultValues: {
       name: '',
       description: '',
       pointCost: 0,
@@ -59,14 +51,16 @@ export function RewardDialog({
     },
   });
 
-  React.useEffect(() => {
-    form.reset(reward || {
-      name: '',
-      description: '',
-      pointCost: 0,
-      iconName: 'Gift',
-      color: 'bg-gray-100 text-gray-600',
-    });
+  useEffect(() => {
+    if (open) {
+      form.reset(reward || {
+        name: '',
+        description: '',
+        pointCost: 0,
+        iconName: 'Gift',
+        color: 'bg-gray-100 text-gray-600',
+      });
+    }
   }, [reward, open, form]);
 
   const onSubmit = async (data: RewardFormValues) => {
@@ -138,14 +132,14 @@ export function RewardDialog({
                   <FormControl>
                     <Input placeholder="e.g., PiggyBank" {...field} />
                   </FormControl>
-                   <p className="text-xs text-muted-foreground pt-1">
+                  <p className="text-xs text-muted-foreground pt-1">
                       Find icons at lucide.dev and use the exact name.
                     </p>
                   <FormMessage />
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
               control={form.control}
               name="color"
               render={({ field }) => (

@@ -21,7 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import type { Reward } from '@/types';
 import * as LucideIcons from 'lucide-react';
-import { RewardDialog } from './RewardDialog'; // Import the new dialog component
+import { RewardDialog } from './RewardDialog';
 
 type IconName = keyof typeof LucideIcons;
 
@@ -62,8 +62,12 @@ export function ManageRewardsTab() {
   };
 
   return (
-    <React.Fragment>
-      <RewardDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} reward={rewardToEdit} />
+    <>
+      <RewardDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        reward={rewardToEdit}
+      />
       <AlertDialog open={!!rewardToDelete} onOpenChange={(open) => !open && setRewardToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
@@ -76,6 +80,7 @@ export function ManageRewardsTab() {
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
       <CardContent className="space-y-4">
         <div className="flex justify-end">
           <Button onClick={handleCreate}>
@@ -95,8 +100,8 @@ export function ManageRewardsTab() {
                         <Icon name={reward.iconName as IconName} className="h-6 w-6" />
                       </div>
                       <div className="text-right">
-                         <div className="font-bold text-amber-600 text-lg">{reward.pointCost.toLocaleString()}</div>
-                         <div className="text-xs text-muted-foreground font-semibold">PTS</div>
+                          <div className="font-bold text-amber-600 text-lg">{reward.pointCost.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground font-semibold">PTS</div>
                       </div>
                     </div>
                     <h3 className="font-bold mt-3">{reward.name}</h3>
@@ -114,6 +119,6 @@ export function ManageRewardsTab() {
               ))}
         </div>
       </CardContent>
-    </React.Fragment>
+    </>
   );
 }

@@ -1,34 +1,17 @@
 'use client';
 
 import * as React from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { manageTier } from '@/lib/firestore/rewards';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { manageTier } from '@/lib/firestore/rewards';
 import type { RewardTier } from '@/types';
-import * as LucideIcons from 'lucide-react';
-
-type IconName = keyof typeof LucideIcons;
-
-const Icon = ({ name, className }: { name: IconName; className?: string }) => {
-  const LucideIcon = LucideIcons[name] as React.ElementType;
-  if (!LucideIcon) {
-    return <LucideIcons.Shield className={className} />;
-  }
-  return <LucideIcon className={className} />;
-};
 
 const tierSchema = z.object({
   name: z.string().min(2, "Name is too short"),
@@ -38,31 +21,31 @@ const tierSchema = z.object({
 
 type TierFormValues = z.infer<typeof tierSchema>;
 
-export function TierDialog({
-  open,
-  onOpenChange,
-  tier,
-}: {
+interface TierDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tier: RewardTier | null;
-}) {
+}
+
+export function TierDialog({ open, onOpenChange, tier }: TierDialogProps) {
   const { toast } = useToast();
   const form = useForm<TierFormValues>({
     resolver: zodResolver(tierSchema),
-    defaultValues: tier || {
+    defaultValues: {
       name: '',
       minPoints: 0,
       iconName: 'Shield',
     },
   });
 
-  React.useEffect(() => {
-    form.reset(tier || {
-      name: '',
-      minPoints: 0,
-      iconName: 'Shield',
-    });
+  useEffect(() => {
+    if (open) {
+      form.reset(tier || {
+        name: '',
+        minPoints: 0,
+        iconName: 'Shield',
+      });
+    }
   }, [tier, open, form]);
 
   const onSubmit = async (data: TierFormValues) => {
@@ -121,7 +104,7 @@ export function TierDialog({
                   <FormControl>
                     <Input placeholder="e.g., Shield, Award, Crown" {...field} />
                   </FormControl>
-                   <p className="text-xs text-muted-foreground pt-1">
+                  <p className="text-xs text-muted-foreground pt-1">
                       Find icons at lucide.dev and use the exact name.
                     </p>
                   <FormMessage />
