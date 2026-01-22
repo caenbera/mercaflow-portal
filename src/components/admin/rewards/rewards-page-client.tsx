@@ -1,23 +1,13 @@
-
 "use client";
 
-import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
-// You will create these components in subsequent steps
-// import { ManageRewardsTab } from './manage-rewards-tab';
-// import { ManageTiersTab } from './manage-tiers-tab';
-// import { ManageRulesTab } from './manage-rules-tab';
-
-// Placeholder components for now
-const ManageRewardsTab = () => <CardContent>Manage rewards content coming soon.</CardContent>;
-const ManageTiersTab = () => <CardContent>Manage tiers content coming soon.</CardContent>;
-const ManageRulesTab = () => <CardContent>Manage rules content coming soon.</CardContent>;
-
+// Import the real components
+import { ManageRewardsTab } from './manage-rewards-tab';
+import { ManageTiersTab } from './manage-tiers-tab';
+import { ManageRulesTab } from './manage-rules-tab';
 
 export function RewardsPageClient() {
   const t = useTranslations('AdminRewardsPage');
