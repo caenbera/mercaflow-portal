@@ -108,5 +108,18 @@ service cloud.firestore {
       allow read: if isAuthed();
       allow write: if hasAdminRole();
     }
+
+    // OFFERS Collection
+    match /offers/{offerId} {
+      allow read: if isAuthed();
+      // Only admins/superadmins can create, update, or delete offers
+      allow write: if hasAdminRole();
+    }
+    
+    // OFFER CATEGORIES Collection
+    match /offerCategories/{categoryId} {
+      allow read: if isAuthed();
+      allow write: if hasAdminRole();
+    }
   }
 }
