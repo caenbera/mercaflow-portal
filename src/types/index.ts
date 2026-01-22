@@ -135,5 +135,11 @@ export interface Branch {
   manager: string;
 }
 
+export interface PriceList {
+  name: string;
+  discount: number;
+  description: string;
+}
+
 // Exporting Firebase User type for components
 export type { User };

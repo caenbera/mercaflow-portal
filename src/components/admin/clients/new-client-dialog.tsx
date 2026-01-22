@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,13 +15,12 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { UserProfile, ClientTier } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfile } from '@/lib/firestore/users';
-import { Check, Pencil, Plus, Trash2, Undo2 } from 'lucide-react';
+import { priceLists } from '@/lib/price-lists';
 
 
 const clientFormSchema = z.object({
@@ -44,17 +43,11 @@ interface ClientFormDialogProps {
 }
 
 const initialTiers: ClientTier[] = ['standard', 'bronze', 'silver', 'gold'];
-const initialPriceLists: string[] = ['Standard', 'VIP', 'Wholesale'];
 
 export function ClientFormDialog({ open, onOpenChange, client }: ClientFormDialogProps) {
   const t = useTranslations('ClientsPage');
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  
-  const [priceLists, setPriceLists] = useState(initialPriceLists);
-  const [isInputMode, setIsInputMode] = useState(false);
-  const [editModeTarget, setEditModeTarget] = useState<string | null>(null);
-  const priceListInputRef = useRef<HTMLInputElement>(null);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(clientFormSchema),
@@ -82,9 +75,6 @@ export function ClientFormDialog({ open, onOpenChange, client }: ClientFormDialo
         paymentTerms: client.paymentTerms || 'Net 15',
         priceList: client.priceList || 'Standard'
       });
-       if (client.priceList && !priceLists.includes(client.priceList)) {
-        setPriceLists(prev => [...prev, client.priceList!]);
-      }
     } else if (open) {
         form.reset({
           businessName: '', contactPerson: '', phone: '', address: '',
@@ -92,14 +82,9 @@ export function ClientFormDialog({ open, onOpenChange, client }: ClientFormDialo
       });
     }
   }, [open, client, form]);
-
-  const currentPriceList = form.watch('priceList');
-
-  const startCreatingPriceList = () => { setEditModeTarget(null); setIsInputMode(true); if (priceListInputRef.current) priceListInputRef.current.value = ""; setTimeout(() => priceListInputRef.current?.focus(), 100); };
-  const startEditingPriceList = () => { if (!currentPriceList) return; setEditModeTarget(currentPriceList); setIsInputMode(true); setTimeout(() => { if(priceListInputRef.current) { priceListInputRef.current.value = currentPriceList; priceListInputRef.current.focus(); }}, 100);};
-  const handleSavePriceList = () => { const inputValue = priceListInputRef.current?.value.trim(); if (!inputValue) { setIsInputMode(false); return; } if (editModeTarget) { setPriceLists(prev => prev.map(c => c === editModeTarget ? inputValue : c)); if (currentPriceList === editModeTarget) form.setValue('priceList', inputValue); } else { if (!priceLists.includes(inputValue)) { setPriceLists(prev => [...prev, inputValue]); form.setValue('priceList', inputValue); } } setIsInputMode(false); setEditModeTarget(null); };
-  const handleDeletePriceList = () => { if (!currentPriceList || !confirm(t('confirm_delete_pricelist', { priceList: currentPriceList }))) return; setPriceLists(prev => prev.filter(c => c !== currentPriceList)); form.setValue('priceList', ''); };
-  const cancelPriceListInput = () => { setIsInputMode(false); setEditModeTarget(null); };
+  
+  const selectedPriceListName = form.watch('priceList');
+  const selectedPriceList = priceLists.find(p => p.name === selectedPriceListName);
   
   const onSubmit = async (values: FormValues) => {
     if (!client) {
@@ -150,29 +135,25 @@ export function ClientFormDialog({ open, onOpenChange, client }: ClientFormDialo
                         <Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
                         <SelectContent><SelectItem value="Net 7">Net 7</SelectItem><SelectItem value="Net 15">Net 15</SelectItem><SelectItem value="Net 30">Net 30</SelectItem></SelectContent></Select><FormMessage /></FormItem> )}/>
                      <FormField control={form.control} name="priceList" render={({ field }) => (
-                        <FormItem><FormLabel>{t('price_list_label')}</FormLabel>
-                        <div className="flex items-center gap-2">
-                        {isInputMode ? (
-                           <>
-                                <Input ref={priceListInputRef} onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); handleSavePriceList(); }}} />
-                                <Button type="button" size="icon" onClick={handleSavePriceList}><Check className="h-4 w-4" /></Button>
-                                <Button type="button" size="icon" variant="ghost" onClick={cancelPriceListInput}><Undo2 className="h-4 w-4" /></Button>
-                            </>
-                        ) : (
-                             <>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder={t('price_list_label')} /></SelectTrigger></FormControl>
-                                <SelectContent>{priceLists.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                                </Select>
-                                <div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border">
-                                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentPriceList} onClick={startEditingPriceList}><Pencil className="h-3.5 w-3.5" /></Button>
-                                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentPriceList} onClick={handleDeletePriceList}><Trash2 className="h-3.5 w-3.5" /></Button>
-                                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={startCreatingPriceList}><Plus className="h-4 w-4" /></Button>
-                                </div>
-                            </>
-                        )}
-                        </div>
-                        <FormMessage /></FormItem>
+                        <FormItem>
+                          <FormLabel>{t('price_list_label')}</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={t('price_list_label')} />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {priceLists.map(pl => <SelectItem key={pl.name} value={pl.name}>{pl.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                            {selectedPriceList && (
+                                <p className="text-xs text-muted-foreground pt-1">
+                                    {selectedPriceList.description}
+                                </p>
+                            )}
+                          <FormMessage />
+                        </FormItem>
                     )}/>
                 </div>
                  <DialogFooter className="pt-4">

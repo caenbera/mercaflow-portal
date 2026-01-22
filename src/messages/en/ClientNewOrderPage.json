@@ -16,6 +16,8 @@
     "selectedItems": "Selected Items",
     "observations": "General Observations",
     "observationsPlaceholder": "e.g., Ring the bell loudly...",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
     "total": "Total",
     "sendOrder": "Send Order",
     "sendingOrder": "Sending...",

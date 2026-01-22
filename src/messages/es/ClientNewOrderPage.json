@@ -16,6 +16,8 @@
     "selectedItems": "Productos Seleccionados",
     "observations": "Observaciones Generales",
     "observationsPlaceholder": "Ej: Timbrar fuerte...",
+    "subtotal": "Subtotal",
+    "discount": "Descuento",
     "total": "Total",
     "sendOrder": "Enviar Pedido",
     "sendingOrder": "Enviando...",

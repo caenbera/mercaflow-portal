@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
-import type { Product as ProductType, OrderItem, ProductCategory } from '@/types';
+import type { Product as ProductType, OrderItem, ProductCategory, PriceList } from '@/types';
 import { CalendarIcon, Search, MessageSquarePlus, Pencil, Minus, Plus, ShoppingBasket, Star } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
@@ -23,13 +23,14 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useProducts } from '@/hooks/use-products';
 import { useOrders } from '@/hooks/use-orders';
 import { Skeleton } from '@/components/ui/skeleton';
+import { priceLists } from '@/lib/price-lists';
 
 interface Cart { [productId: string]: number };
 interface Notes { [productId: string]: string };
 
 const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
-const CheckoutContent = ({ orderItems, notes, total, deliveryDate, isSubmitting, handleSubmitOrder, t, locale }: any) => (
+const CheckoutContent = ({ orderItems, notes, subtotal, discountAmount, total, deliveryDate, isSubmitting, handleSubmitOrder, t, locale, priceListName, discountPercentage }: any) => (
   <div className="flex flex-col h-full">
     <SheetHeader className="p-3 text-left border-b">
       <SheetTitle className="text-base">{t('confirmOrder')}</SheetTitle>
@@ -64,7 +65,19 @@ const CheckoutContent = ({ orderItems, notes, total, deliveryDate, isSubmitting,
       </div>
     </div>
     <div className="p-3 bg-gray-50 border-t">
-      <div className="flex justify-between items-center mb-2">
+       <div className="space-y-1 text-sm mb-3">
+          <div className="flex justify-between">
+              <span className="text-muted-foreground">{t('subtotal')}</span>
+              <span className="font-medium">{formatCurrency(subtotal)}</span>
+          </div>
+          {discountAmount > 0 && (
+              <div className="flex justify-between text-primary">
+                  <span className="font-medium">{t('discount')} ({priceListName} {discountPercentage}%)</span>
+                  <span className="font-medium">-{formatCurrency(discountAmount)}</span>
+              </div>
+          )}
+      </div>
+      <div className="flex justify-between items-center mb-2 pt-2 border-t">
         <span className="text-muted-foreground font-medium">{t('total')}</span>
         <span className="text-xl font-bold">{formatCurrency(total)}</span>
       </div>
@@ -160,9 +173,9 @@ export default function NewOrderPage() {
     return productList;
   }, [activeCategory, searchTerm, unifiedProductsForClient, loading, favoriteProductIds, t, locale]);
 
-  const { orderItems, total, totalItems } = useMemo(() => {
+  const { orderItems, subtotal, discountAmount, total, totalItems, priceListName, discountPercentage } = useMemo(() => {
     const orderItems: (OrderItem & { photoUrl: string })[] = [];
-    let total = 0;
+    let subtotal = 0;
     let totalItems = 0;
 
     for (const productId in cart) {
@@ -176,12 +189,28 @@ export default function NewOrderPage() {
           price: product.salePrice,
           photoUrl: product.photoUrl || '',
         });
-        total += product.salePrice * quantity;
+        subtotal += product.salePrice * quantity;
         totalItems += quantity;
       }
     }
-    return { orderItems, total, totalItems };
-  }, [cart, products]);
+    
+    const clientPriceListName = userProfile?.priceList || 'Standard';
+    const priceListConfig = priceLists.find(pl => pl.name === clientPriceListName);
+    const discountPerc = priceListConfig ? priceListConfig.discount / 100 : 0;
+    
+    const discountAmount = subtotal * discountPerc;
+    const total = subtotal - discountAmount;
+
+    return { 
+      orderItems, 
+      subtotal, 
+      discountAmount, 
+      total, 
+      totalItems,
+      priceListName: priceListConfig?.name || '',
+      discountPercentage: priceListConfig?.discount || 0
+    };
+  }, [cart, products, userProfile]);
 
   const handleQuantityChange = (productId: string, change: number) => {
     setCart(prev => {
@@ -262,12 +291,16 @@ export default function NewOrderPage() {
   const checkoutProps = {
     orderItems,
     notes,
+    subtotal,
+    discountAmount,
     total,
     deliveryDate,
     isSubmitting,
     handleSubmitOrder,
     t,
     locale,
+    priceListName,
+    discountPercentage,
   };
 
   return (
