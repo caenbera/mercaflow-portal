@@ -87,5 +87,8 @@
   "delete_confirm_desc": "This will permanently delete the client '{clientName}'. This action cannot be undone.",
   "delete_button_confirm": "Yes, Delete Client",
   "toast_delete_success_title": "Client Deleted",
-  "toast_delete_success_desc": "{clientName} has been successfully deleted."
+  "toast_delete_success_desc": "{clientName} has been successfully deleted.",
+  "delete_note_confirm_title": "Are you sure?",
+  "delete_note_confirm_desc": "This will permanently delete the note. This action cannot be undone.",
+  "delete_note_confirm_action": "Delete"
 }

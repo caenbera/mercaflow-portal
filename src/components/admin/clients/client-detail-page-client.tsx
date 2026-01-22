@@ -147,15 +147,15 @@ export function ClientDetailPageClient({ client, orders }: ClientDetailPageClien
        <AlertDialog open={!!noteToDelete} onOpenChange={(open) => !open && setNoteToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('delete_note_confirm_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the note. This action cannot be undone.
+              {t('delete_note_confirm_desc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel_button')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirmed} className="bg-destructive hover:bg-destructive/90">
-              Delete
+              {t('delete_note_confirm_action')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

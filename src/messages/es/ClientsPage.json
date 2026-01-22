@@ -87,5 +87,8 @@
   "delete_confirm_desc": "Esto eliminará permanentemente al cliente '{clientName}'. Esta acción no se puede deshacer.",
   "delete_button_confirm": "Sí, Eliminar Cliente",
   "toast_delete_success_title": "Cliente Eliminado",
-  "toast_delete_success_desc": "{clientName} ha sido eliminado correctamente."
+  "toast_delete_success_desc": "{clientName} ha sido eliminado correctamente.",
+  "delete_note_confirm_title": "¿Estás seguro?",
+  "delete_note_confirm_desc": "Esto eliminará la nota permanentemente. Esta acción no se puede deshacer.",
+  "delete_note_confirm_action": "Eliminar"
 }
