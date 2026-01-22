@@ -143,5 +143,17 @@ service cloud.firestore {
       allow read: if hasAdminRole();
       allow write: if hasAdminRole();
     }
+
+    // SUPPORT TICKETS Collection
+    match /supportTickets/{ticketId} {
+      // Users can create their own tickets.
+      allow create: if isAuthed() && request.resource.data.userId == request.auth.uid;
+      
+      // Admins can read and update all tickets.
+      allow read, update: if hasAdminRole();
+
+      // Only admins can delete tickets.
+      allow delete: if hasAdminRole();
+    }
   }
 }

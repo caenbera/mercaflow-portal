@@ -1,8 +1,17 @@
+
 rules_version = '2';
+
 service firebase.storage {
   match /b/{bucket}/o {
-    match /{allPaths=**} {
-      allow read, write: if request.auth != null;
+    // Allow users to upload images for their own support tickets.
+    // The path is validated to ensure they can't write to other users' folders.
+    match /support-tickets/{userId}/{fileName} {
+      allow create: if request.auth.uid == userId
+                     && request.resource.size < 5 * 1024 * 1024 // 5MB limit
+                     && request.resource.contentType.matches('image/.*'); // Only images
+      
+      // Admins or the user who uploaded the file can read it.
+      allow read: if request.auth.uid == userId || (request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']);
     }
   }
 }

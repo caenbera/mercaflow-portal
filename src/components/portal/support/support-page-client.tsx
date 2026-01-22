@@ -174,7 +174,7 @@ export function SupportPageClient() {
 
              <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white" disabled={isSubmitting} onClick={handleSendTicket}>
                 {isSubmitting ? t('sending_report_button') : t('send_report_button')}
-            </Button>
+             </Button>
           </div>
         </Card>
 
