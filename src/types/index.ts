@@ -1,7 +1,7 @@
 
 import type { Timestamp, User } from 'firebase/firestore';
 
-export type UserRole = 'client' | 'admin' | 'superadmin' | 'picker';
+export type UserRole = 'client' | 'admin' | 'superadmin' | 'picker' | 'purchaser';
 export type UserStatus = 'active' | 'pending_approval' | 'blocked';
 export type ClientTier = 'standard' | 'bronze' | 'silver' | 'gold';
 

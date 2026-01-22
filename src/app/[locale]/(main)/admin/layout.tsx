@@ -5,7 +5,7 @@ import { RoleGuard } from '@/components/auth/role-guard';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <RoleGuard allowedRoles={['admin', 'superadmin', 'picker']}>
+    <RoleGuard allowedRoles={['admin', 'superadmin', 'picker', 'purchaser']}>
       {children}
     </RoleGuard>
   );
