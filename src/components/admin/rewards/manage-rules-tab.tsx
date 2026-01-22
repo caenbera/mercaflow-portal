@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -11,7 +10,7 @@ import { useProducts } from '@/hooks/use-products';
 import { manageRule, deleteRule } from '@/lib/firestore/rewards';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -19,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Edit, Trash2, Cog } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import type { RewardRule, RewardRuleType, Product, ProductCategory } from '@/types';
 import { useLocale } from 'next-intl';
 
@@ -231,7 +230,7 @@ export function ManageRulesTab() {
   }
 
   return (
-    <React.Fragment>
+    <>
       <RuleDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} rule={editingRule} products={products} />
       <AlertDialog open={!!deletingRule} onOpenChange={(open) => !open && setDeletingRule(null)}>
         <AlertDialogContent>
@@ -280,6 +279,6 @@ export function ManageRulesTab() {
             )
         }
       </CardContent>
-    </React.Fragment>
+    </>
   );
 }
