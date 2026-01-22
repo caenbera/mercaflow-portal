@@ -1,3 +1,4 @@
+
 import type { Timestamp, User } from 'firebase/firestore';
 
 export type UserRole = 'client' | 'admin' | 'superadmin' | 'picker';
@@ -141,6 +142,13 @@ export interface PriceList {
   discount: number;
   description?: string;
 }
+
+export interface AdminInvite {
+  email: string;
+  role: UserRole;
+  status: 'pending' | 'claimed';
+}
+
 
 // Exporting Firebase User type for components
 export type { User };

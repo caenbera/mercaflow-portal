@@ -1,9 +1,10 @@
 
+
 import { doc, updateDoc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import type { UserProfile } from '@/types';
+import type { UserProfile, UserRole } from '@/types';
 
 export const updateUserProfile = (uid: string, data: Partial<UserProfile>) => {
   const userDoc = doc(db, 'users', uid);
@@ -53,22 +54,20 @@ export const deleteUser = (uid: string) => {
   });
 };
 
-
-// This function is no longer needed with the simplified role management.
-// We keep it here in case we want to re-introduce a pre-approval flow later,
-// but it is not used by any component.
-export const addAdminInvite = (email: string) => {
+export const addAdminInvite = (email: string, role: UserRole) => {
   const inviteDocRef = doc(db, 'adminInvites', email.toLowerCase());
   const inviteData = {
     email: email.toLowerCase(),
+    role: role,
     status: 'pending',
   };
-  setDoc(inviteDocRef, inviteData).catch(async (serverError) => {
+  return setDoc(inviteDocRef, inviteData).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: inviteDocRef.path,
       operation: 'create',
       requestResourceData: inviteData,
     });
     errorEmitter.emit('permission-error', permissionError);
+    throw serverError;
   });
 };

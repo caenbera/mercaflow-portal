@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -7,9 +8,10 @@ import { useTranslations } from 'next-intl';
 import { useUsers } from '@/hooks/use-users';
 import { UsersTable } from '@/components/dashboard/users/users-table';
 import { RoleGuard } from '@/components/auth/role-guard';
-import type { UserProfile } from '@/types';
-import { updateUserProfile } from '@/lib/firestore/users';
+import type { UserProfile, UserRole } from '@/types';
+import { updateUserProfile, addAdminInvite } from '@/lib/firestore/users';
 import { useToast } from '@/hooks/use-toast';
+import { InviteAdminForm } from '@/components/dashboard/users/invite-admin-form';
 
 export default function ManageUsersPage() {
   const t = useTranslations('Dashboard');
@@ -35,11 +37,39 @@ export default function ManageUsersPage() {
       setIsUpdating(false);
     }
   };
+
+  const handleInvite = async (email: string, role: UserRole) => {
+    try {
+      await addAdminInvite(email, role);
+      toast({
+        title: "Invite Sent",
+        description: `${email} has been pre-approved as a(n) ${role}. They can now sign up.`
+      })
+    } catch (error: any) {
+       toast({
+        variant: "destructive",
+        title: "Error sending invite",
+        description: error.message || "An unexpected error occurred. This could be a permissions issue.",
+      });
+    }
+  };
   
   return (
     <RoleGuard allowedRoles={['superadmin']}>
       <div className="flex flex-col gap-4 p-4 sm:p-6 lg:p-8">
         <h1 className="text-2xl font-headline font-bold">{t('users_title')}</h1>
+        
+        <Card>
+            <CardHeader>
+                <CardTitle>Pre-Approve Admin / Staff</CardTitle>
+                <CardDescription>
+                    Invite a new admin or staff member. They will be prompted to create an account with the role you assign.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <InviteAdminForm onInvite={handleInvite} />
+            </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -66,3 +96,4 @@ export default function ManageUsersPage() {
     </RoleGuard>
   );
 }
+

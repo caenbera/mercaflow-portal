@@ -1,0 +1,98 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthed() {
+      return request.auth != null;
+    }
+
+    // Helper function to check for admin or superadmin roles.
+    // This safely checks if the user document exists before accessing its data.
+    function hasAdminRole() {
+      return isAuthed() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+    }
+    
+    // Helper function to check for superadmin role.
+    function isSuperAdmin() {
+      return isAuthed() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+    }
+
+    // USERS Collection
+    match /users/{userId} {
+      allow create: if isAuthed() && request.auth.uid == userId;
+      
+      allow read: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
+      
+      // A user can update their own data (but not their role).
+      // An admin can update a client's data (but not their role).
+      // A superadmin can update any data on another user, as long as that user is not also a superadmin.
+      allow update: if isAuthed() && (
+                    (request.auth.uid == userId && !('role' in request.resource.data.diff(resource.data).affectedKeys())) ||
+                    (isSuperAdmin() && resource.data.role != 'superadmin') ||
+                    (hasAdminRole() && resource.data.role == 'client' && !('role' in request.resource.data.diff(resource.data).affectedKeys()))
+                  );
+      
+      allow delete: if isSuperAdmin();
+
+       // NOTES sub-collection inside USERS
+      match /notes/{noteId} {
+        // Admins and superadmins can manage notes for any user.
+        allow read, write: if hasAdminRole();
+      }
+    }
+
+    // PRODUCTS Collection
+    match /products/{productId} {
+      allow read: if isAuthed();
+      allow write: if hasAdminRole();
+    }
+
+    // ORDERS Collection
+    match /orders/{orderId} {
+      allow create: if isAuthed() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAuthed() && (resource.data.userId == request.auth.uid || hasAdminRole());
+      allow update: if hasAdminRole();
+      allow delete: if hasAdminRole();
+    }
+    
+    // SUPPLIERS Collection
+    match /suppliers/{supplierId} {
+      // Admins and superadmins need to be able to read and write.
+      allow read, write: if hasAdminRole();
+    }
+    
+    // BRANCHES sub-collection inside USERS
+    match /users/{userId}/branches/{branchId} {
+        // A user can manage their own branches.
+        allow read, write: if isAuthed() && request.auth.uid == userId;
+    }
+
+    // ADMIN INVITES Collection
+    match /adminInvites/{email} {
+      // Superadmins can manage invites.
+      allow read, create, delete: if isSuperAdmin();
+      
+      // Unauthenticated users can check for their own invite during signup by email.
+      allow get: if request.auth == null;
+      
+      // An authenticated user can "claim" their invite by updating its status.
+      // This is safe because they must be authenticated with the email that matches the document ID.
+      // It only allows the status field to be changed to 'claimed'.
+      allow update: if isAuthed() && request.auth.token.email == email
+                      && request.resource.data.status == 'claimed'
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+    }
+
+    // PRICE LISTS Collection
+    match /pricelists/{priceListId} {
+      allow read: if isAuthed();
+      allow write: if hasAdminRole();
+    }
+  }
+}
