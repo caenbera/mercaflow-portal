@@ -180,7 +180,7 @@ export function ClientDetailPageClient({ client, orders }: ClientDetailPageClien
                 <div>
                   <h1 className="text-2xl font-bold font-headline">{client.businessName}</h1>
                   <div className="flex items-center gap-3 mt-1 flex-wrap">
-                    <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 capitalize">{client.status}</Badge>
+                    <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 capitalize">{client.status || 'active'}</Badge>
                     <Badge variant="outline" className="border-yellow-200 bg-yellow-100 text-yellow-800 hover:bg-yellow-100/80">
                         {getTierIcon(client.tier)}
                         <span className="ml-1 capitalize">{client.tier}</span>
@@ -317,7 +317,11 @@ export function ClientDetailPageClient({ client, orders }: ClientDetailPageClien
                                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                 <span className="font-semibold text-foreground">{note.authorName}</span>
                                                 <span>&bull;</span>
-                                                <span>{formatDistanceToNow(note.createdAt.toDate(), { addSuffix: true, locale: es })}</span>
+                                                {note.createdAt ? (
+                                                  <span>{formatDistanceToNow(note.createdAt.toDate(), { addSuffix: true, locale: es })}</span>
+                                                ) : (
+                                                  <span>Just now</span>
+                                                )}
                                             </div>
                                             <p className="text-sm">{note.text}</p>
                                         </div>
