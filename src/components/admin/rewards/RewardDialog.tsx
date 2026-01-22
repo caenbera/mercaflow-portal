@@ -26,6 +26,7 @@ import {
 import { manageReward } from '@/lib/firestore/rewards';
 import type { Reward } from '@/types';
 import { allowedIcons, iconNames } from '@/lib/constants/icons';
+import { useTranslations } from 'next-intl';
 
 const rewardSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
@@ -56,6 +57,7 @@ interface RewardDialogProps {
 
 export function RewardDialog({ open, onOpenChange, reward }: RewardDialogProps) {
   const { toast } = useToast();
+  const t = useTranslations('AdminRewardsPage');
 
   const form = useForm<RewardFormValues>({
     resolver: zodResolver(rewardSchema),
@@ -86,15 +88,15 @@ export function RewardDialog({ open, onOpenChange, reward }: RewardDialogProps) 
     try {
       await manageReward(reward?.id || null, data);
       toast({
-        title: `Reward ${reward ? 'updated' : 'created'} successfully.`,
+        title: reward ? t('toast_reward_updated') : t('toast_reward_created'),
       });
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving reward:', error);
       toast({
         variant: 'destructive',
-        title: 'Failed to save reward.',
-        description: 'Please check your inputs and try again.',
+        title: t('toast_reward_error'),
+        description: t('toast_reward_error_desc'),
       });
     }
   };
@@ -103,13 +105,12 @@ export function RewardDialog({ open, onOpenChange, reward }: RewardDialogProps) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>{reward ? 'Edit Reward' : 'Create New Reward'}</DialogTitle>
+          <DialogTitle>{reward ? t('dialog_edit_reward') : t('dialog_create_reward')}</DialogTitle>
           <DialogDescription>
-            Define a redeemable item or benefit for your loyalty program.
+            {t('dialog_reward_desc')}
           </DialogDescription>
         </DialogHeader>
 
-        {/* 👇 Contenedor scrollable que incluye el formulario con los íconos */}
         <div className="overflow-y-auto px-1 pb-1 max-h-[50vh]">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -118,13 +119,12 @@ export function RewardDialog({ open, onOpenChange, reward }: RewardDialogProps) 
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Reward Name</FormLabel>
+                    <FormLabel>{t('dialog_reward_name_label')}</FormLabel>
                     <FormControl>
-                      {/* Nota: Ya no hay Input para iconName */}
                       <input
                         type="text"
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        placeholder="e.g., $20 Credit"
+                        placeholder={t('dialog_reward_name_placeholder')}
                         {...field}
                       />
                     </FormControl>
@@ -138,17 +138,17 @@ export function RewardDialog({ open, onOpenChange, reward }: RewardDialogProps) 
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>{t('dialog_reward_desc_label')}</FormLabel>
                     <FormControl>
                       <input
                         type="text"
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        placeholder="Applicable on your next invoice"
+                        placeholder={t('dialog_reward_desc_placeholder')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      A short explanation visible to users in the rewards catalog.
+                      {t('dialog_reward_desc_help')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -160,19 +160,19 @@ export function RewardDialog({ open, onOpenChange, reward }: RewardDialogProps) 
                 name="pointCost"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Point Cost</FormLabel>
+                    <FormLabel>{t('dialog_reward_cost_label')}</FormLabel>
                     <FormControl>
                       <input
                         type="number"
                         min="1"
                         step="1"
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        placeholder="1000"
+                        placeholder={t('dialog_reward_cost_placeholder')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      How many loyalty points are required to redeem this reward?
+                      {t('dialog_reward_cost_help')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -184,7 +184,7 @@ export function RewardDialog({ open, onOpenChange, reward }: RewardDialogProps) 
                 name="iconName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Icon</FormLabel>
+                    <FormLabel>{t('dialog_icon_label')}</FormLabel>
                     <div className="grid grid-cols-5 gap-2 pt-2">
                       {allowedIcons.map((iconOption) => {
                         const IconComponent = iconOption.component;
@@ -198,7 +198,7 @@ export function RewardDialog({ open, onOpenChange, reward }: RewardDialogProps) 
                                 ? 'border-primary bg-primary/10 scale-105'
                                 : 'border-muted hover:bg-muted/30'
                             }`}
-                            aria-label={`Select ${iconOption.name} icon`}
+                            aria-label={t('dialog_reward_icon_select_aria', { iconName: iconOption.name })}
                           >
                             <IconComponent className="w-6 h-6" />
                             <span className="text-xs mt-1 text-muted-foreground">{iconOption.name}</span>
@@ -216,7 +216,7 @@ export function RewardDialog({ open, onOpenChange, reward }: RewardDialogProps) 
                 name="color"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Badge Color</FormLabel>
+                    <FormLabel>{t('dialog_reward_color_label')}</FormLabel>
                     <div className="flex flex-wrap gap-2 pt-1">
                       {colorOptions.map((option) => (
                         <button
@@ -228,7 +228,7 @@ export function RewardDialog({ open, onOpenChange, reward }: RewardDialogProps) 
                               ? 'border-primary scale-105'
                               : 'border-transparent hover:opacity-80'
                           }`}
-                          aria-label={`Select ${option.name} color`}
+                          aria-label={t('dialog_reward_color_select_aria', { colorName: option.name })}
                         >
                           <div className={`w-full h-full rounded-full ${option.value}`} />
                         </button>
@@ -244,10 +244,10 @@ export function RewardDialog({ open, onOpenChange, reward }: RewardDialogProps) 
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('cancel_button')}
           </Button>
           <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
-            {reward ? 'Update Reward' : 'Create Reward'}
+            {reward ? t('dialog_reward_update_button') : t('dialog_reward_create_button')}
           </Button>
         </DialogFooter>
       </DialogContent>

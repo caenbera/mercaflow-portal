@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { manageTier } from '@/lib/firestore/rewards';
 import type { RewardTier } from '@/types';
 import { allowedIcons, iconNames } from '@/lib/constants/icons';
+import { useTranslations } from 'next-intl';
 
 const tierSchema = z.object({
   name: z.string().min(2, 'Name is too short'),
@@ -45,6 +46,7 @@ interface TierDialogProps {
 
 export function TierDialog({ open, onOpenChange, tier }: TierDialogProps) {
   const { toast } = useToast();
+  const t = useTranslations('AdminRewardsPage');
 
   const form = useForm<TierFormValues>({
     resolver: zodResolver(tierSchema),
@@ -71,15 +73,15 @@ export function TierDialog({ open, onOpenChange, tier }: TierDialogProps) {
     try {
       await manageTier(tier?.id || null, data);
       toast({
-        title: `Tier ${tier ? 'updated' : 'created'} successfully.`,
+        title: tier ? t('toast_tier_updated') : t('toast_tier_created'),
       });
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving tier:', error);
       toast({
         variant: 'destructive',
-        title: 'Error saving tier.',
-        description: 'Please try again or contact support.',
+        title: t('toast_tier_error'),
+        description: t('toast_tier_error_desc'),
       });
     }
   };
@@ -88,9 +90,9 @@ export function TierDialog({ open, onOpenChange, tier }: TierDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{tier ? 'Edit Tier' : 'Create New Tier'}</DialogTitle>
+          <DialogTitle>{tier ? t('dialog_edit_tier') : t('dialog_create_tier')}</DialogTitle>
           <DialogDescription>
-            Define a customer loyalty level. Users will unlock this tier once they reach the minimum points.
+            {t('dialog_tier_desc')}
           </DialogDescription>
         </DialogHeader>
 
@@ -101,9 +103,9 @@ export function TierDialog({ open, onOpenChange, tier }: TierDialogProps) {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tier Name</FormLabel>
+                  <FormLabel>{t('dialog_tier_name_label')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Bronze, Silver, Gold" {...field} />
+                    <Input placeholder={t('dialog_tier_name_placeholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -115,9 +117,9 @@ export function TierDialog({ open, onOpenChange, tier }: TierDialogProps) {
               name="minPoints"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Minimum Points to Achieve</FormLabel>
+                  <FormLabel>{t('dialog_tier_points_label')}</FormLabel>
                   <FormControl>
-                    <Input type="number" min="0" placeholder="0" {...field} />
+                    <Input type="number" min="0" placeholder={t('dialog_tier_points_placeholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -129,7 +131,7 @@ export function TierDialog({ open, onOpenChange, tier }: TierDialogProps) {
               name="iconName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Icon</FormLabel>
+                  <FormLabel>{t('dialog_icon_label')}</FormLabel>
                   <div className="grid grid-cols-5 gap-2 pt-2">
                     {allowedIcons.map((iconOption) => {
                       const IconComponent = iconOption.component;
@@ -143,7 +145,7 @@ export function TierDialog({ open, onOpenChange, tier }: TierDialogProps) {
                               ? 'border-primary bg-primary/10 scale-105'
                               : 'border-muted hover:bg-muted/30'
                           }`}
-                          aria-label={`Select ${iconOption.name} icon`}
+                          aria-label={t('dialog_reward_icon_select_aria', { iconName: iconOption.name })}
                         >
                           <IconComponent className="w-6 h-6" />
                           <span className="text-xs mt-1 text-muted-foreground">{iconOption.name}</span>
@@ -158,9 +160,9 @@ export function TierDialog({ open, onOpenChange, tier }: TierDialogProps) {
 
             <DialogFooter className="gap-2 sm:gap-0">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                {t('cancel_button')}
               </Button>
-              <Button type="submit">{tier ? 'Update Tier' : 'Create Tier'}</Button>
+              <Button type="submit">{tier ? t('dialog_tier_update_button') : t('dialog_tier_create_button')}</Button>
             </DialogFooter>
           </form>
         </Form>
