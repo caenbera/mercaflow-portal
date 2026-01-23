@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/navigation';
 import { useAuth } from '@/context/auth-context';
@@ -15,9 +16,12 @@ import { AddBranchDialog } from './add-branch-dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Crown, Pencil, Plus, MapPin, Store, Tag, Headset, FileText, LogOut, ChevronRight, MoreVertical } from 'lucide-react';
+import { Crown, Pencil, Plus, MapPin, Store, Tag, Headset, FileText, LogOut, ChevronRight, MoreVertical, Bell, BellOff } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { subscribeToPushNotifications, unsubscribeFromPushNotifications, getPushSubscription } from '@/lib/notifications';
 
 
 export function AccountPageClient() {
@@ -29,8 +33,47 @@ export function AccountPageClient() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
+  const [isNotificationProcessing, setIsNotificationProcessing] = useState(true);
 
   const loading = authLoading || branchesLoading;
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator) {
+        getPushSubscription().then(sub => {
+            setIsNotificationsEnabled(!!sub);
+            setIsNotificationProcessing(false);
+        });
+    } else {
+        setIsNotificationProcessing(false);
+    }
+  }, []);
+
+  const handleNotificationToggle = async () => {
+    if (!user) return;
+    setIsNotificationProcessing(true);
+    try {
+        if (isNotificationsEnabled) {
+            await unsubscribeFromPushNotifications(user.uid);
+            setIsNotificationsEnabled(false);
+            toast({ title: "Notifications Disabled", description: "You will no longer receive push notifications on this device." });
+        } else {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                await subscribeToPushNotifications(user.uid);
+                setIsNotificationsEnabled(true);
+                toast({ title: "Notifications Enabled!", description: "You will now receive updates via push notifications." });
+            } else {
+                toast({ variant: 'destructive', title: "Permission Denied", description: "You need to grant permission to enable notifications." });
+            }
+        }
+    } catch (error) {
+        console.error("Error toggling notifications", error);
+        toast({ variant: 'destructive', title: "Error", description: "Could not change notification settings." });
+    } finally {
+        setIsNotificationProcessing(false);
+    }
+  };
 
   const handleSignOut = async () => {
     if (confirm(t('logout_confirm'))) {
@@ -176,6 +219,26 @@ export function AccountPageClient() {
                     ) : (
                         <p className="text-center text-sm text-muted-foreground py-4">No branches added yet.</p>
                     )}
+                </div>
+            </div>
+
+            <div className="text-xs font-bold text-muted-foreground uppercase mt-6 mb-2">Ajustes</div>
+            <div className="bg-card rounded-2xl shadow-sm overflow-hidden">
+                <div className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", isNotificationsEnabled ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500')}>
+                            {isNotificationsEnabled ? <Bell className="h-5 w-5"/> : <BellOff className="h-5 w-5"/>}
+                        </div>
+                        <div>
+                            <span className="font-semibold text-sm">Notificaciones Push</span>
+                            <p className="text-xs text-muted-foreground">Recibe actualizaciones de pedidos y soporte.</p>
+                        </div>
+                    </div>
+                    <Switch
+                        checked={isNotificationsEnabled}
+                        onCheckedChange={handleNotificationToggle}
+                        disabled={isNotificationProcessing}
+                    />
                 </div>
             </div>
 

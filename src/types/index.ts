@@ -5,6 +5,14 @@ export type UserRole = 'client' | 'admin' | 'superadmin' | 'picker' | 'purchaser
 export type UserStatus = 'active' | 'pending_approval' | 'blocked';
 export type ClientTier = 'standard' | 'bronze' | 'silver' | 'gold';
 
+export interface PushSubscriptionJSON {
+  endpoint: string;
+  expirationTime?: number | null;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+}
 
 export interface UserProfile {
   uid: string;
@@ -22,6 +30,7 @@ export interface UserProfile {
   priceList?: string;
   rewardPoints?: number;
   creditBalance?: number;
+  pushSubscription?: PushSubscriptionJSON | null;
 }
 
 
