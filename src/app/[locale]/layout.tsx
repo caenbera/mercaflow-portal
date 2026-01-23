@@ -17,6 +17,7 @@ export default async function RootLayout({
   const { locale } = await params; // ✅ AWAIT aquí
   setRequestLocale(locale); // ✅ sin "unstable_"
   const messages = await getMessages();
+  const iconUrl = "https://i.postimg.cc/y86gF4Cp/the-fresh_hub-noback.png";
 
   return (
     <html lang={locale} suppressHydrationWarning>
@@ -31,7 +32,8 @@ export default async function RootLayout({
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
         />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icon.svg"></link>
+        <link rel="icon" href={iconUrl} type="image/png" />
+        <link rel="apple-touch-icon" href={iconUrl}></link>
         <meta name="theme-color" content="#27ae60" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
