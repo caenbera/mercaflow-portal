@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import {
   DndContext,
   DragOverlay,
@@ -236,6 +237,15 @@ export function TicketBoard({ tickets }: TicketBoardProps) {
                       <p className="text-xs"><strong>Orden:</strong> {selectedTicket.orderId}</p>
                     )}
                   </div>
+                  <Separator />
+                  {selectedTicket.photoUrl && (
+                    <div>
+                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">Evidencia Fotográfica</h3>
+                      <a href={selectedTicket.photoUrl} target="_blank" rel="noopener noreferrer">
+                          <Image src={selectedTicket.photoUrl} alt="Support Ticket Evidence" width={500} height={300} className="rounded-lg border object-cover" />
+                      </a>
+                    </div>
+                  )}
                   <Separator />
                   <div className="flex justify-between items-center">
                     <Badge className={`border ${STATUS_CONFIG[selectedTicket.status].color}`}>
