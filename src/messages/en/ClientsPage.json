@@ -1,3 +1,4 @@
+
 {
   "title": "Clients",
   "subtitle": "Manage accounts, credits, and access.",
@@ -93,6 +94,7 @@
   "manage_pricelists_title": "Manage Price Lists",
   "manage_pricelists_desc": "Add, edit, or delete price lists available for all clients.",
   "new_pricelist_name_label": "List Name",
-  "new_pricelist_discount_label": "Discount (%)",
-  "add_pricelist_button": "Add List"
+  "add_pricelist_button": "Add List",
+  "edit_pricelist": "Edit List",
+  "new_pricelist": "New List"
 }

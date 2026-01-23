@@ -133,7 +133,7 @@ export function PriceListManagerDialog({ open, onOpenChange }: PriceListManagerD
             </div>
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(editingId ? handleUpdate : handleAddNew)} className="space-y-4">
-                    <h3 className="text-sm font-semibold">{editingId ? t('edit_category') : t('new_category')}</h3>
+                    <h3 className="text-sm font-semibold">{editingId ? t('edit_pricelist') : t('new_pricelist')}</h3>
                     <FormField control={form.control} name="name" render={({ field }) => (
                          <FormItem>
                              <FormLabel>{t('new_pricelist_name_label')}</FormLabel>

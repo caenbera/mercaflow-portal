@@ -1,3 +1,4 @@
+
 {
   "title": "Clientes",
   "subtitle": "Administra cuentas, créditos y accesos.",
@@ -93,6 +94,7 @@
   "manage_pricelists_title": "Gestionar Listas de Precios",
   "manage_pricelists_desc": "Añade, edita o elimina las listas de precios disponibles para todos los clientes.",
   "new_pricelist_name_label": "Nombre de la Lista",
-  "new_pricelist_discount_label": "Descuento (%)",
-  "add_pricelist_button": "Añadir Lista"
+  "add_pricelist_button": "Añadir Lista",
+  "edit_pricelist": "Editar Lista",
+  "new_pricelist": "Nueva Lista"
 }
