@@ -4,7 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SupportTicket } from '@/types';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, Paperclip } from 'lucide-react';
 import { STATUS_CONFIG } from './ticket-board';
 
 interface SortableTicketItemProps {
@@ -15,7 +15,7 @@ interface SortableTicketItemProps {
 export function SortableTicketItem({ ticket, onClick }: SortableTicketItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ticket.id,
-    data: { status: ticket.status }, // ✅ CORREGIDO: se añadió "data:"
+    data: { status: ticket.status },
   });
 
   const style = {
@@ -35,7 +35,8 @@ export function SortableTicketItem({ ticket, onClick }: SortableTicketItemProps)
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-sm font-medium line-clamp-1">{ticket.issueType}</CardTitle>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            {ticket.photoUrl && <Paperclip className="h-4 w-4 text-muted-foreground" />}
             <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" {...listeners} {...attributes} />
             <Badge className={`border ${STATUS_CONFIG[ticket.status].color}`}>
               {STATUS_CONFIG[ticket.status].icon}
