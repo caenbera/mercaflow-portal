@@ -155,5 +155,11 @@ service cloud.firestore {
       // Only admins can delete tickets.
       allow delete: if hasAdminRole();
     }
+
+    // INVOICES Collection
+    match /invoices/{invoiceId} {
+      allow read: if isAuthed() && (resource.data.userId == request.auth.uid || hasAdminRole());
+      allow write: if hasAdminRole(); // Only admins can create/update invoices (e.g. mark as paid)
+    }
   }
 }

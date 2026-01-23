@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -10,14 +11,10 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Wallet, FileDown, AlertTriangle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from '@/navigation';
-
-const MOCK_INVOICES = [
-    { id: "INV-2023-001", date: "01 Ene, 2026", due: "15 Ene, 2026", amount: 450.00, status: "overdue", paid: false },
-    { id: "INV-2023-002", date: "10 Ene, 2026", due: "25 Ene, 2026", amount: 320.50, status: "open", paid: false },
-    { id: "INV-2023-003", date: "15 Ene, 2026", due: "30 Ene, 2026", amount: 480.00, status: "open", paid: false },
-    { id: "INV-2022-999", date: "20 Dic, 2025", due: "05 Ene, 2026", amount: 1200.00, status: "paid", paid: true },
-    { id: "INV-2022-998", date: "15 Dic, 2025", due: "30 Dic, 2025", amount: 850.00, status: "paid", paid: true },
-];
+import { useInvoices } from '@/hooks/use-invoices';
+import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
+import type { Invoice } from '@/types';
 
 const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
@@ -25,14 +22,18 @@ export function InvoicesPageClient() {
   const t = useTranslations('ClientInvoicesPage');
   const router = useRouter();
   const { toast } = useToast();
+  const { invoices, loading } = useInvoices();
 
   const [activeTab, setActiveTab] = useState('unpaid');
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const { totalBalance, overdueBalance, unpaidInvoices, paidInvoices } = useMemo(() => {
-    const unpaid = MOCK_INVOICES.filter(inv => !inv.paid);
-    const paid = MOCK_INVOICES.filter(inv => inv.paid);
+    if (loading) {
+      return { totalBalance: 0, overdueBalance: 0, unpaidInvoices: [], paidInvoices: [] };
+    }
+    const unpaid = invoices.filter(inv => inv.status !== 'paid');
+    const paid = invoices.filter(inv => inv.status === 'paid');
     const total = unpaid.reduce((sum, inv) => sum + inv.amount, 0);
     const overdue = unpaid.filter(inv => inv.status === 'overdue').reduce((sum, inv) => sum + inv.amount, 0);
     return {
@@ -41,14 +42,14 @@ export function InvoicesPageClient() {
       unpaidInvoices: unpaid,
       paidInvoices: paid,
     };
-  }, []);
+  }, [invoices, loading]);
 
   const selectedTotal = useMemo(() => {
     return selectedInvoices.reduce((sum, id) => {
-      const invoice = MOCK_INVOICES.find(inv => inv.id === id);
+      const invoice = invoices.find(inv => inv.id === id);
       return sum + (invoice?.amount || 0);
     }, 0);
-  }, [selectedInvoices]);
+  }, [selectedInvoices, invoices]);
 
   const handleSelectInvoice = (invoiceId: string, isChecked: boolean) => {
     setSelectedInvoices(prev => {
@@ -72,12 +73,21 @@ export function InvoicesPageClient() {
     }, 2000);
   };
   
-  const renderInvoiceList = (invoices: typeof MOCK_INVOICES) => {
-    if (invoices.length === 0) {
+  const renderInvoiceList = (invoicesToRender: Invoice[]) => {
+    if (loading) {
+      return (
+        <div className="space-y-2">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      );
+    }
+    if (invoicesToRender.length === 0) {
       return <p className="text-center text-muted-foreground py-10">{t('no_invoices')}</p>;
     }
 
-    return invoices.map(inv => (
+    return invoicesToRender.map(inv => (
       <Card key={inv.id} className={cn("p-3 flex items-center gap-3 transition-colors", inv.status === 'overdue' && 'border-l-4 border-destructive')}>
         {activeTab === 'unpaid' ? (
           <Checkbox
@@ -91,13 +101,13 @@ export function InvoicesPageClient() {
         )}
         <div className="flex-grow">
           <div className="flex justify-between items-start">
-            <label htmlFor={`inv-${inv.id}`} className="font-bold cursor-pointer">{inv.id}</label>
+            <label htmlFor={`inv-${inv.id}`} className="font-bold cursor-pointer">{inv.id.substring(0, 8).toUpperCase()}</label>
             <span className="font-bold text-sm">{formatCurrency(inv.amount)}</span>
           </div>
           <div className="flex justify-between items-end text-xs">
-            <span className="text-muted-foreground">{t('issued_date', { date: inv.date })}</span>
-            {inv.status === 'overdue' && <span className="font-semibold text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {t('due_date_overdue', { date: inv.due })}</span>}
-            {inv.status === 'open' && <span className="text-muted-foreground">{t('due_date_open', { date: inv.due })}</span>}
+            <span className="text-muted-foreground">{t('issued_date', { date: format(inv.invoiceDate.toDate(), 'dd MMM, yyyy') })}</span>
+            {inv.status === 'overdue' && <span className="font-semibold text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {t('due_date_overdue', { date: format(inv.dueDate.toDate(), 'dd MMM, yyyy') })}</span>}
+            {inv.status === 'open' && <span className="text-muted-foreground">{t('due_date_open', { date: format(inv.dueDate.toDate(), 'dd MMM, yyyy') })}</span>}
             {inv.status === 'paid' && <span className="font-semibold text-green-600">{t('paid_status')}</span>}
           </div>
         </div>
@@ -125,8 +135,8 @@ export function InvoicesPageClient() {
           <div className="flex justify-between items-center">
             <div>
               <p className="text-sm opacity-80 uppercase font-semibold">{t('total_to_pay')}</p>
-              <p className="text-2xl font-bold">{formatCurrency(totalBalance)}</p>
-              {overdueBalance > 0 && <p className="text-xs bg-red-500/80 text-white rounded-md px-2 py-0.5 mt-1 inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3"/>{t('overdue_amount', { amount: formatCurrency(overdueBalance) })}</p>}
+              {loading ? <Skeleton className="h-8 w-32 bg-white/20 mt-1" /> : <p className="text-2xl font-bold">{formatCurrency(totalBalance)}</p>}
+              {overdueBalance > 0 && !loading && <p className="text-xs bg-red-500/80 text-white rounded-md px-2 py-0.5 mt-1 inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3"/>{t('overdue_amount', { amount: formatCurrency(overdueBalance) })}</p>}
             </div>
             <Button variant="secondary" size="sm">{t('payment_methods')}<Wallet className="ml-2 h-4 w-4"/></Button>
           </div>

@@ -243,8 +243,18 @@ export interface SupportTicket {
   createdAt: Timestamp;
 }
 
+export type InvoiceStatus = 'paid' | 'open' | 'overdue';
+
+export interface Invoice {
+  id: string;
+  orderId: string;
+  userId: string;
+  invoiceDate: Timestamp;
+  dueDate: Timestamp;
+  amount: number;
+  status: InvoiceStatus;
+}
+
 
 // Exporting Firebase User type for components
 export type { User };
-
-
