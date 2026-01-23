@@ -32,11 +32,13 @@ export function TicketBoard() {
     if (!loading) {
       const newCols: Record<TicketStatus, SupportTicket[]> = { new: [], in_progress: [], resolved: [] };
       tickets.forEach(ticket => {
-        const status = ticket.status as TicketStatus;
-        // This check prevents a crash if a ticket has a missing or invalid status
-        if (newCols[status]) {
-          newCols[status].push(ticket);
+        let status = ticket.status as TicketStatus;
+        // This is a safeguard. If a ticket has a missing or invalid status,
+        // it will default to the 'new' column instead of crashing the app.
+        if (!status || !newCols[status]) {
+          status = 'new';
         }
+        newCols[status].push(ticket);
       });
       setColumns(newCols);
     }
