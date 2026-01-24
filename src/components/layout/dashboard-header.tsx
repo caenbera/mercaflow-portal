@@ -18,6 +18,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { LanguageSwitcher } from '../landing/language-switcher';
 import { useTranslations } from 'next-intl';
+import { NotificationBell } from './notification-bell';
 
 export function DashboardHeader() {
   const { user, userProfile } = useAuth();
@@ -54,6 +55,7 @@ export function DashboardHeader() {
       <div className="relative ml-auto flex-1 md:grow-0">
         {/* Potentially add a search bar here in the future */}
       </div>
+      <NotificationBell />
       <LanguageSwitcher />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

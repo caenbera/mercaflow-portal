@@ -1,0 +1,13 @@
+{
+  "title": "Notificaciones",
+  "sr_toggle": "Alternar notificaciones",
+  "item1_title": "Nuevo Pedido Recibido",
+  "item1_desc": "El pedido #ORD-8853 de Tacos El Sol ha sido realizado.",
+  "item1_time": "Hace 5 minutos",
+  "item2_title": "Ticket de Soporte Actualizado",
+  "item2_desc": "Tu ticket sobre un producto faltante ha sido resuelto.",
+  "item2_time": "Hace 1 hora",
+  "item3_title": "Pedido Enviado",
+  "item3_desc": "Tu pedido #ORD-8852 ya está en camino.",
+  "item3_time": "Ayer"
+}

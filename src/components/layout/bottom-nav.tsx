@@ -11,56 +11,95 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, UserCircle, MoreHorizontal, ChevronRight, Users, LayoutGrid, Tag, Trophy, Headset, FileText } from 'lucide-react';
+import { LogOut, UserCircle, MoreHorizontal, ChevronRight, Users, LayoutGrid, Tag, Trophy, Headset, FileText, Bell } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { NavDefinition } from './app-sidebar';
+import { NotificationSheetContent } from './notification-sheet';
 
 export function BottomNavBar({ navConfig }: { navConfig: NavDefinition }) {
   const pathname = usePathname();
   const t = useTranslations('NavigationBar');
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isMoreSheetOpen, setIsMoreSheetOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { role } = useAuth();
 
-  let navItems = role === 'client' ? navConfig.mobile.client : navConfig.mobile.admin;
-  if (!role) navItems = [];
+  let baseNavItems = role === 'client' ? navConfig.mobile.client : navConfig.mobile.admin;
+  if (!role) baseNavItems = [];
 
-  const mainNavItems = navItems.slice(0,3);
+  const navItems = baseNavItems.slice(0, 3);
+
+  const bottomBarItems = [
+    ...navItems,
+    { href: '#notifications', label: t('notifications'), icon: Bell },
+    { href: '#more', label: t('more'), icon: MoreHorizontal },
+  ];
 
   return (
     <>
       <div className="fixed bottom-0 left-0 z-40 w-full h-16 bg-card border-t md:hidden" style={{paddingBottom: 'env(safe-area-inset-bottom)'}}>
-        <div className="grid h-full grid-cols-4 mx-auto">
-          {mainNavItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center justify-center px-1 pt-2 font-medium text-center group ${
-                pathname.startsWith(item.href)
-                  ? 'text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <item.icon className="w-5 h-5 mb-1" />
-              <span className="text-[11px] leading-tight whitespace-normal text-center">{item.label}</span>
-            </Link>
-          ))}
-          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetTrigger asChild>
-                <button
-                    type="button"
-                    className="flex flex-col items-center justify-center px-1 pt-2 font-medium text-center group text-muted-foreground hover:text-foreground"
-                >
-                    <MoreHorizontal className="w-5 h-5 mb-1" />
-                    <span className="text-[11px] whitespace-normal text-center">{t('more')}</span>
-                </button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="h-auto w-full rounded-t-2xl p-0">
-              <MoreMenuSheetContent 
-                onClose={() => setIsSheetOpen(false)}
-                navConfig={navConfig}
-              />
-            </SheetContent>
-          </Sheet>
+        <div className="grid h-full grid-cols-5 mx-auto">
+          {bottomBarItems.map((item) => {
+            const isActive = item.href.startsWith('#') ? false : pathname.startsWith(item.href);
+
+            if (item.href === '#notifications') {
+              return (
+                <Sheet key={item.href} open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
+                  <SheetTrigger asChild>
+                    <button
+                        type="button"
+                        className="flex flex-col items-center justify-center px-1 pt-2 font-medium text-center group text-muted-foreground hover:text-foreground relative"
+                    >
+                        <item.icon className="w-5 h-5 mb-1" />
+                        <span className="text-[11px] whitespace-normal text-center">{item.label}</span>
+                        <span className="absolute top-1.5 right-3.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
+                          3
+                        </span>
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="h-[90dvh] max-h-[90dvh] p-0 flex flex-col">
+                    <NotificationSheetContent />
+                  </SheetContent>
+                </Sheet>
+              );
+            }
+
+            if (item.href === '#more') {
+              return (
+                 <Sheet key={item.href} open={isMoreSheetOpen} onOpenChange={setIsMoreSheetOpen}>
+                    <SheetTrigger asChild>
+                        <button
+                            type="button"
+                            className="flex flex-col items-center justify-center px-1 pt-2 font-medium text-center group text-muted-foreground hover:text-foreground"
+                        >
+                            <item.icon className="w-5 h-5 mb-1" />
+                            <span className="text-[11px] whitespace-normal text-center">{item.label}</span>
+                        </button>
+                    </SheetTrigger>
+                    <SheetContent side="bottom" className="h-auto w-full rounded-t-2xl p-0">
+                      <MoreMenuSheetContent 
+                        onClose={() => setIsMoreSheetOpen(false)}
+                        navConfig={navConfig}
+                      />
+                    </SheetContent>
+                  </Sheet>
+              );
+            }
+            
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex flex-col items-center justify-center px-1 pt-2 font-medium text-center group ${
+                  isActive
+                    ? 'text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <item.icon className="w-5 h-5 mb-1" />
+                <span className="text-[11px] leading-tight whitespace-normal text-center">{item.label}</span>
+              </Link>
+            );
+          })}
         </div>
       </div>
       <div className="h-16 md:hidden" />

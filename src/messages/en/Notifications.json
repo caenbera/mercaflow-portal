@@ -1,0 +1,13 @@
+{
+  "title": "Notifications",
+  "sr_toggle": "Toggle notifications",
+  "item1_title": "New Order Received",
+  "item1_desc": "Order #ORD-8853 from Tacos El Sol has been placed.",
+  "item1_time": "5 minutes ago",
+  "item2_title": "Support Ticket Updated",
+  "item2_desc": "Your ticket about a missing product has been resolved.",
+  "item2_time": "1 hour ago",
+  "item3_title": "Order Shipped",
+  "item3_desc": "Your order #ORD-8852 is now on its way.",
+  "item3_time": "Yesterday"
+}

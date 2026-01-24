@@ -1,4 +1,3 @@
-
 {
   "dashboard": "Panel de Control",
   "newOrder": "Nuevo Pedido",
@@ -26,5 +25,6 @@
   "rewards": "Recompensas",
   "my_rewards": "Mis Recompensas",
   "invoices": "Facturas y Pagos",
-  "procurement": "Compras"
+  "procurement": "Compras",
+  "notifications": "Notificaciones"
 }
