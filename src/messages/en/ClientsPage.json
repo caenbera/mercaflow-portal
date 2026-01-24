@@ -1,4 +1,3 @@
-
 {
   "title": "Clients",
   "subtitle": "Manage accounts, credits, and access.",
@@ -107,5 +106,7 @@
   "to_placeholder": "or more",
   "add_tier_button": "Add Tier",
   "save_changes_button": "Save Changes",
-  "create_new_list_button": "Create New List"
+  "create_new_list_button": "Create New List",
+  "new_pricelist_name_placeholder": "e.g., VIP Clients",
+  "pricing_tiers_label": "Pricing Tiers"
 }

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -14,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { usePriceLists } from '@/hooks/use-pricelists';
 import { addPriceList, updatePriceList, deletePriceList } from '@/lib/firestore/pricelists';
-import { Pencil, Trash2, Check, X, Loader2, Plus, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Pencil, Trash2, Check, X, Loader2, Plus, AlertTriangle } from 'lucide-react';
 import type { PriceList } from '@/types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -137,13 +136,13 @@ export function PriceListManagerDialog({ open, onOpenChange }: PriceListManagerD
                     <FormField control={form.control} name="name" render={({ field }) => (
                          <FormItem>
                              <FormLabel>{t('new_pricelist_name_label')}</FormLabel>
-                             <FormControl><Input {...field} placeholder="e.g., VIP Clients" /></FormControl>
+                             <FormControl><Input {...field} placeholder={t('new_pricelist_name_placeholder')} /></FormControl>
                              <FormMessage/>
                          </FormItem>
                      )}/>
                      
                      <div className="space-y-3">
-                        <FormLabel>Pricing Tiers</FormLabel>
+                        <FormLabel>{t('pricing_tiers_label')}</FormLabel>
                         {fields.map((field, index) => (
                            <div key={field.id} className="grid grid-cols-[1fr,auto,1fr,1fr,auto] items-end gap-2 p-2 border rounded-md bg-muted/20">
                                <FormField control={form.control} name={`tiers.${index}.from`} render={({ field }) => (<FormItem><FormLabel className="text-xs">{t('from_label')}</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)}/>
