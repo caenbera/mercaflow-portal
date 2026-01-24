@@ -7,17 +7,17 @@ export function Hero() {
   const t = useTranslations('LandingPageHero');
 
   return (
-    <section className="bg-gradient-to-br from-green-500 via-green-600 to-green-700 text-white py-20">
+    <section className="bg-gradient-to-br from-green-500 via-green-600 to-green-700 text-white py-16 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center">
-                <h1 className="text-5xl md:text-6xl font-bold mb-6" style={{textShadow: '2px 2px 4px rgba(0,0,0,0.3)'}}>
+                <h1 className="text-4xl md:text-6xl font-bold mb-6" style={{textShadow: '2px 2px 4px rgba(0,0,0,0.3)'}}>
                     {t.rich('hero_title_html', {
                       yellow: (chunks) => <span className="text-yellow-300">{chunks}</span>
                     })}
                 </h1>
-                <p className="text-xl md:text-2xl mb-8" style={{textShadow: '2px 2px 4px rgba(0,0,0,0.3)'}}>
+                <p className="text-lg md:text-2xl mb-8" style={{textShadow: '2px 2px 4px rgba(0,0,0,0.3)'}}>
                     {t.rich('hero_subtitle_html', {
-                      br: () => <br />,
+                      br: () => <br className="hidden md:block"/>,
                       lightYellow: (chunks) => <span className="text-yellow-200">{chunks}</span>
                     })}
                 </p>
@@ -36,12 +36,12 @@ export function Hero() {
                     </div>
                 </div>
                 <div className="space-y-4 md:space-y-0 md:space-x-4 md:flex justify-center">
-                    <Button asChild size="lg" className="bg-accent text-white px-8 py-4 text-lg font-bold hover:bg-orange-600 transition animate-pulse h-auto">
+                    <Button asChild size="lg" className="w-full md:w-auto bg-accent text-white px-8 py-3 text-base md:text-lg font-bold hover:bg-orange-600 transition animate-pulse h-auto">
                       <a href="#cotizacion">
                           <Calculator className="mr-2" />{t('hero_cta_quote')}
                       </a>
                     </Button>
-                    <Button asChild size="lg" className="bg-yellow-400 text-gray-900 px-8 py-4 text-lg font-bold hover:bg-yellow-300 transition h-auto">
+                    <Button asChild size="lg" className="w-full md:w-auto bg-yellow-400 text-gray-900 px-8 py-3 text-base md:text-lg font-bold hover:bg-yellow-300 transition h-auto">
                       <a href="#muestra">
                           <Gift className="mr-2" />{t('hero_cta_sample')}
                       </a>

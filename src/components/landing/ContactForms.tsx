@@ -26,13 +26,13 @@ export function ContactForms() {
     <section id="cotizacion" className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
-                <h2 className="text-4xl font-bold text-gray-900 mb-4">{t('contact_forms_title')}</h2>
-                <p className="text-xl text-gray-600">{t('contact_forms_subtitle')}</p>
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{t('contact_forms_title')}</h2>
+                <p className="text-lg md:text-xl text-gray-600">{t('contact_forms_subtitle')}</p>
             </div>
             <div className="grid md:grid-cols-2 gap-12">
                 {/* Cotización Form */}
-                <div className="bg-green-50 p-8 rounded-xl border border-green-200">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center flex items-center justify-center gap-2">
+                <div className="bg-green-50 p-6 md:p-8 rounded-xl border border-green-200">
+                    <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 text-center flex items-center justify-center gap-2">
                         <Calculator className="text-green-600" />
                         {t('quote_form_title')}
                     </h3>
@@ -63,15 +63,15 @@ export function ContactForms() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <Button type="submit" className="w-full bg-primary text-primary-foreground py-4 text-lg font-bold hover:bg-green-700 transition h-auto">
+                        <Button type="submit" className="w-full bg-primary text-primary-foreground py-3 text-base md:text-lg font-bold hover:bg-green-700 transition h-auto">
                             <Send className="mr-2" />{t('quote_form_button')}
                         </Button>
                     </form>
                 </div>
 
                 {/* Muestra Form */}
-                <div id="formulario-muestra" className="bg-orange-50 p-8 rounded-xl border border-orange-200">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center flex items-center justify-center gap-2">
+                <div id="formulario-muestra" className="bg-orange-50 p-6 md:p-8 rounded-xl border border-orange-200">
+                    <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 text-center flex items-center justify-center gap-2">
                         <Gift className="text-accent" />
                         {t('sample_form_title')}
                     </h3>
@@ -92,7 +92,7 @@ export function ContactForms() {
                             <Label htmlFor="s-address" className="block text-sm font-semibold text-gray-700 mb-2">{t('form_address_label')}</Label>
                             <Textarea id="s-address" rows={3} placeholder={t('form_address_placeholder')} />
                         </div>
-                        <Button type="submit" className="w-full bg-accent text-accent-foreground py-4 text-lg font-bold hover:bg-orange-600 transition h-auto">
+                        <Button type="submit" className="w-full bg-accent text-accent-foreground py-3 text-base md:text-lg font-bold hover:bg-orange-600 transition h-auto">
                             <Truck className="mr-2" />{t('sample_form_button')}
                         </Button>
                     </form>
