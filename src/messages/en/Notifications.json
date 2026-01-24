@@ -11,5 +11,9 @@
   "item3_desc": "Your order #ORD-8852 is now on its way.",
   "item3_time": "Yesterday",
   "no_notifications": "You have no notifications.",
+  "new_offer_title": "🔥 New Flash Offer!",
+  "new_offer_body": "{productName} at an incredible price. Don't miss out!",
+  "points_earned_title": "🎉 Points Earned!",
+  "points_earned_body": "You received {points} points for your order.",
   "loading": "Loading"
 }

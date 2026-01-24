@@ -16,7 +16,6 @@ import { db } from '@/lib/firebase/config';
 import type { Order, UserProfile, RewardRule } from '@/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { awardPointsForOrder } from './rewards';
 
 type OrderInput = Omit<Order, 'id' | 'createdAt'>;
 type OrderUpdateInput = Partial<Omit<Order, 'id' | 'createdAt' | 'userId'>>;
@@ -47,35 +46,9 @@ export const updateOrder = async (id: string, orderData: OrderUpdateInput) => {
   const orderDoc = doc(db, 'orders', id);
   
   try {
-    const orderSnapshot = await getDoc(orderDoc);
-    if (!orderSnapshot.exists()) {
-      throw new Error("Order not found");
-    }
-    const currentStatus = orderSnapshot.data().status;
-
+    // The logic for awarding points is now handled by a Cloud Function (onOrderUpdate)
+    // to ensure reliability and security. We simply update the document from the client.
     await updateDoc(orderDoc, orderData);
-
-    if (orderData.status === 'delivered' && currentStatus !== 'delivered') {
-      const order = { id, ...orderSnapshot.data() } as Order;
-      
-      const userDoc = await getDoc(doc(db, 'users', order.userId));
-      if (userDoc.exists()) {
-          const userProfile = { uid: userDoc.id, ...userDoc.data() } as UserProfile;
-          
-          // Fetch all active rules
-          const rulesQuery = query(collection(db, 'rewardRules'), where('isActive', '==', true));
-          const rulesSnapshot = await getDocs(rulesQuery);
-          const allRules = rulesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as RewardRule);
-
-          // Fetch all user's orders for complex rules
-          const userOrdersQuery = query(collection(db, 'orders'), where('userId', '==', order.userId));
-          const userOrdersSnapshot = await getDocs(userOrdersQuery);
-          const allOrders = userOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Order);
-
-          // Award points using the rule engine
-          await awardPointsForOrder(order, userProfile, allRules, allOrders);
-      }
-    }
   } catch(serverError: any) {
     const permissionError = new FirestorePermissionError({
       path: orderDoc.path,
@@ -83,6 +56,8 @@ export const updateOrder = async (id: string, orderData: OrderUpdateInput) => {
       requestResourceData: orderData,
     });
     errorEmitter.emit('permission-error', permissionError);
+    // Re-throw to be handled by the calling component (e.g., show a toast)
+    throw serverError;
   }
 };
 

@@ -11,5 +11,9 @@
   "item3_desc": "Tu pedido #ORD-8852 ya está en camino.",
   "item3_time": "Ayer",
   "no_notifications": "No tienes notificaciones.",
+  "new_offer_title": "🔥 ¡Nueva Oferta Flash!",
+  "new_offer_body": "¡{productName} a un precio increíble! No te la pierdas.",
+  "points_earned_title": "🎉 ¡Puntos Ganados!",
+  "points_earned_body": "Has recibido {points} puntos por tu pedido.",
   "loading": "Cargando"
 }
