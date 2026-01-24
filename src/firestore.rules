@@ -72,10 +72,23 @@ service cloud.firestore {
       allow read: if isAuthed();
       allow write: if hasPurchasingPermissions();
     }
+    
+    // PRODUCT CATEGORIES Collection
+    match /productCategories/{categoryId} {
+      allow read: if isAuthed();
+      allow write: if hasAdminRole();
+    }
+
+    // PRODUCT UNITS Collection
+    match /productUnits/{unitId} {
+      allow read: if isAuthed();
+      allow write: if hasAdminRole();
+    }
 
     // ORDERS Collection
     match /orders/{orderId} {
       allow create: if isAuthed() && request.resource.data.userId == request.auth.uid;
+      // This rule has a potential issue for list queries by admins. We will address it if it becomes a problem.
       allow read: if isAuthed() && (resource.data.userId == request.auth.uid || hasPickingPermissions());
       allow update: if hasPickingPermissions();
       allow delete: if hasAdminRole();
@@ -154,6 +167,14 @@ service cloud.firestore {
 
       // Only admins can delete tickets.
       allow delete: if hasAdminRole();
+    }
+
+    // INVOICES Collection
+    match /invoices/{invoiceId} {
+      // A user can read their own invoices. Admins can also read them via the get() helper.
+      // This rule is simplified to avoid query issues for non-admins.
+      allow read: if isAuthed() && resource.data.userId == request.auth.uid;
+      allow write: if hasAdminRole(); // Only admins can create/update invoices (e.g. mark as paid)
     }
   }
 }

@@ -23,6 +23,11 @@ import { Camera, Plus, Check, Undo2, Pencil, Trash2, Loader2 } from 'lucide-reac
 import { cn } from '@/lib/utils';
 import { useSuppliers } from '@/hooks/use-suppliers';
 
+import { useProductCategories, type ProductCategoryWithId } from '@/hooks/useProductCategories';
+import { useProductUnits, type ProductUnit } from '@/hooks/useProductUnits';
+import { addProductCategory, updateProductCategory, deleteProductCategory } from '@/lib/firestore/productCategories';
+import { addProductUnit, updateProductUnit, deleteProductUnit } from '@/lib/firestore/productUnits';
+
 const supplierSchema = z.object({
   supplierId: z.string().min(1, "Supplier is required."),
   cost: z.coerce.number().min(0, "Cost cannot be negative."),
@@ -60,24 +65,6 @@ interface ProductFormProps {
   defaultSupplierId?: string;
 }
 
-const initialCategories: ProductCategory[] = [
-  { es: "Verduras", en: "Vegetables" },
-  { es: "Frutas", en: "Fruits" },
-  { es: "Hierbas", en: "Herbs" },
-  { es: "Abarrotes", en: "Groceries" },
-  { es: "Congelados", en: "Frozen" },
-];
-
-const initialUnits: { es: string, en: string }[] = [
-  { es: "Caja 20lb", en: "20lb Box" },
-  { es: "Caja 40lb", en: "40lb Box" },
-  { es: "Bulto", en: "Sack" },
-  { es: "Kilogramo", en: "Kilogram" },
-  { es: "Bidón", en: "Jug" },
-  { es: "Manojo", en: "Bunch" },
-  { es: "Paq 2kg", en: "2kg Pack" },
-];
-
 export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSkuLoading, setIsSkuLoading] = useState(false);
@@ -91,15 +78,15 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
   const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
   const [imgUrlInputValue, setImgUrlInputValue] = useState('');
   
-  const [categories, setCategories] = useState(initialCategories);
+  const { categories, loading: categoriesLoading } = useProductCategories();
   const [isCategoryInputMode, setIsCategoryInputMode] = useState(false);
-  const [editCategoryTarget, setEditCategoryTarget] = useState<ProductCategory | null>(null);
+  const [editCategoryTarget, setEditCategoryTarget] = useState<ProductCategoryWithId | null>(null);
   const esCategoryInputRef = useRef<HTMLInputElement>(null);
   const enCategoryInputRef = useRef<HTMLInputElement>(null);
 
-  const [units, setUnits] = useState(initialUnits);
+  const { units, loading: unitsLoading } = useProductUnits();
   const [isUnitInputMode, setIsUnitInputMode] = useState(false);
-  const [editUnitTarget, setEditUnitTarget] = useState<{ es: string; en: string } | null>(null);
+  const [editUnitTarget, setEditUnitTarget] = useState<ProductUnit | null>(null);
   const esUnitInputRef = useRef<HTMLInputElement>(null);
   const enUnitInputRef = useRef<HTMLInputElement>(null);
   
@@ -183,13 +170,13 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
   };
   
   useEffect(() => {
-    if (suppliersLoading) return;
+    if (suppliersLoading || categoriesLoading || unitsLoading) return;
     const initialData = getInitialFormData();
     form.reset(initialData);
     setPriceCalculationMethod(initialData.pricingMethod || 'margin');
     setEditingProduct(product);
     setImgUrlInputValue(initialData.photoUrl || '');
-  }, [product, defaultSupplierId, pathname, suppliersLoading]);
+  }, [product, defaultSupplierId, pathname, suppliersLoading, categoriesLoading, unitsLoading]);
 
 
   const handleSkuBlur = async () => {
@@ -252,15 +239,15 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
   };
   
   const startCreatingCategory = () => { setEditCategoryTarget(null); setIsCategoryInputMode(true); setTimeout(() => esCategoryInputRef.current?.focus(), 100); };
-  const startEditingCategory = () => { if (!currentCategory?.es) return; setEditCategoryTarget(currentCategory); setIsCategoryInputMode(true); setTimeout(() => { if (esCategoryInputRef.current) esCategoryInputRef.current.value = currentCategory.es; if (enCategoryInputRef.current) enCategoryInputRef.current.value = currentCategory.en; esCategoryInputRef.current?.focus(); }, 100); };
-  const handleSaveCategory = () => { const esValue = esCategoryInputRef.current?.value.trim(); const enValue = enCategoryInputRef.current?.value.trim(); if (!esValue || !enValue) { toast({ variant: 'destructive', title: 'Both category names are required.' }); return; } const newCategory: ProductCategory = { es: esValue, en: enValue }; if (editCategoryTarget) { setCategories(prev => prev.map(c => c.es === editCategoryTarget.es ? newCategory : c)); if (currentCategory.es === editCategoryTarget.es) form.setValue('category', newCategory); toast({ title: t('toast_category_updated'), description: newCategory.es }); } else { if (!categories.some(c => c.es.toLowerCase() === newCategory.es.toLowerCase())) { setCategories(prev => [...prev, newCategory]); form.setValue('category', newCategory); toast({ title: t('toast_category_added'), description: newCategory.es }); } } setIsCategoryInputMode(false); setEditCategoryTarget(null); };
-  const handleDeleteCategory = () => { if (!currentCategory?.es || !confirm(t('confirm_delete_category', { category: currentCategory.es }))) return; const newCategories = categories.filter(c => c.es !== currentCategory.es); setCategories(newCategories); form.setValue('category', { es: '', en: '' }); toast({ title: t('toast_category_deleted') }); };
+  const startEditingCategory = () => { if (!currentCategory?.es) return; const categoryToEdit = categories.find(c => c.es === currentCategory.es); if (!categoryToEdit) return; setEditCategoryTarget(categoryToEdit); setIsCategoryInputMode(true); setTimeout(() => { if (esCategoryInputRef.current) esCategoryInputRef.current.value = currentCategory.es; if (enCategoryInputRef.current) enCategoryInputRef.current.value = currentCategory.en; esCategoryInputRef.current?.focus(); }, 100); };
+  const handleSaveCategory = async () => { const esValue = esCategoryInputRef.current?.value.trim(); const enValue = enCategoryInputRef.current?.value.trim(); if (!esValue || !enValue) { toast({ variant: 'destructive', title: 'Both category names are required.' }); return; } const newCategory: ProductCategory = { es: esValue, en: enValue }; try { if (editCategoryTarget) { await updateProductCategory(editCategoryTarget.id, newCategory); if (currentCategory.es === editCategoryTarget.es) form.setValue('category', newCategory); toast({ title: t('toast_category_updated'), description: newCategory.es }); } else { if (!categories.some(c => c.es.toLowerCase() === newCategory.es.toLowerCase())) { await addProductCategory(newCategory); form.setValue('category', newCategory); toast({ title: t('toast_category_added'), description: newCategory.es }); } } } catch (error) { toast({ variant: 'destructive', title: 'Error saving category' }); } setIsCategoryInputMode(false); setEditCategoryTarget(null); };
+  const handleDeleteCategory = async () => { if (!currentCategory?.es) return; const categoryToDelete = categories.find(c => c.es === currentCategory.es); if (!categoryToDelete || !confirm(t('confirm_delete_category', { category: currentCategory.es }))) return; try { await deleteProductCategory(categoryToDelete.id); form.setValue('category', { es: '', en: '' }); toast({ title: t('toast_category_deleted') }); } catch (error) { toast({ variant: 'destructive', title: 'Error deleting category' }); } };
   const cancelCategoryInput = () => { setIsCategoryInputMode(false); setEditCategoryTarget(null); };
 
   const startCreatingUnit = () => { setEditUnitTarget(null); setIsUnitInputMode(true); setTimeout(() => esUnitInputRef.current?.focus(), 100); };
-  const startEditingUnit = () => { if (!currentUnit?.es) return; setEditUnitTarget(currentUnit); setIsUnitInputMode(true); setTimeout(() => { if (esUnitInputRef.current) esUnitInputRef.current.value = currentUnit.es; if (enUnitInputRef.current) enUnitInputRef.current.value = currentUnit.en; esUnitInputRef.current?.focus(); }, 100); };
-  const handleSaveUnit = () => { const esValue = esUnitInputRef.current?.value.trim(); const enValue = enUnitInputRef.current?.value.trim(); if (!esValue || !enValue) { toast({ variant: 'destructive', title: 'Both unit names are required.' }); return; } const newUnit = { es: esValue, en: enValue }; if (editUnitTarget) { setUnits(prev => prev.map(u => u.es === editUnitTarget.es ? newUnit : u)); if (currentUnit.es === editUnitTarget.es) form.setValue('unit', newUnit); } else { if (!units.some(u => u.es.toLowerCase() === newUnit.es.toLowerCase())) { setUnits(prev => [...prev, newUnit]); form.setValue('unit', newUnit); } } setIsUnitInputMode(false); setEditUnitTarget(null); };
-  const handleDeleteUnit = () => { if (!currentUnit?.es || !confirm(`Are you sure you want to delete the unit '${currentUnit.es}'?`)) return; const newUnits = units.filter(u => u.es !== currentUnit.es); setUnits(newUnits); form.setValue('unit', { es: '', en: '' }); };
+  const startEditingUnit = () => { if (!currentUnit?.es) return; const unitToEdit = units.find(u => u.es === currentUnit.es); if (!unitToEdit) return; setEditUnitTarget(unitToEdit); setIsUnitInputMode(true); setTimeout(() => { if (esUnitInputRef.current) esUnitInputRef.current.value = currentUnit.es; if (enUnitInputRef.current) enUnitInputRef.current.value = currentUnit.en; esUnitInputRef.current?.focus(); }, 100); };
+  const handleSaveUnit = async () => { const esValue = esUnitInputRef.current?.value.trim(); const enValue = enUnitInputRef.current?.value.trim(); if (!esValue || !enValue) { toast({ variant: 'destructive', title: 'Both unit names are required.' }); return; } const newUnit = { es: esValue, en: enValue }; try { if (editUnitTarget) { await updateProductUnit(editUnitTarget.id, newUnit); if (currentUnit.es === editUnitTarget.es) form.setValue('unit', newUnit); toast({ title: "Unit updated" }); } else { if (!units.some(u => u.es.toLowerCase() === newUnit.es.toLowerCase())) { await addProductUnit(newUnit); form.setValue('unit', newUnit); toast({ title: "Unit created" }); } } } catch(e) { toast({ variant: 'destructive', title: 'Error saving unit' }); } setIsUnitInputMode(false); setEditUnitTarget(null); };
+  const handleDeleteUnit = async () => { if (!currentUnit?.es) return; const unitToDelete = units.find(u => u.es === currentUnit.es); if (!unitToDelete || !confirm(`Are you sure you want to delete the unit '${currentUnit.es}'?`)) return; try { await deleteProductUnit(unitToDelete.id); form.setValue('unit', { es: '', en: '' }); toast({ title: "Unit deleted" }); } catch(e) { toast({ variant: 'destructive', title: 'Error deleting unit' }); }};
   const cancelUnitInput = () => { setIsUnitInputMode(false); setEditUnitTarget(null); };
 
   async function onSubmit(values: ProductFormValues) {
@@ -322,8 +309,8 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_category')}</FormLabel><div className="flex items-center gap-2">{isCategoryInputMode ? (<div className="flex-grow grid grid-cols-2 gap-2 animate-in fade-in zoom-in-95 duration-200"><Input ref={esCategoryInputRef} placeholder="Nombre en Español" className="border-primary/50 ring-2 ring-primary/10" /><Input ref={enCategoryInputRef} placeholder="Name in English" className="border-primary/50 ring-2 ring-primary/10" /><Button type="button" size="icon" className="bg-green-600 hover:bg-green-700 h-10 w-10" onClick={handleSaveCategory} title={t('save')}><Check className="h-4 w-4" /></Button><Button type="button" size="icon" variant="ghost" className="text-muted-foreground h-10 w-10" onClick={cancelCategoryInput} title={t('cancel')}><Undo2 className="h-4 w-4" /></Button></div>) : (<><Select onValueChange={(value) => { if (!value) return; try { const parsedValue = JSON.parse(value); field.onChange(parsedValue); } catch (e) { console.error("Failed to parse category value", e); } }} value={field.value?.es ? JSON.stringify(field.value) : ""}><FormControl><SelectTrigger className="h-10 bg-white flex-grow"><SelectValue placeholder={t('form_placeholder_select_category')}>{field.value?.es || t('form_placeholder_select_category')}</SelectValue></SelectTrigger></FormControl><SelectContent>{categories.map(c => <SelectItem key={c.es} value={JSON.stringify(c)}>{c.es}</SelectItem>)}</SelectContent></Select><div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border border-gray-200"><Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentCategory?.es} onClick={startEditingCategory}><Pencil className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!currentCategory?.es} onClick={handleDeleteCategory}><Trash2 className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={startCreatingCategory}><Plus className="h-4 w-4" /></Button></div></>)}</div><FormMessage /></FormItem>)}/>
-                <FormField control={form.control} name="unit" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_unit')}</FormLabel><div className="flex items-center gap-2">{isUnitInputMode ? (<div className="flex-grow grid grid-cols-2 gap-2 animate-in fade-in zoom-in-95 duration-200"><Input ref={esUnitInputRef} placeholder="Unidad en Español" className="border-primary/50 ring-2 ring-primary/10" /><Input ref={enUnitInputRef} placeholder="Unit in English" className="border-primary/50 ring-2 ring-primary/10" /><Button type="button" size="icon" className="bg-green-600 hover:bg-green-700 h-10 w-10" onClick={handleSaveUnit} title={t('save')}><Check className="h-4 w-4" /></Button><Button type="button" size="icon" variant="ghost" className="text-muted-foreground h-10 w-10" onClick={cancelUnitInput} title={t('cancel')}><Undo2 className="h-4 w-4" /></Button></div>) : (<><Select onValueChange={(value) => { if (!value) return; try { const parsedValue = JSON.parse(value); field.onChange(parsedValue); } catch (e) { console.error("Failed to parse unit value", e); } }} value={field.value?.es ? JSON.stringify(field.value) : ""}><FormControl><SelectTrigger className="h-10 bg-white flex-grow"><SelectValue placeholder="Selecciona una unidad">{field.value?.es || "Selecciona una unidad"}</SelectValue></SelectTrigger></FormControl><SelectContent>{units.map(u => <SelectItem key={u.es} value={JSON.stringify(u)}>{u.es}</SelectItem>)}</SelectContent></Select><div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border border-gray-200"><Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentUnit?.es} onClick={startEditingUnit}><Pencil className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!currentUnit?.es} onClick={handleDeleteUnit}><Trash2 className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={startCreatingUnit}><Plus className="h-4 w-4" /></Button></div></>)}</div><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_category')}</FormLabel><div className="flex items-center gap-2">{isCategoryInputMode ? (<div className="flex-grow grid grid-cols-2 gap-2 animate-in fade-in zoom-in-95 duration-200"><Input ref={esCategoryInputRef} placeholder="Nombre en Español" className="border-primary/50 ring-2 ring-primary/10" /><Input ref={enCategoryInputRef} placeholder="Name in English" className="border-primary/50 ring-2 ring-primary/10" /><Button type="button" size="icon" className="bg-green-600 hover:bg-green-700 h-10 w-10" onClick={handleSaveCategory} title={t('save')}><Check className="h-4 w-4" /></Button><Button type="button" size="icon" variant="ghost" className="text-muted-foreground h-10 w-10" onClick={cancelCategoryInput} title={t('cancel')}><Undo2 className="h-4 w-4" /></Button></div>) : (<><Select onValueChange={(value) => { if (!value) return; try { const parsedValue = JSON.parse(value); field.onChange(parsedValue); } catch (e) { console.error("Failed to parse category value", e); } }} value={field.value?.es ? JSON.stringify(field.value) : ""}><FormControl><SelectTrigger className="h-10 bg-white flex-grow"><SelectValue placeholder={t('form_placeholder_select_category')}>{field.value?.es || t('form_placeholder_select_category')}</SelectValue></SelectTrigger></FormControl><SelectContent>{categories.map(c => <SelectItem key={c.id} value={JSON.stringify(c)}>{c.es}</SelectItem>)}</SelectContent></Select><div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border border-gray-200"><Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentCategory?.es} onClick={startEditingCategory}><Pencil className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!currentCategory?.es} onClick={handleDeleteCategory}><Trash2 className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={startCreatingCategory}><Plus className="h-4 w-4" /></Button></div></>)}</div><FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="unit" render={({ field }) => (<FormItem><FormLabel className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('form_label_unit')}</FormLabel><div className="flex items-center gap-2">{isUnitInputMode ? (<div className="flex-grow grid grid-cols-2 gap-2 animate-in fade-in zoom-in-95 duration-200"><Input ref={esUnitInputRef} placeholder="Unidad en Español" className="border-primary/50 ring-2 ring-primary/10" /><Input ref={enUnitInputRef} placeholder="Unit in English" className="border-primary/50 ring-2 ring-primary/10" /><Button type="button" size="icon" className="bg-green-600 hover:bg-green-700 h-10 w-10" onClick={handleSaveUnit} title={t('save')}><Check className="h-4 w-4" /></Button><Button type="button" size="icon" variant="ghost" className="text-muted-foreground h-10 w-10" onClick={cancelUnitInput} title={t('cancel')}><Undo2 className="h-4 w-4" /></Button></div>) : (<><Select onValueChange={(value) => { if (!value) return; try { const parsedValue = JSON.parse(value); field.onChange(parsedValue); } catch (e) { console.error("Failed to parse unit value", e); } }} value={field.value?.es ? JSON.stringify(field.value) : ""}><FormControl><SelectTrigger className="h-10 bg-white flex-grow"><SelectValue placeholder="Selecciona una unidad">{field.value?.es || "Selecciona una unidad"}</SelectValue></SelectTrigger></FormControl><SelectContent>{units.map(u => <SelectItem key={u.id} value={JSON.stringify(u)}>{u.es}</SelectItem>)}</SelectContent></Select><div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border border-gray-200"><Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentUnit?.es} onClick={startEditingUnit}><Pencil className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!currentUnit?.es} onClick={handleDeleteUnit}><Trash2 className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={startCreatingUnit}><Plus className="h-4 w-4" /></Button></div></>)}</div><FormMessage /></FormItem>)}/>
             </div>
             
             <hr className="my-2 border-dashed border-gray-200" />
