@@ -1,7 +1,6 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const webpush = require("web-push");
-const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 
 admin.initializeApp();
 
@@ -61,37 +60,45 @@ async function sendNotificationToUser(userId, payload) {
 async function sendNotificationToRoles(roles, payload) {
     try {
         const usersRef = admin.firestore().collection('users');
-        const q = usersRef.where('role', 'in', roles);
-        const usersSnapshot = await q.get();
+        const usersSnapshot = await usersRef.get();
 
         if (usersSnapshot.empty) {
-            functions.logger.log("No users found with roles:", roles);
+            functions.logger.log("No users found to send notifications to.");
             return;
         }
 
         const notificationPromises = [];
         const batch = admin.firestore().batch();
+        let targetUserCount = 0;
         
         usersSnapshot.forEach(doc => {
             const userProfile = doc.data();
-            const notificationRef = admin.firestore().collection('users').doc(doc.id).collection('notifications').doc();
-            batch.set(notificationRef, {
-                ...payload,
-                read: false,
-                createdAt: admin.firestore.FieldValue.serverTimestamp()
-            });
+            if (roles.includes(userProfile.role)) {
+                targetUserCount++;
+                const notificationRef = admin.firestore().collection('users').doc(doc.id).collection('notifications').doc();
+                batch.set(notificationRef, {
+                    ...payload,
+                    read: false,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp()
+                });
 
-            const subscription = userProfile.pushSubscription;
-            if (subscription && subscription.endpoint) {
-                notificationPromises.push(
-                    webpush.sendNotification(subscription, JSON.stringify(payload))
-                );
+                const subscription = userProfile.pushSubscription;
+                if (subscription && subscription.endpoint) {
+                    notificationPromises.push(
+                        webpush.sendNotification(subscription, JSON.stringify(payload))
+                    );
+                }
             }
         });
 
+        if (targetUserCount === 0) {
+            functions.logger.log("No users found with specified roles:", roles);
+            return;
+        }
+
         await Promise.all(notificationPromises);
         await batch.commit();
-        functions.logger.log(`Sent notifications to ${usersSnapshot.size} users with roles:`, roles);
+        functions.logger.log(`Sent notifications to ${targetUserCount} users with roles:`, roles);
     } catch (error) {
         functions.logger.error("Error sending notifications to roles:", roles, error);
     }
@@ -186,96 +193,106 @@ async function awardPointsForOrder(order, userProfile, allOrders, allRules) {
 
 
 // --- SUPPORT TICKET NOTIFICATIONS ---
-exports.onSupportTicketUpdate = onDocumentUpdated("supportTickets/{ticketId}", async (event) => {
-    const newValue = event.data.after.data();
-    const previousValue = event.data.before.data();
-    if (newValue.status === previousValue.status) return null;
+exports.onSupportTicketUpdate = functions.firestore
+    .document("supportTickets/{ticketId}")
+    .onUpdate(async (change, context) => {
+        const newValue = change.after.data();
+        const previousValue = change.before.data();
+        if (newValue.status === previousValue.status) return null;
 
-    const statusTranslations = { "new": "Nuevo", "in_progress": "En Progreso", "resolved": "Resuelto" };
-    const notificationPayload = {
-      title: "Actualización de Ticket de Soporte",
-      body: `Tu ticket #${event.params.ticketId.substring(0, 6)} ha sido actualizado a: ${statusTranslations[newValue.status] || newValue.status}`,
-      icon: NOTIFICATION_ICON,
-      data: { url: `/client/support` },
-    };
-    await sendNotificationToUser(newValue.userId, notificationPayload);
-    return null;
-});
+        const statusTranslations = { "new": "Nuevo", "in_progress": "En Progreso", "resolved": "Resuelto" };
+        const notificationPayload = {
+          title: "Actualización de Ticket de Soporte",
+          body: `Tu ticket #${context.params.ticketId.substring(0, 6)} ha sido actualizado a: ${statusTranslations[newValue.status] || newValue.status}`,
+          icon: NOTIFICATION_ICON,
+          data: { url: `/client/support` },
+        };
+        await sendNotificationToUser(newValue.userId, notificationPayload);
+        return null;
+    });
 
-exports.onNewSupportTicket = onDocumentCreated("supportTickets/{ticketId}", async (event) => {
-    const ticket = event.data.data();
-    const notificationPayload = {
-      title: "Nuevo Ticket de Soporte",
-      body: `De ${ticket.userName}: "${ticket.issueType}"`,
-      icon: NOTIFICATION_ICON,
-      data: { url: `/admin/support` },
-    };
-    await sendNotificationToRoles(['admin', 'superadmin'], notificationPayload);
-    return null;
-});
+exports.onNewSupportTicket = functions.firestore
+    .document("supportTickets/{ticketId}")
+    .onCreate(async (snap) => {
+        const ticket = snap.data();
+        const notificationPayload = {
+          title: "Nuevo Ticket de Soporte",
+          body: `De ${ticket.userName}: "${ticket.issueType}"`,
+          icon: NOTIFICATION_ICON,
+          data: { url: `/admin/support` },
+        };
+        await sendNotificationToRoles(['admin', 'superadmin'], notificationPayload);
+        return null;
+    });
 
 // --- ORDER NOTIFICATIONS ---
-exports.onNewOrder = onDocumentCreated("orders/{orderId}", async (event) => {
-    const order = event.data.data();
-    const notificationPayload = {
-      title: "Nuevo Pedido Recibido",
-      body: `Nuevo pedido de ${order.businessName} por un total de $${order.total.toFixed(2)}.`,
-      icon: NOTIFICATION_ICON,
-      data: { url: `/admin/orders` },
-    };
-    await sendNotificationToRoles(['admin', 'superadmin'], notificationPayload);
-    return null;
-});
+exports.onNewOrder = functions.firestore
+    .document("orders/{orderId}")
+    .onCreate(async (snap) => {
+        const order = snap.data();
+        const notificationPayload = {
+          title: "Nuevo Pedido Recibido",
+          body: `Nuevo pedido de ${order.businessName} por un total de $${order.total.toFixed(2)}.`,
+          icon: NOTIFICATION_ICON,
+          data: { url: `/admin/orders` },
+        };
+        await sendNotificationToRoles(['admin', 'superadmin'], notificationPayload);
+        return null;
+    });
 
-exports.onOrderUpdate = onDocumentUpdated("orders/{orderId}", async (event) => {
-    const newValue = event.data.after.data();
-    const previousValue = event.data.before.data();
-    if (newValue.status === previousValue.status) return null;
+exports.onOrderUpdate = functions.firestore
+    .document("orders/{orderId}")
+    .onUpdate(async (change, context) => {
+        const newValue = change.after.data();
+        const previousValue = change.before.data();
+        if (newValue.status === previousValue.status) return null;
 
-    const statusTranslations = { "pending": "Pendiente", "processing": "En Preparación", "shipped": "En Ruta", "delivered": "Entregado", "cancelled": "Cancelado" };
-    const notificationPayload = {
-      title: "Actualización de tu Pedido",
-      body: `Tu pedido #${event.params.orderId.substring(0, 6)} ha sido actualizado a: ${statusTranslations[newValue.status] || newValue.status}`,
-      icon: NOTIFICATION_ICON,
-      data: { url: `/client/history` },
-    };
-    await sendNotificationToUser(newValue.userId, notificationPayload);
+        const statusTranslations = { "pending": "Pendiente", "processing": "En Preparación", "shipped": "En Ruta", "delivered": "Entregado", "cancelled": "Cancelado" };
+        const notificationPayload = {
+          title: "Actualización de tu Pedido",
+          body: `Tu pedido #${context.params.orderId.substring(0, 6)} ha sido actualizado a: ${statusTranslations[newValue.status] || newValue.status}`,
+          icon: NOTIFICATION_ICON,
+          data: { url: `/client/history` },
+        };
+        await sendNotificationToUser(newValue.userId, notificationPayload);
 
-    // If order is delivered, award points.
-    if (newValue.status === 'delivered' && previousValue.status !== 'delivered') {
-        try {
-            const userId = newValue.userId;
-            const userDoc = await admin.firestore().collection('users').doc(userId).get();
-            if (!userDoc.exists) throw new Error("User not found for point calculation");
-            const userProfile = { uid: userDoc.id, ...userDoc.data() };
+        // If order is delivered, award points.
+        if (newValue.status === 'delivered' && previousValue.status !== 'delivered') {
+            try {
+                const userId = newValue.userId;
+                const userDoc = await admin.firestore().collection('users').doc(userId).get();
+                if (!userDoc.exists) throw new Error("User not found for point calculation");
+                const userProfile = { uid: userDoc.id, ...userDoc.data() };
 
-            const rulesSnapshot = await admin.firestore().collection('rewardRules').where('isActive', '==', true).get();
-            const allRules = rulesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const rulesSnapshot = await admin.firestore().collection('rewardRules').where('isActive', '==', true).get();
+                const allRules = rulesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            const userOrdersSnapshot = await admin.firestore().collection('orders').where('userId', '==', userId).get();
-            const allOrders = userOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            const order = { id: event.params.orderId, ...newValue };
-            
-            await awardPointsForOrder(order, userProfile, allOrders, allRules);
-        } catch (error) {
-            functions.logger.error(`Error awarding points for order ${event.params.orderId}:`, error);
+                const userOrdersSnapshot = await admin.firestore().collection('orders').where('userId', '==', userId).get();
+                const allOrders = userOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                const order = { id: context.params.orderId, ...newValue };
+                
+                await awardPointsForOrder(order, userProfile, allOrders, allRules);
+            } catch (error) {
+                functions.logger.error(`Error awarding points for order ${context.params.orderId}:`, error);
+            }
         }
-    }
 
-    return null;
-});
+        return null;
+    });
 
 // --- OFFER NOTIFICATIONS ---
-exports.onNewOffer = onDocumentCreated("offers/{offerId}", async (event) => {
-    const offer = event.data.data();
-    const notificationPayload = {
-      title: "🔥 ¡Nueva Oferta Flash!",
-      body: `¡${offer.productName.es} a un precio increíble! No te la pierdas.`,
-      icon: NOTIFICATION_ICON,
-      data: { url: '/client/offers' },
-    };
-    // Send to all clients
-    await sendNotificationToRoles(['client'], notificationPayload);
-    return null;
-});
+exports.onNewOffer = functions.firestore
+    .document("offers/{offerId}")
+    .onCreate(async (snap) => {
+        const offer = snap.data();
+        const notificationPayload = {
+          title: "🔥 ¡Nueva Oferta Flash!",
+          body: `¡${offer.productName.es} a un precio increíble! No te la pierdas.`,
+          icon: NOTIFICATION_ICON,
+          data: { url: '/client/offers' },
+        };
+        // Send to all clients
+        await sendNotificationToRoles(['client'], notificationPayload);
+        return null;
+    });
