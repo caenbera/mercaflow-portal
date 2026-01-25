@@ -3,7 +3,7 @@
 import { updateUserProfile } from '@/lib/firestore/users';
 
 // IMPORTANT: In a real application, this key should be stored in .env.local as NEXT_PUBLIC_VAPID_PUBLIC_KEY
-const VAPID_PUBLIC_KEY = 'BPhgGfH_TCI66-3o7kXQ2S2G4iO4-dJkYx9A3C2A1Z1E4W4zY2zJ4J8L4zX3w5H_k3K9J6n3L1oY8E';
+const VAPID_PUBLIC_KEY = 'BGn5e3vs2MA9iP2AJ2eFfdCgVG9EJ79EK2vT9msKLqxp9k0OHdIeNJXGrvIc0iGzG69WKzuFH6rQdtOslG4dnNo';
 
 function urlBase64ToUint8Array(base64String: string) {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -60,3 +60,5 @@ export async function getPushSubscription(): Promise<PushSubscription | null> {
     }
     return null;
 }
+
+    
