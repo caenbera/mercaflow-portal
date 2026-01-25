@@ -35,5 +35,12 @@
   "branch_add_success": "Nueva sede agregada correctamente.",
   "branch_add_error": "Error al agregar la sede.",
   "branch_delete_success": "Sede eliminada correctamente.",
-  "branch_delete_error": "Error al eliminar la sede."
+  "branch_delete_error": "Error al eliminar la sede.",
+  "toast_notifications_enabled_title": "¡Notificaciones Activadas!",
+  "toast_notifications_enabled_desc": "Ahora recibirás actualizaciones por notificaciones push.",
+  "toast_permission_denied_title": "Permiso Denegado",
+  "toast_permission_denied_desc": "Necesitas otorgar permiso para activar las notificaciones.",
+  "toast_notifications_disabled_title": "Notificaciones Desactivadas",
+  "toast_notifications_disabled_desc": "Ya no recibirás notificaciones push en este dispositivo.",
+  "notifications_blocked": "Has bloqueado las notificaciones. Para activarlas, debes cambiar los permisos en la configuración de tu navegador."
 }

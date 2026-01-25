@@ -34,47 +34,59 @@ export function AccountPageClient() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  
   const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
   const [isNotificationProcessing, setIsNotificationProcessing] = useState(true);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(null);
 
   const loading = authLoading || branchesLoading;
   
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator) {
-        getPushSubscription().then(sub => {
-            setIsNotificationsEnabled(!!sub);
-            setIsNotificationProcessing(false);
-        });
-    } else {
+  const syncPushSubscriptionState = async () => {
+    // Don't run on server or if APIs are not present
+    if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator)) {
         setIsNotificationProcessing(false);
+        setNotificationPermission('denied'); // Effectively disabled
+        return;
     }
+
+    setNotificationPermission(Notification.permission);
+
+    if (Notification.permission === 'granted') {
+        const sub = await getPushSubscription();
+        setIsNotificationsEnabled(!!sub);
+    } else {
+        setIsNotificationsEnabled(false);
+    }
+    setIsNotificationProcessing(false);
+  };
+  
+  useEffect(() => {
+    syncPushSubscriptionState();
   }, []);
 
   const handleNotificationToggle = async (checked: boolean) => {
     if (!user) return;
     setIsNotificationProcessing(true);
+
     try {
-        if (checked) {
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                await subscribeToPushNotifications(user.uid);
-                setIsNotificationsEnabled(true);
-                toast({ title: "Notifications Enabled!", description: "You will now receive updates via push notifications." });
-            } else {
-                toast({ variant: 'destructive', title: "Permission Denied", description: "You need to grant permission to enable notifications." });
-            }
+      if (checked) {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          await subscribeToPushNotifications(user.uid);
+          toast({ title: t('toast_notifications_enabled_title'), description: t('toast_notifications_enabled_desc') });
         } else {
-            await unsubscribeFromPushNotifications(user.uid);
-            setIsNotificationsEnabled(false);
-            toast({ title: "Notifications Disabled", description: "You will no longer receive push notifications on this device." });
+          toast({ variant: 'destructive', title: t('toast_permission_denied_title'), description: t('toast_permission_denied_desc') });
         }
+      } else {
+        await unsubscribeFromPushNotifications(user.uid);
+        toast({ title: t('toast_notifications_disabled_title'), description: t('toast_notifications_disabled_desc') });
+      }
     } catch (error) {
         console.error("Error toggling notifications", error);
         toast({ variant: 'destructive', title: "Error", description: "Could not change notification settings." });
-        // Revert UI state on error
-        setIsNotificationsEnabled(!checked);
     } finally {
-        setIsNotificationProcessing(false);
+        // Crucially, re-sync state from browser after any operation
+        await syncPushSubscriptionState();
     }
   };
 
@@ -241,9 +253,14 @@ export function AccountPageClient() {
                     <Switch
                         checked={isNotificationsEnabled}
                         onCheckedChange={handleNotificationToggle}
-                        disabled={isNotificationProcessing}
+                        disabled={isNotificationProcessing || notificationPermission === 'denied'}
                     />
                 </div>
+                 {notificationPermission === 'denied' && (
+                    <div className="px-4 pb-3 -mt-2 border-t pt-3">
+                      <p className="text-xs text-destructive">{t('notifications_blocked')}</p>
+                    </div>
+                 )}
             </div>
 
             <div className="text-xs font-bold text-muted-foreground uppercase mt-6 mb-2">{t('more_services_section_title')}</div>

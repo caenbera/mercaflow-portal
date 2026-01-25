@@ -35,5 +35,12 @@
   "branch_add_success": "New branch added successfully.",
   "branch_add_error": "Error adding branch.",
   "branch_delete_success": "Branch deleted successfully.",
-  "branch_delete_error": "Error deleting branch."
+  "branch_delete_error": "Error deleting branch.",
+  "toast_notifications_enabled_title": "Notifications Enabled!",
+  "toast_notifications_enabled_desc": "You will now receive updates via push notifications.",
+  "toast_permission_denied_title": "Permission Denied",
+  "toast_permission_denied_desc": "You need to grant permission to enable notifications.",
+  "toast_notifications_disabled_title": "Notifications Disabled",
+  "toast_notifications_disabled_desc": "You will no longer receive push notifications on this device.",
+  "notifications_blocked": "You have blocked notifications. To enable them, you must change permissions in your browser settings."
 }
