@@ -309,5 +309,4 @@ exports.onNewOffer = functions.firestore
         await sendNotificationToRoles(['client'], notificationPayload);
         return null;
     });
-
     
