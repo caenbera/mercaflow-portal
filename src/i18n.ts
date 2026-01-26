@@ -1,10 +1,19 @@
-
 import {getRequestConfig} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {locales} from './i18n-config';
 
-// This function now dynamically imports all message files for a given locale
-// and combines them into a single object.
+// Lista de rutas que NO deben ser redirigidas
+const EXCLUDED_PATHS = [
+  '/manifest.json',
+  '/sw.js',
+  '/favicon.ico',
+  '/apple-touch-icon.png',
+  '/icon-192.png',
+  '/icon-512.png',
+  // Agrega cualquier otro archivo estático que necesites
+];
+
+// Esta función ahora dinámicamente importa todos los archivos de mensajes
 async function getMessages(locale: string) {
   try {
     const authMessages = (await import(`./messages/${locale}/Auth.json`)).default;
@@ -40,7 +49,6 @@ async function getMessages(locale: string) {
     const adminSupportPageMessages = (await import(`./messages/${locale}/AdminSupportPage.json`)).default;
     const adminUsersPageMessages = (await import(`./messages/${locale}/AdminUsersPage.json`)).default;
     const notificationsMessages = (await import(`./messages/${locale}/Notifications.json`)).default;
-
 
     return {
       Auth: authMessages,
@@ -82,13 +90,22 @@ async function getMessages(locale: string) {
   }
 }
 
-export default getRequestConfig(async ({ requestLocale }) => {
+export default getRequestConfig(async ({ requestLocale, request }) => {
+  // Verificar si la ruta debe ser excluida
+  const url = new URL(request.url);
+  const pathname = url.pathname;
+  
+  if (EXCLUDED_PATHS.some(path => pathname === path)) {
+    // Para rutas excluidas, no aplicar internacionalización
+    return {};
+  }
+
   let locale = await requestLocale;
   if (!locale || !locales.includes(locale as any)) {
     locale = 'es';
   }
   return {
-    locale, // ← incluir esto
+    locale,
     messages: await getMessages(locale),
   };
 });
