@@ -1,57 +1,20 @@
 import type { Metadata } from 'next';
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
-import { routing } from '@/i18n/routing';
-import { locales } from '@/i18n-config';
-import { notFound } from 'next/navigation';
-import { RegisterServiceWorker } from '@/components/RegisterServiceWorker';
+import { ReactNode } from 'react';
 
-export async function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
-}
+export const metadata: Metadata = {
+  title: 'Fresh Hub Portal',
+  description: "Wholesale fresh produce for Chicago's latin businesses.",
+};
 
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: 'Fresh Hub Portal',
-    description: 'Wholesale fresh produce for Chicago\'s latin businesses.',
-    icons: {
-      icon: '/favicon.ico',
-      apple: '/apple-touch-icon.png',
-    },
-    manifest: '/manifest.json',
-    themeColor: '#27ae60',
-  };
-}
-
-export default async function RootLayout({
-  children,
-  params: { locale },
-}: {
-  children: React.ReactNode;
-  params: { locale: string };
-}) {
-  // Validate that the incoming `locale` parameter is valid
-  if (!locales.includes(locale as any)) notFound();
-
-  // Providing all messages to the client
-  // side components
-  // This makes the messages immediately available
-  // without additional requests
-  const messages = await getMessages();
-
-  return (
-    <html lang={locale} suppressHydrationWarning>
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#27ae60" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-      </head>
-      <body>
-        <NextIntlClientProvider messages={messages}>
-          {children}
-          <RegisterServiceWorker />
-        </NextIntlClientProvider>
-      </body>
-    </html>
-  );
+/**
+ * This is the root layout. However, since we are using internationalization,
+ * the main layout that defines the <html> and <body> tags is located in
+ * `src/app/[locale]/layout.tsx`. This root layout simply acts as a
+ * passthrough for its children. The <html> and <body> tags are defined
+ * in the locale-specific layout.
+ */
+export default function RootLayout({ children }: { children: ReactNode }) {
+  // We return children directly because the actual HTML document structure
+  // is handled by src/app/[locale]/layout.tsx
+  return children;
 }
