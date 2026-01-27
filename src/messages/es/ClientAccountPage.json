@@ -44,5 +44,12 @@
   "toast_notifications_disabled_title": "Notificaciones Desactivadas",
   "toast_notifications_disabled_desc": "Ya no recibirás notificaciones push en este dispositivo.",
   "notifications_blocked": "Has bloqueado las notificaciones. Para activarlas, debes cambiar los permisos en la configuración de tu navegador.",
-  "notifications_not_supported": "Las notificaciones no son soportadas en este navegador o entorno."
+  "notifications_not_supported": "Las notificaciones no son soportadas en este navegador o entorno.",
+  "edit_business_details_title": "Editar Datos del Negocio",
+  "edit_business_details_desc": "Actualiza la información principal de tu empresa.",
+  "business_name_label": "Nombre del Negocio",
+  "business_name_placeholder": "El nombre de tu negocio",
+  "main_contact_label": "Nombre del Contacto Principal",
+  "phone_label": "Número de Teléfono",
+  "save_changes_button": "Guardar Cambios"
 }

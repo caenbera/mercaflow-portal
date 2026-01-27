@@ -1,11 +1,11 @@
-
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter } from '@/navigation';
+import { useRouter, Link } from '@/navigation';
 import { useAuth } from '@/context/auth-context';
 import { useBranches } from '@/hooks/use-branches';
+import { useInvoices } from '@/hooks/use-invoices'; // Import useInvoices
 import { useToast } from '@/hooks/use-toast';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
@@ -13,6 +13,7 @@ import { deleteBranch } from '@/lib/firestore/branches';
 import type { Branch } from '@/types';
 
 import { AddBranchDialog } from './add-branch-dialog';
+import { BusinessDetailsDialog } from './business-details-dialog'; // Import new dialog
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,9 +30,11 @@ export function AccountPageClient() {
   const router = useRouter();
   const { user, userProfile, role, loading: authLoading } = useAuth();
   const { branches, loading: branchesLoading } = useBranches();
+  const { invoices, loading: invoicesLoading } = useInvoices(); // Use the invoices hook
   const { toast } = useToast();
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isBranchDialogOpen, setIsBranchDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false); // State for new dialog
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   
   const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
@@ -39,7 +42,24 @@ export function AccountPageClient() {
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(null);
   const [isApiSupported, setIsApiSupported] = useState(true);
 
-  const loading = authLoading || branchesLoading;
+  const loading = authLoading || branchesLoading || invoicesLoading;
+
+  const { creditUsed, creditLimit, creditPercentage, availableCredit } = useMemo(() => {
+    if (loading || !userProfile) {
+        return { creditUsed: 0, creditLimit: 0, creditPercentage: 0, availableCredit: 0 };
+    }
+    const pendingBalance = invoices.filter(inv => inv.status !== 'paid').reduce((sum, inv) => sum + inv.amount, 0);
+    const limit = userProfile.creditLimit || 0;
+    const percentage = limit > 0 ? (pendingBalance / limit) * 100 : 0;
+    const available = limit - pendingBalance;
+
+    return {
+        creditUsed: pendingBalance,
+        creditLimit: limit,
+        creditPercentage: Math.min(percentage, 100),
+        availableCredit: available
+    };
+  }, [invoices, userProfile, loading]);
   
   const syncPushSubscriptionState = async () => {
     setIsNotificationProcessing(true);
@@ -120,6 +140,7 @@ export function AccountPageClient() {
     }
   };
 
+
   const handleSignOut = async () => {
     if (confirm(t('logout_confirm'))) {
       try {
@@ -134,12 +155,12 @@ export function AccountPageClient() {
   
   const handleAddBranch = () => {
     setSelectedBranch(null);
-    setIsDialogOpen(true);
+    setIsBranchDialogOpen(true);
   };
 
   const handleEditBranch = (branch: Branch) => {
     setSelectedBranch(branch);
-    setIsDialogOpen(true);
+    setIsBranchDialogOpen(true);
   };
   
   const handleDeleteBranch = async (branchId: string) => {
@@ -152,21 +173,14 @@ export function AccountPageClient() {
     }
   };
 
-  // --- MOCK DATA from prototype for credit ---
-  const creditData = {
-    creditLimit: 5000,
-    creditUsed: 1250.50
-  };
-  
-  const availableCredit = creditData.creditLimit - creditData.creditUsed;
-  const creditPercentage = (creditData.creditUsed / creditData.creditLimit) * 100;
-  
   const getInitials = (name: string) => name ? name.split(' ').map(n => n[0]).join('').toUpperCase() : '';
   const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
   return (
     <>
-      <AddBranchDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} branch={selectedBranch} />
+      <AddBranchDialog open={isBranchDialogOpen} onOpenChange={setIsBranchDialogOpen} branch={selectedBranch} />
+      <BusinessDetailsDialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen} />
+
       <div className="pb-20 md:pb-0">
         {/* Header */}
         <div className="bg-gradient-to-br from-primary to-[#34495e] text-white p-5 pt-8 pb-12 rounded-b-2xl shadow-lg mb-[-40px] relative z-[1]">
@@ -196,12 +210,12 @@ export function AccountPageClient() {
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-muted-foreground uppercase font-semibold">{t('pending_balance')}</div>
-                  <div className="font-bold text-foreground">{loading ? <Skeleton className="h-5 w-24 ml-auto mt-1" /> : formatCurrency(creditData.creditUsed)}</div>
+                  <div className="font-bold text-foreground">{loading ? <Skeleton className="h-5 w-24 ml-auto mt-1" /> : formatCurrency(creditUsed)}</div>
                 </div>
             </div>
             <Progress value={creditPercentage} className="h-2 my-3"/>
               <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{t('credit_limit', { limit: formatCurrency(creditData.creditLimit)})}</span>
+                  <span>{t('credit_limit', { limit: formatCurrency(creditLimit)})}</span>
                   <span>{t('used_credit', { percent: Math.round(creditPercentage) })}</span>
               </div>
           </div>
@@ -211,7 +225,7 @@ export function AccountPageClient() {
         <div className={cn("mt-6 px-5", role !== 'client' && 'md:mt-[-40px]')}>
             <div className="text-xs font-bold text-muted-foreground uppercase mb-2">{t('account_section_title')}</div>
             <div className="bg-card rounded-2xl shadow-sm overflow-hidden">
-                <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50">
+                <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50" onClick={() => setIsDetailsDialogOpen(true)}>
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-100 text-blue-600"><Store className="h-5 w-5"/></div>
                         <span className="font-semibold text-sm">{t('business_data_item')}</span>
@@ -309,8 +323,7 @@ export function AccountPageClient() {
 
             <div className="text-xs font-bold text-muted-foreground uppercase mt-6 mb-2">{t('more_services_section_title')}</div>
             <div className="bg-card rounded-2xl shadow-sm overflow-hidden">
-                {/* Other menu items */}
-                 <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50">
+                 <Link href="/client/offers" className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-red-100 text-red-600"><Tag className="h-5 w-5"/></div>
                         <span className="font-semibold text-sm">{t('offers_item')}</span>
@@ -319,21 +332,21 @@ export function AccountPageClient() {
                         <span className="text-xs bg-destructive text-destructive-foreground px-2 py-0.5 rounded-full font-semibold">{t('new_badge')}</span>
                         <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </div>
-                </div>
-                 <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50 border-t">
+                </Link>
+                 <Link href="/client/support" className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50 border-t">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-orange-100 text-orange-600"><Headset className="h-5 w-5"/></div>
                         <span className="font-semibold text-sm">{t('support_item')}</span>
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50 border-t">
+                </Link>
+                <Link href="/client/invoices" className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50 border-t">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-100 text-blue-600"><FileText className="h-5 w-5"/></div>
                         <span className="font-semibold text-sm">{t('invoices_item')}</span>
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
+                </Link>
             </div>
             
             <Button variant="outline" className="w-full mt-6 bg-card border-destructive/20 text-destructive hover:bg-destructive/5 hover:text-destructive" onClick={handleSignOut}>
@@ -344,5 +357,3 @@ export function AccountPageClient() {
     </>
   );
 }
-
-    

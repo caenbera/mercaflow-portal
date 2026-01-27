@@ -44,5 +44,12 @@
   "toast_notifications_disabled_title": "Notifications Disabled",
   "toast_notifications_disabled_desc": "You will no longer receive push notifications on this device.",
   "notifications_blocked": "You have blocked notifications. To enable them, you must change permissions in your browser settings.",
-  "notifications_not_supported": "Notifications are not supported in this browser or environment."
+  "notifications_not_supported": "Notifications are not supported in this browser or environment.",
+  "edit_business_details_title": "Edit Business Details",
+  "edit_business_details_desc": "Update your main company information.",
+  "business_name_label": "Business Name",
+  "business_name_placeholder": "Your business name",
+  "main_contact_label": "Main Contact Name",
+  "phone_label": "Phone Number",
+  "save_changes_button": "Save Changes"
 }
