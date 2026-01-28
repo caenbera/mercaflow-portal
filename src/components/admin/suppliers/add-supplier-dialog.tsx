@@ -168,7 +168,7 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
                 </div>
                 
                  <hr className="my-4"/>
-                <FormLabel className="font-bold">Volume Discounts</FormLabel>
+                <FormLabel className="font-bold">{t('volume_discounts_title')}</FormLabel>
                 <div className="space-y-3">
                   {discountFields.map((field, index) => (
                     <Controller
@@ -181,24 +181,24 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
                             <div className="p-2 border rounded-lg bg-muted/30">
                               <div className="grid grid-cols-[1fr,1fr,auto] gap-2 items-end">
                                 <FormField control={form.control} name={`volumeDiscounts.${index}.type`} render={({ field }) => (
-                                    <FormItem><FormLabel className="text-xs">Type</FormLabel><Select onValueChange={(value) => { field.onChange(value); const scope = value === 'quantity' ? 'product' : 'order'; form.setValue(`volumeDiscounts.${index}.scope`, scope); }} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="amount">By Amount</SelectItem><SelectItem value="quantity">By Quantity</SelectItem><SelectItem value="monthlyVolume">By Monthly Volume</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                                    <FormItem><FormLabel className="text-xs">{t('discount_rule_type_label')}</FormLabel><Select onValueChange={(value) => { field.onChange(value); const scope = value === 'quantity' ? 'product' : 'order'; form.setValue(`volumeDiscounts.${index}.scope`, scope); }} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="amount">{t('discount_type_amount')}</SelectItem><SelectItem value="quantity">{t('discount_type_quantity')}</SelectItem><SelectItem value="monthlyVolume">{t('discount_type_monthly_volume')}</SelectItem></SelectContent></Select><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name={`volumeDiscounts.${index}.scope`} render={({ field }) => (
-                                    <FormItem><FormLabel className="text-xs">Scope</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="order">Entire Order</SelectItem><SelectItem value="product">Single Product</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                                    <FormItem><FormLabel className="text-xs">{t('discount_rule_scope_label')}</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="order">{t('discount_scope_order')}</SelectItem><SelectItem value="product">{t('discount_scope_product')}</SelectItem></SelectContent></Select><FormMessage /></FormItem>
                                 )}/>
                                  <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeDiscount(index)}><Trash2 className="h-4 w-4"/></Button>
                               </div>
                               <div className={cn("grid gap-2 mt-2", discountType === 'quantity' ? "grid-cols-3" : "grid-cols-2")}>
                                 {discountType === 'quantity' && (
                                     <FormField control={form.control} name={`volumeDiscounts.${index}.productId`} render={({ field }) => (
-                                        <FormItem><FormLabel className="text-xs">Product</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={productsLoading}><FormControl><SelectTrigger><SelectValue placeholder="Select product..."/></SelectTrigger></FormControl><SelectContent>{products.map(p => <SelectItem key={p.id} value={p.id}>{p.name.es}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                                        <FormItem><FormLabel className="text-xs">{t('product')}</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={productsLoading}><FormControl><SelectTrigger><SelectValue placeholder={t('product_select_placeholder')}/></SelectTrigger></FormControl><SelectContent>{products.map(p => <SelectItem key={p.id} value={p.id}>{p.name.es}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
                                     )}/>
                                 )}
                                 <FormField control={form.control} name={`volumeDiscounts.${index}.from`} render={({ field }) => (
-                                    <FormItem><FormLabel className="text-xs">Threshold ({discountType === 'quantity' ? 'units' : '$'})</FormLabel><FormControl><Input type="number" {...field}/></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel className="text-xs">{t('discount_threshold_label', { unit: discountType === 'quantity' ? t('discount_threshold_unit_units') : t('discount_threshold_unit_currency') })}</FormLabel><FormControl><Input type="number" {...field}/></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name={`volumeDiscounts.${index}.discount`} render={({ field }) => (
-                                    <FormItem><FormLabel className="text-xs">Discount (%)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel className="text-xs">{t('discount_percentage_label')}</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                               </div>
                             </div>
@@ -207,7 +207,7 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
                     />
                   ))}
                    <Button type="button" variant="outline" size="sm" onClick={() => appendDiscount({ id: `discount-${Date.now()}`, type: 'amount', scope: 'order', from: 1000, discount: 5 })}>
-                    <Plus className="mr-2 h-4 w-4" /> Add Discount Rule
+                    <Plus className="mr-2 h-4 w-4" /> {t('add_discount_rule_button')}
                   </Button>
                 </div>
 

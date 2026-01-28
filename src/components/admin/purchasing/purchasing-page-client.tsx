@@ -261,22 +261,22 @@ export function PurchasingPageClient() {
                 if (closeness >= 0.8) { // 80% towards the goal
                     const needed = threshold - currentProgress;
                     if (rule.type === 'quantity') {
-                        const productName = products.find(p => p.id === rule.productId)?.name[locale] || 'product';
-                        opportunities.push(`Add ${needed.toFixed(0)} more units of ${productName} to get ${rule.discount}% off.`);
+                        const productName = products.find(p => p.id === rule.productId)?.name[locale as 'es'|'en'] || 'product';
+                        opportunities.push(t('opportunity_add_units', { needed: needed.toFixed(0), productName, discount: rule.discount }));
                     } else {
-                        opportunities.push(`Add $${needed.toFixed(2)} more to your order to get ${rule.discount}% off.`);
+                        opportunities.push(t('opportunity_add_amount', { needed: needed.toFixed(2), discount: rule.discount }));
                     }
                 }
             }
         }
         
         calculations[vendorName] = {
-            appliedDiscount: bestDiscount ? { description: `${bestDiscount.rule.discount}% Volume Discount`, amount: bestDiscount.amount } : null,
+            appliedDiscount: bestDiscount ? { description: t('discount_applied_desc', { discount: bestDiscount.rule.discount }), amount: bestDiscount.amount } : null,
             opportunities,
         };
     }
     return calculations;
-  }, [procurementCart, suppliers, allOrders, products, loading, locale]);
+  }, [procurementCart, suppliers, allOrders, products, loading, locale, t]);
 
   const handleOpenCompare = (product: Product, current: ProductSupplier, best: ProductSupplier) => setComparisonData({ product, productName: product.name[locale], current: { ...current, name: getSupplierName(current.supplierId) }, best: { ...best, name: getSupplierName(best.supplierId) } });
   const handleCloseCompare = () => setComparisonData(null);

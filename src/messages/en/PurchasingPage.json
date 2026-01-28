@@ -42,5 +42,8 @@
     "print_unit_cost_header": "Unit Cost",
     "print_subtotal_header": "Subtotal",
     "print_total_label": "ORDER TOTAL",
-    "print_footer": "Document generated electronically by FreshAdmin System."
+    "print_footer": "Document generated electronically by FreshAdmin System.",
+    "discount_applied_desc": "{discount}% Volume Discount",
+    "opportunity_add_units": "Add {needed} more units of {productName} to get {discount}% off.",
+    "opportunity_add_amount": "Add ${needed} more to your order to get {discount}% off."
 }

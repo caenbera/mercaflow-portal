@@ -81,5 +81,19 @@
     "confirm_delete_category": "¿Seguro deseas eliminar la categoría '{category}'?",
     "add_supplier_success_title": "Proveedor Creado",
     "edit_supplier_success_title": "Proveedor Actualizado",
-    "no_products_yet": "Este proveedor aún no tiene productos en su catálogo."
+    "no_products_yet": "Este proveedor aún no tiene productos en su catálogo.",
+    "volume_discounts_title": "Descuentos por Volumen",
+    "discount_rule_type_label": "Tipo",
+    "discount_rule_scope_label": "Ámbito",
+    "discount_type_amount": "Por Monto",
+    "discount_type_quantity": "Por Cantidad",
+    "discount_type_monthly_volume": "Por Volumen Mensual",
+    "discount_scope_order": "Pedido Completo",
+    "discount_scope_product": "Producto Individual",
+    "discount_threshold_label": "Umbral ({unit})",
+    "discount_threshold_unit_units": "unidades",
+    "discount_threshold_unit_currency": "$",
+    "discount_percentage_label": "Descuento (%)",
+    "add_discount_rule_button": "Añadir Regla de Descuento",
+    "product_select_placeholder": "Seleccionar producto..."
 }

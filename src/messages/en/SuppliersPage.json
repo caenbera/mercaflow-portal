@@ -81,5 +81,19 @@
     "confirm_delete_category": "Are you sure you want to delete the category '{category}'?",
     "add_supplier_success_title": "Supplier Created",
     "edit_supplier_success_title": "Supplier Updated",
-    "no_products_yet": "This supplier has no products in their catalog yet."
+    "no_products_yet": "This supplier has no products in their catalog yet.",
+    "volume_discounts_title": "Volume Discounts",
+    "discount_rule_type_label": "Type",
+    "discount_rule_scope_label": "Scope",
+    "discount_type_amount": "By Amount",
+    "discount_type_quantity": "By Quantity",
+    "discount_type_monthly_volume": "By Monthly Volume",
+    "discount_scope_order": "Entire Order",
+    "discount_scope_product": "Single Product",
+    "discount_threshold_label": "Threshold ({unit})",
+    "discount_threshold_unit_units": "units",
+    "discount_threshold_unit_currency": "$",
+    "discount_percentage_label": "Discount (%)",
+    "add_discount_rule_button": "Add Discount Rule",
+    "product_select_placeholder": "Select product..."
 }
