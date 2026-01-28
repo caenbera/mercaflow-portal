@@ -111,5 +111,6 @@
   "new_category_name_en": "Nombre (Inglés)",
   "add_category_button": "Añadir Categoría",
   "toast_offer_success": "¡Oferta publicada con éxito!",
-  "toast_offer_error": "No se pudo publicar la oferta."
+  "toast_offer_error": "No se pudo publicar la oferta.",
+  "form_label_markup": "Recargo (Markup) (%)"
 }

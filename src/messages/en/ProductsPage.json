@@ -111,5 +111,6 @@
   "new_category_name_en": "Name (English)",
   "add_category_button": "Add Category",
   "toast_offer_success": "Offer published successfully!",
-  "toast_offer_error": "Could not publish offer."
+  "toast_offer_error": "Could not publish offer.",
+  "form_label_markup": "Markup (%)"
 }
