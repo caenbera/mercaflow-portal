@@ -298,6 +298,7 @@ export interface PurchaseOrderItem {
   productId: string;
   name: string;
   orderedQty: number;
+  receivedQty?: number;
   price: number;
 }
 

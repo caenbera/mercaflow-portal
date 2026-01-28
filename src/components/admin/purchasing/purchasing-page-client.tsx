@@ -38,11 +38,14 @@ import {
   DollarSign,
   Leaf,
   Lightbulb,
+  FileCheck2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Product, ProductSupplier, SupplierDiscount, PurchaseOrder } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { addPurchaseOrder } from '@/lib/firestore/purchaseOrders';
+import { usePurchaseOrders } from '@/hooks/use-purchase-orders';
+import { ReceptionConfirmationDialog } from './reception-confirmation-dialog';
 
 interface CartItem {
   productId: string;
@@ -180,6 +183,10 @@ export function PurchasingPageClient() {
   const [poToPrint, setPoToPrint] = useState<any | null>(null);
   const [isClient, setIsClient] = useState(false);
 
+  const { purchaseOrders, loading: poLoading } = usePurchaseOrders();
+  const [isReceptionDialogOpen, setIsReceptionDialogOpen] = useState(false);
+  const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
+
   useEffect(() => { setIsClient(true); }, []);
 
   const getSupplierName = (id: string) => suppliers.find(s => s.id === id)?.name || 'N/A';
@@ -281,6 +288,16 @@ export function PurchasingPageClient() {
     return calculations;
   }, [procurementCart, suppliers, allOrders, products, loading, locale, t]);
 
+  const pendingPOs = useMemo(() => {
+    if (poLoading) return [];
+    return purchaseOrders.filter(po => po.status === 'pending');
+  }, [purchaseOrders, poLoading]);
+
+  const handleOpenReceptionDialog = (po: PurchaseOrder) => {
+    setSelectedPO(po);
+    setIsReceptionDialogOpen(true);
+  };
+
   const handleOpenCompare = (product: Product, current: ProductSupplier, best: ProductSupplier) => setComparisonData({ product, productName: product.name[locale], current: { ...current, name: getSupplierName(current.supplierId) }, best: { ...best, name: getSupplierName(best.supplierId) } });
   const handleCloseCompare = () => setComparisonData(null);
   const handleAddToCart = (product: Product, vendorId: string, price: number) => { const vendorName = getSupplierName(vendorId); setProcurementCart(prevCart => { const newCart = { ...prevCart }; const vendorCart = newCart[vendorName] ? [...newCart[vendorName]] : []; const existingItem = vendorCart.find(p => p.productId === product.id); if (existingItem) { existingItem.qty += 10; } else { vendorCart.push({ productId: product.id, name: product.name[locale], price, qty: 10 }); } newCart[vendorName] = vendorCart; return newCart; }); handleCloseCompare(); };
@@ -349,6 +366,10 @@ export function PurchasingPageClient() {
     }
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  };
+
 
   const renderProductRow = (product: Product) => {
     if (!product.suppliers || product.suppliers.length === 0) return null;
@@ -372,10 +393,57 @@ export function PurchasingPageClient() {
   return (
     <>
       {isClient && poToPrint && createPortal( <PrintablePO poData={poToPrint} onDone={() => setPoToPrint(null)} />, document.body )}
+      <ReceptionConfirmationDialog
+        open={isReceptionDialogOpen}
+        onOpenChange={setIsReceptionDialogOpen}
+        purchaseOrder={selectedPO}
+      />
       <div className="flex flex-col gap-6 no-print">
         <div><h1 className="text-2xl font-bold font-headline">{t('title')}</h1><p className="text-muted-foreground">{t('subtitle')}</p></div>
         <Card className="border-yellow-400"><CardHeader className="bg-yellow-50 dark:bg-yellow-900/20"><h2 className="font-bold text-lg flex items-center gap-2"><Flame className="text-red-500"/>{t('suggestions_title')}</h2><p className="text-sm text-muted-foreground">{t('suggestions_subtitle')}</p></CardHeader><CardContent className="p-0"><div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>{t('product_header')}</TableHead><TableHead>{t('stock_status_header')}</TableHead><TableHead>{t('current_supplier_header')}</TableHead><TableHead>{t('price_opportunity_header')}</TableHead><TableHead className="text-right">{t('action_header')}</TableHead></TableRow></TableHeader><TableBody>{loading ? Array.from({length: 2}).map((_,i) => <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-10 w-full"/></TableCell></TableRow>) : lowStockSuggestions.map(renderProductRow)}</TableBody></Table></div></CardContent></Card>
         <Card><CardHeader><div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"><h2 className="font-bold text-lg">{t('catalog_title')}</h2><div className="relative max-w-xs w-full"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder={t('search_placeholder')} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div></div></CardHeader><CardContent className="p-0"><div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>{t('product_header')}</TableHead><TableHead>{t('stock_status_header')}</TableHead><TableHead>{t('main_supplier_header')}</TableHead><TableHead>{t('price_opportunity_header')}</TableHead><TableHead className="text-right">{t('action_header')}</TableHead></TableRow></TableHeader><TableBody>{loading ? Array.from({length: 3}).map((_,i) => <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-10 w-full"/></TableCell></TableRow>) : generalCatalog.map(renderProductRow)}</TableBody></Table></div></CardContent></Card>
+        
+        <Card>
+            <CardHeader>
+                <h2 className="font-bold text-lg flex items-center gap-2"><FileCheck2 className="text-blue-500"/>{t('pending_receptions_title')}</h2>
+                <p className="text-sm text-muted-foreground">{t('pending_receptions_subtitle')}</p>
+            </CardHeader>
+            <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>{t('reception_id_header')}</TableHead>
+                                <TableHead>{t('reception_supplier_header')}</TableHead>
+                                <TableHead>{t('reception_date_header')}</TableHead>
+                                <TableHead className="text-right">{t('total_header')}</TableHead>
+                                <TableHead className="text-right">{t('action_header')}</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {poLoading ? (
+                                <TableRow><TableCell colSpan={5}><Skeleton className="h-10 w-full"/></TableCell></TableRow>
+                            ) : pendingPOs.length > 0 ? (
+                                pendingPOs.map(po => (
+                                    <TableRow key={po.id}>
+                                        <TableCell className="font-bold">{po.poId}</TableCell>
+                                        <TableCell>{po.supplierName}</TableCell>
+                                        <TableCell>{po.createdAt.toDate().toLocaleDateString()}</TableCell>
+                                        <TableCell className="text-right font-medium">{formatCurrency(po.total)}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button size="sm" onClick={() => handleOpenReceptionDialog(po)}>{t('reception_confirm_button')}</Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow><TableCell colSpan={5} className="text-center h-24 text-muted-foreground">{t('no_pending_receptions')}</TableCell></TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            </CardContent>
+        </Card>
+
         <div className="space-y-4"><h2 className="text-xl font-bold text-primary flex items-center gap-2 pt-4 border-t mt-4"><ClipboardList />{t('draft_pos_title')}</h2>{Object.keys(procurementCart).length === 0 ? <div className="text-center py-10 text-muted-foreground border rounded-lg bg-card shadow-sm"><ShoppingCart className="mx-auto h-12 w-12 opacity-25 mb-2"/><p className="font-semibold">{t('no_drafts_title')}</p><p className="text-sm">{t('no_drafts_subtitle')}</p></div> : (
           Object.entries(procurementCart).map(([vendor, items]) => {
             const subtotal = items.reduce((sum, item) => sum + item.qty * item.price, 0);
@@ -414,9 +482,3 @@ export function PurchasingPageClient() {
     </>
   );
 }
-    
-
-    
-
-
-
