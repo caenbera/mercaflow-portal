@@ -116,6 +116,12 @@ service cloud.firestore {
       allow write: if hasAdminRole();
     }
 
+    // PURCHASE ORDERS Collection
+    match /purchaseOrders/{poId} {
+      // Only admins/purchasers can manage POs
+      allow read, write: if hasPurchasingPermissions();
+    }
+
     // OFFERS Collection
     match /offers/{offerId} {
       allow read: if isAuthed();

@@ -1,3 +1,4 @@
+
 {
     "title": "Central de Compras",
     "subtitle": "Reabastecimiento y gestión de proveedores",
@@ -45,5 +46,12 @@
     "print_footer": "Documento generado electrónicamente por FreshAdmin System.",
     "discount_applied_desc": "Descuento por Volumen del {discount}%",
     "opportunity_add_units": "Añade {needed} unidades más de {productName} para obtener un {discount}% de descuento.",
-    "opportunity_add_amount": "Añade ${needed} más a tu pedido para obtener un {discount}% de descuento."
+    "opportunity_add_amount": "Añade ${needed} más a tu pedido para obtener un {discount}% de descuento.",
+    "save_print_po_button": "Guardar e Imprimir OC",
+    "cannot_create_po_title": "No se puede crear la OC",
+    "cannot_create_po_desc": "Una orden de compra debe contener al menos un artículo.",
+    "po_saved_success_title": "OC Guardada como Pendiente",
+    "po_saved_success_desc": "La Orden de Compra {poId} ha sido guardada. Ahora puedes confirmar su recepción.",
+    "po_saved_error_title": "Error al Guardar la OC",
+    "po_saved_error_desc": "Hubo un problema al guardar la orden de compra. Por favor, inténtalo de nuevo."
 }

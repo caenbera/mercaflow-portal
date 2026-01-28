@@ -40,7 +40,9 @@ import {
   Lightbulb,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Product, ProductSupplier, SupplierDiscount } from '@/types';
+import type { Product, ProductSupplier, SupplierDiscount, PurchaseOrder } from '@/types';
+import { useToast } from '@/hooks/use-toast';
+import { addPurchaseOrder } from '@/lib/firestore/purchaseOrders';
 
 interface CartItem {
   productId: string;
@@ -165,6 +167,7 @@ const PrintablePO = ({ poData, onDone }: { poData: any, onDone: () => void }) =>
 export function PurchasingPageClient() {
   const t = useTranslations('PurchasingPage');
   const locale = useLocale() as 'es' | 'en';
+  const { toast } = useToast();
   
   const { products, loading: productsLoading } = useProducts();
   const { suppliers, loading: suppliersLoading } = useSuppliers();
@@ -283,7 +286,69 @@ export function PurchasingPageClient() {
   const handleAddToCart = (product: Product, vendorId: string, price: number) => { const vendorName = getSupplierName(vendorId); setProcurementCart(prevCart => { const newCart = { ...prevCart }; const vendorCart = newCart[vendorName] ? [...newCart[vendorName]] : []; const existingItem = vendorCart.find(p => p.productId === product.id); if (existingItem) { existingItem.qty += 10; } else { vendorCart.push({ productId: product.id, name: product.name[locale], price, qty: 10 }); } newCart[vendorName] = vendorCart; return newCart; }); handleCloseCompare(); };
   const handleUpdateQty = (vendor: string, productName: string, newQty: string) => { setProcurementCart(prevCart => { const newCart = { ...prevCart }; const vendorCart = newCart[vendor] ? [...newCart[vendor]] : []; const itemToUpdate = vendorCart.find(p => p.name === productName); if (itemToUpdate) { itemToUpdate.qty = parseInt(newQty, 10) || 0; } newCart[vendor] = vendorCart; return newCart; }); };
   const handleRemoveDraft = (vendor: string) => { if (window.confirm(`${t('confirm_remove_draft')} ${vendor}?`)) { setProcurementCart(prevCart => { const newCart = { ...prevCart }; delete newCart[vendor]; return newCart; }); } };
-  const handlePrintPO = (vendorName: string) => { const items = procurementCart[vendorName]; if (!items) return; const discountInfo = discountCalculations[vendorName]; const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0); const total = subtotal - (discountInfo?.appliedDiscount?.amount || 0); const poId = `PO-${9020 + Object.keys(procurementCart).indexOf(vendorName)}`; setPoToPrint({ vendorName, items, total, poId, date: new Date().toLocaleDateString(), discountInfo }); };
+  
+  const handleSaveAndPrintPO = async (vendorName: string) => {
+    const items = procurementCart[vendorName];
+    if (!items || items.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: t('cannot_create_po_title'),
+        description: t('cannot_create_po_desc'),
+      });
+      return;
+    }
+  
+    const supplier = suppliers.find(s => s.name === vendorName);
+    if (!supplier) {
+      toast({ variant: 'destructive', title: 'Supplier not found' });
+      return;
+    }
+  
+    const discountInfo = discountCalculations[vendorName];
+    const subtotal = items.reduce((sum, item) => sum + item.qty * item.price, 0);
+    const total = subtotal - (discountInfo?.appliedDiscount?.amount || 0);
+    const poId = `PO-${1000 + Math.floor(Math.random() * 9000)}`;
+  
+    const purchaseOrderData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'completedAt'> = {
+      poId,
+      supplierId: supplier.id,
+      supplierName: vendorName,
+      items: items.map(item => ({
+        productId: item.productId,
+        name: item.name,
+        orderedQty: item.qty,
+        price: item.price,
+      })),
+      subtotal,
+      discountInfo,
+      total,
+      status: 'pending',
+    };
+  
+    try {
+      await addPurchaseOrder(purchaseOrderData);
+      toast({
+        title: t('po_saved_success_title'),
+        description: t('po_saved_success_desc', { poId }),
+      });
+  
+      setPoToPrint({ ...purchaseOrderData, date: new Date().toLocaleDateString() });
+  
+      setProcurementCart(prevCart => {
+        const newCart = { ...prevCart };
+        delete newCart[vendorName];
+        return newCart;
+      });
+    } catch (error) {
+      console.error("Error saving purchase order:", error);
+      toast({
+        variant: 'destructive',
+        title: t('po_saved_error_title'),
+        description: t('po_saved_error_desc'),
+      });
+    }
+  };
+
 
   const renderProductRow = (product: Product) => {
     if (!product.suppliers || product.suppliers.length === 0) return null;
@@ -335,7 +400,7 @@ export function PurchasingPageClient() {
                       <div className="flex justify-between py-1 font-bold border-t"><span>Total:</span><span>${total.toFixed(2)}</span></div>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center pt-4 mt-4 border-t"><Button variant="link" className="text-destructive p-0 h-auto" onClick={() => handleRemoveDraft(vendor)}><Trash2 className="mr-2 h-4 w-4"/> {t('remove_draft_button')}</Button><Button onClick={() => handlePrintPO(vendor)}><FileText className="mr-2 h-4 w-4" />{t('generate_pdf_button')}</Button></div>
+                  <div className="flex justify-between items-center pt-4 mt-4 border-t"><Button variant="link" className="text-destructive p-0 h-auto" onClick={() => handleRemoveDraft(vendor)}><Trash2 className="mr-2 h-4 w-4"/> {t('remove_draft_button')}</Button><Button onClick={() => handleSaveAndPrintPO(vendor)}><FileText className="mr-2 h-4 w-4" />{t('save_print_po_button')}</Button></div>
                 </CardContent>
               </Card>
             )
@@ -352,5 +417,6 @@ export function PurchasingPageClient() {
     
 
     
+
 
 

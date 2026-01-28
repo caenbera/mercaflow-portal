@@ -294,6 +294,35 @@ export interface Notification {
   createdAt: Timestamp;
 }
 
+export interface PurchaseOrderItem {
+  productId: string;
+  name: string;
+  orderedQty: number;
+  price: number;
+}
+
+export type PurchaseOrderStatus = 'pending' | 'completed' | 'cancelled';
+
+export interface PurchaseOrder {
+  id: string;
+  poId: string;
+  supplierId: string;
+  supplierName: string;
+  items: PurchaseOrderItem[];
+  subtotal: number;
+  discountInfo: {
+    appliedDiscount: {
+      description: string;
+      amount: number;
+    } | null;
+    opportunities: string[];
+  };
+  total: number;
+  status: PurchaseOrderStatus;
+  createdAt: Timestamp;
+  completedAt?: Timestamp;
+}
+
 
 // Exporting Firebase User type for components
 export type { User };

@@ -1,3 +1,4 @@
+
 {
     "title": "Purchasing Center",
     "subtitle": "Restocking and supplier management",
@@ -29,7 +30,6 @@
     "total_label": "Total",
     "items_label": "items",
     "remove_draft_button": "Remove",
-    "generate_pdf_button": "Generate PDF Order",
     "confirm_remove_draft": "Remove order for",
     "po_id": "PO",
     "print_date_label": "Date",
@@ -45,5 +45,12 @@
     "print_footer": "Document generated electronically by FreshAdmin System.",
     "discount_applied_desc": "{discount}% Volume Discount",
     "opportunity_add_units": "Add {needed} more units of {productName} to get {discount}% off.",
-    "opportunity_add_amount": "Add ${needed} more to your order to get {discount}% off."
+    "opportunity_add_amount": "Add ${needed} more to your order to get {discount}% off.",
+    "save_print_po_button": "Save & Print PO",
+    "cannot_create_po_title": "Cannot Create PO",
+    "cannot_create_po_desc": "A purchase order must contain at least one item.",
+    "po_saved_success_title": "PO Saved as Pending",
+    "po_saved_success_desc": "Purchase Order {poId} has been saved. You can now confirm its reception.",
+    "po_saved_error_title": "Error Saving PO",
+    "po_saved_error_desc": "There was a problem saving the purchase order. Please try again."
 }
