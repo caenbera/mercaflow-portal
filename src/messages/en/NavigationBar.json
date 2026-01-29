@@ -27,5 +27,10 @@
   "my_rewards": "My Rewards",
   "invoices": "Invoices & Payments",
   "procurement": "Procurement",
-  "notifications": "Notifications"
+  "notifications": "Notifications",
+  "group_management": "Management",
+  "group_catalog": "Catalog",
+  "group_procurement": "Procurement",
+  "group_warehouse": "Warehouse",
+  "group_administration": "Administration"
 }

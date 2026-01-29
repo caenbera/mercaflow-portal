@@ -50,65 +50,65 @@ export function AppSidebar() {
   const pathname = usePathname();
   const t = useTranslations('NavigationBar');
 
-  const navConfig: NavDefinition = {
+  // This object is used by the mobile BottomNavBar, do not remove.
+   const navConfig: NavDefinition = {
     desktop: {
-      client: [
-        { href: '/client/dashboard', label: t('dashboard'), icon: LayoutGrid },
-        { href: '/client/new-order', label: t('newOrder'), icon: ShoppingCart },
-        { href: '/client/history', label: t('orderHistory'), icon: History },
-        { href: '/client/account', label: t('my_account'), icon: UserCircle },
-      ],
-      admin: [
-        { href: '/admin/dashboard', label: t('dashboard'), icon: LayoutGrid },
-        { href: '/admin/orders', label: t('manageOrders'), icon: ShoppingCart },
-        { href: '/admin/products', label: t('manageProducts'), icon: Package },
-        { href: '/admin/clients', label: t('manageClients'), icon: Users },
-        { href: '/admin/purchasing', label: t('purchasing'), icon: ShoppingBag },
-        { href: '/admin/purchase-orders', label: t('purchaseOrders'), icon: ClipboardList },
-        { href: '/admin/suppliers', label: t('suppliers'), icon: Truck },
-        { href: '/admin/rewards', label: t('rewards'), icon: Trophy },
-        { href: '/admin/support', label: t('support'), icon: Headset },
-      ],
-      superadmin: [
-        { href: '/admin/users', label: t('manageUsers'), icon: Users },
-      ],
-      picker: [
-        { href: '/admin/picking', label: t('picking'), icon: Boxes },
-      ],
-      purchaser: [
-        { href: '/admin/purchasing', label: t('purchasing'), icon: ShoppingBag },
-        { href: '/admin/purchase-orders', label: t('purchaseOrders'), icon: ClipboardList },
-        { href: '/admin/products', label: t('manageProducts'), icon: Package },
-      ]
+      client: [], // Desktop rendering is now handled by groups below
+      admin: [],
+      superadmin: [],
+      picker: [],
+      purchaser: [],
     },
     mobile: {
       client: [
         { href: '/client/dashboard', label: t('home'), icon: Home },
         { href: '/client/new-order', label: t('myOrder'), icon: ClipboardList },
         { href: '/client/history', label: t('history'), icon: History },
-        { href: '/client/account', label: t('my_account'), icon: UserCircle },
       ],
        admin: [
         { href: '/admin/dashboard', label: t('dashboard'), icon: LayoutGrid },
         { href: '/admin/orders', label: t('manageOrders'), icon: ShoppingCart },
         { href: '/admin/products', label: t('manageProducts'), icon: Package },
-        { href: '/admin/clients', label: t('manageClients'), icon: Users },
-        { href: '/admin/purchasing', label: t('purchasing'), icon: ShoppingBag },
-        { href: '/admin/purchase-orders', label: t('purchaseOrders'), icon: ClipboardList },
-        { href: '/admin/suppliers', label: t('suppliers'), icon: Truck },
-        { href: '/admin/rewards', label: t('rewards'), icon: Trophy },
-        { href: '/admin/support', label: t('support'), icon: Headset },
       ],
       picker: [
         { href: '/admin/picking', label: t('picking'), icon: Boxes },
       ],
       purchaser: [
         { href: '/admin/purchasing', label: t('purchasing'), icon: ShoppingBag },
-        { href: '/admin/purchase-orders', label: t('purchaseOrders'), icon: ClipboardList },
-        { href: '/admin/products', label: t('manageProducts'), icon: Package },
       ]
     }
   };
+
+  const navItems = {
+    client: [
+      { href: '/client/dashboard', label: t('dashboard'), icon: LayoutGrid },
+      { href: '/client/new-order', label: t('newOrder'), icon: ShoppingCart },
+      { href: '/client/history', label: t('orderHistory'), icon: History },
+      { href: '/client/account', label: t('my_account'), icon: UserCircle },
+    ],
+    management: [
+        { href: '/admin/dashboard', label: t('dashboard'), icon: LayoutGrid },
+        { href: '/admin/orders', label: t('manageOrders'), icon: ShoppingCart },
+        { href: '/admin/clients', label: t('manageClients'), icon: Users },
+        { href: '/admin/support', label: t('support'), icon: Headset },
+    ],
+    catalog: [
+        { href: '/admin/products', label: t('manageProducts'), icon: Package },
+        { href: '/admin/suppliers', label: t('suppliers'), icon: Truck },
+        { href: '/admin/rewards', label: t('rewards'), icon: Trophy },
+    ],
+    procurement: [
+        { href: '/admin/purchasing', label: t('purchasing'), icon: ShoppingBag },
+        { href: '/admin/purchase-orders', label: t('purchaseOrders'), icon: ClipboardList },
+    ],
+    warehouse: [
+        { href: '/admin/picking', label: t('picking'), icon: Boxes },
+    ],
+    administration: [
+        { href: '/admin/users', label: t('manageUsers'), icon: Users },
+    ],
+  };
+
   
   if (loading && isMobile) {
     return null; // On mobile, we show a full-screen loader from the layout, so we don't need a skeleton here.
@@ -131,12 +131,6 @@ export function AppSidebar() {
   }
   
   if (isMobile) {
-    // The "More" button in BottomNavBar will handle showing the account link
-    let mobileNavItems = [];
-    if (role === 'client') mobileNavItems = navConfig.mobile.client;
-    else if (role === 'purchaser') mobileNavItems = navConfig.mobile.purchaser;
-    else mobileNavItems = navConfig.mobile.admin;
-    
     return <BottomNavBar navConfig={navConfig} />;
   }
 
@@ -166,48 +160,78 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        { (role === 'superadmin') &&
+        {role === 'superadmin' && (
+          <>
             <SidebarGroup>
-                <SidebarGroupLabel>{t('adminPanel')}</SidebarGroupLabel>
-                <SidebarMenu>
-                    {renderNavItems([...navConfig.desktop.admin, ...navConfig.desktop.superadmin])}
-                </SidebarMenu>
+              <SidebarGroupLabel>{t('group_management')}</SidebarGroupLabel>
+              <SidebarMenu>{renderNavItems(navItems.management)}</SidebarMenu>
             </SidebarGroup>
-        }
-        { (role === 'admin') &&
             <SidebarGroup>
-                <SidebarGroupLabel>{t('adminPanel')}</SidebarGroupLabel>
-                <SidebarMenu>
-                    {renderNavItems(navConfig.desktop.admin)}
-                </SidebarMenu>
+              <SidebarGroupLabel>{t('group_catalog')}</SidebarGroupLabel>
+              <SidebarMenu>{renderNavItems(navItems.catalog)}</SidebarMenu>
             </SidebarGroup>
-        }
+            <SidebarGroup>
+              <SidebarGroupLabel>{t('group_procurement')}</SidebarGroupLabel>
+              <SidebarMenu>{renderNavItems(navItems.procurement)}</SidebarMenu>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel>{t('group_warehouse')}</SidebarGroupLabel>
+              <SidebarMenu>{renderNavItems(navItems.warehouse)}</SidebarMenu>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel>{t('group_administration')}</SidebarGroupLabel>
+              <SidebarMenu>{renderNavItems(navItems.administration)}</SidebarMenu>
+            </SidebarGroup>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupLabel>{t('clientPortal')}</SidebarGroupLabel>
+              <SidebarMenu>{renderNavItems(navItems.client)}</SidebarMenu>
+            </SidebarGroup>
+          </>
+        )}
 
-        { (role === 'purchaser') &&
+        {role === 'admin' && (
+          <>
             <SidebarGroup>
-                <SidebarGroupLabel>{t('procurement')}</SidebarGroupLabel>
-                <SidebarMenu>
-                    {renderNavItems(navConfig.desktop.purchaser)}
-                </SidebarMenu>
+              <SidebarGroupLabel>{t('group_management')}</SidebarGroupLabel>
+              <SidebarMenu>{renderNavItems(navItems.management)}</SidebarMenu>
             </SidebarGroup>
-        }
+            <SidebarGroup>
+              <SidebarGroupLabel>{t('group_catalog')}</SidebarGroupLabel>
+              <SidebarMenu>{renderNavItems(navItems.catalog)}</SidebarMenu>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel>{t('group_procurement')}</SidebarGroupLabel>
+              <SidebarMenu>{renderNavItems(navItems.procurement)}</SidebarMenu>
+            </SidebarGroup>
+          </>
+        )}
 
-        { (role === 'superadmin' || role === 'picker') &&
+        {role === 'purchaser' && (
+           <>
+            <SidebarGroup>
+              <SidebarGroupLabel>{t('group_procurement')}</SidebarGroupLabel>
+              <SidebarMenu>{renderNavItems(navItems.procurement)}</SidebarMenu>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel>{t('group_catalog')}</SidebarGroupLabel>
+              <SidebarMenu>{renderNavItems(navItems.catalog.filter(item => item.href.includes('/products')))}</SidebarMenu>
+            </SidebarGroup>
+          </>
+        )}
+
+        {role === 'picker' && (
           <SidebarGroup>
-              <SidebarGroupLabel>{t('warehouseOps')}</SidebarGroupLabel>
-              <SidebarMenu>
-                  {renderNavItems(navConfig.desktop.picker)}
-              </SidebarMenu>
+            <SidebarGroupLabel>{t('group_warehouse')}</SidebarGroupLabel>
+            <SidebarMenu>{renderNavItems(navItems.warehouse)}</SidebarMenu>
           </SidebarGroup>
-        }
-
-        { (role === 'superadmin' || role === 'admin' || role === 'picker' || role === 'purchaser') && <SidebarSeparator /> }
-
-        { (role === 'client' || role === 'superadmin') &&
+        )}
+        
+        {role === 'client' &&
             <SidebarGroup>
                 <SidebarGroupLabel>{t('clientPortal')}</SidebarGroupLabel>
                 <SidebarMenu>
-                    {renderNavItems(navConfig.desktop.client)}
+                    {renderNavItems(navItems.client)}
                 </SidebarMenu>
             </SidebarGroup>
         }
