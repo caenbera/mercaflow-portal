@@ -43,6 +43,7 @@ export interface ProductSupplier {
   supplierId: string;
   cost: number;
   isPrimary: boolean;
+  supplierProductName?: string;
 }
 
 export interface Product {

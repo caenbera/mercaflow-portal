@@ -32,6 +32,7 @@ const supplierSchema = z.object({
   supplierId: z.string().min(1, "Supplier is required."),
   cost: z.coerce.number().min(0, "Cost cannot be negative."),
   isPrimary: z.boolean(),
+  supplierProductName: z.string().optional(),
 });
 
 const formSchema = z.object({
@@ -201,7 +202,7 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     const supplierContextId = pathname.includes('/suppliers/') ? pathname.split('/suppliers/')[1].split('/')[0] : defaultSupplierId;
     return {
       sku: '', name: { es: '', en: '' }, category: { es: '', en: '' }, subcategory: { es: '', en: '' }, unit: { es: '', en: '' },
-      suppliers: supplierContextId ? [{ supplierId: supplierContextId, cost: 0, isPrimary: true }] : [],
+      suppliers: supplierContextId ? [{ supplierId: supplierContextId, cost: 0, isPrimary: true, supplierProductName: '' }] : [],
       salePrice: 0, stock: 0, minStock: 10, active: true, photoUrl: '', pricingMethod: 'margin',
     };
   };
@@ -250,7 +251,7 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
           setEditingProduct(null);
           const currentValues = form.getValues();
           const supplierContextId = pathname.includes('/suppliers/') ? pathname.split('/suppliers/')[1].split('/')[0] : defaultSupplierId;
-          const newSuppliers = supplierContextId ? [{ supplierId: supplierContextId, cost: 0, isPrimary: true }] : [];
+          const newSuppliers = supplierContextId ? [{ supplierId: supplierContextId, cost: 0, isPrimary: true, supplierProductName: '' }] : [];
           replace(newSuppliers);
           updatePercentageInputs();
       }
@@ -380,12 +381,15 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
                     </div>
                 )}
                 {fields.map((field, index) => (
-                    <div key={field.id} className={cn("p-3 border rounded-lg grid grid-cols-[2fr,1fr,auto] gap-4 items-center", watchedSuppliers[index]?.isPrimary ? "bg-primary/5 border-primary" : "bg-muted/30")}>
+                    <div key={field.id} className={cn("p-3 border rounded-lg grid grid-cols-1 md:grid-cols-[2fr,2fr,1fr,auto] gap-4 items-center", watchedSuppliers[index]?.isPrimary ? "bg-primary/5 border-primary" : "bg-muted/30")}>
                         <FormField control={form.control} name={`suppliers.${index}.supplierId`} render={({ field }) => (
-                            <FormItem><Select onValueChange={field.onChange} value={field.value} disabled={suppliersLoading}><FormControl><SelectTrigger className="h-10 bg-white"><SelectValue placeholder={t('form_placeholder_select_supplier')} /></SelectTrigger></FormControl><SelectContent>{allSuppliers.map(s => <SelectItem key={s.id} value={s.id} disabled={watchedSuppliers.some((ws, i) => i !== index && ws.supplierId === s.id)}>{s.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                            <FormItem><FormLabel className="text-xs font-medium">Proveedor</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={suppliersLoading}><FormControl><SelectTrigger className="h-10 bg-white"><SelectValue placeholder={t('form_placeholder_select_supplier')} /></SelectTrigger></FormControl><SelectContent>{allSuppliers.map(s => <SelectItem key={s.id} value={s.id} disabled={watchedSuppliers.some((ws, i) => i !== index && ws.supplierId === s.id)}>{s.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                        )}/>
+                         <FormField control={form.control} name={`suppliers.${index}.supplierProductName`} render={({ field }) => (
+                            <FormItem><FormLabel className="text-xs font-medium">Nombre del Proveedor</FormLabel><FormControl><Input placeholder="Ej: Roma Tomato #1" className="h-10 bg-white" {...field} /></FormControl><FormMessage /></FormItem>
                         )}/>
                         <FormField control={form.control} name={`suppliers.${index}.cost`} render={({ field }) => (
-                            <FormItem><FormControl><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                            <FormItem><FormLabel className="text-xs font-medium">Costo</FormLabel><FormControl><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
                             <Input
                                 type="number"
                                 className="pl-6 h-10 text-right bg-white"
@@ -419,7 +423,7 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
                         </div>
                     </div>
                 ))}
-                 <Button type="button" variant="outline" size="sm" onClick={() => append({ supplierId: '', cost: 0, isPrimary: fields.length === 0 })}>
+                 <Button type="button" variant="outline" size="sm" onClick={() => append({ supplierId: '', cost: 0, isPrimary: fields.length === 0, supplierProductName: '' })}>
                     <Plus className="mr-2 h-4 w-4"/>
                     {t('add_supplier_label')}
                  </Button>

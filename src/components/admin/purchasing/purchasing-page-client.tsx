@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -312,12 +313,17 @@ export function PurchasingPageClient() {
       poId,
       supplierId: supplier.id,
       supplierName: vendorName,
-      items: items.map(item => ({
-        productId: item.productId,
-        name: item.name,
-        orderedQty: item.qty,
-        price: item.price,
-      })),
+      items: items.map(item => {
+        const product = products.find(p => p.id === item.productId);
+        const supplierInfo = product?.suppliers.find(s => s.supplierId === supplier.id);
+        const supplierProductName = supplierInfo?.supplierProductName;
+        return {
+          productId: item.productId,
+          name: supplierProductName || item.name, // Use supplier's name if available
+          orderedQty: item.qty,
+          price: item.price,
+        };
+      }),
       subtotal,
       discountInfo,
       total,
