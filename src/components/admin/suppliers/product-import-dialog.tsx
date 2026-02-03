@@ -146,32 +146,58 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
   };
   
   const handleImport = async () => {
-      if (!selectedFile) return;
-      setIsProcessing(true);
+    if (!selectedFile) return;
+    setIsProcessing(true);
 
-      try {
-          const text = await selectedFile.text();
-          const rows = text.split(/\r?\n/).map(row => row.trim()).filter(row => row);
-          const headerLine = rows.shift();
-          if (!headerLine) throw new Error("CSV file is empty or has no header.");
+    // This is a robust CSV parser that handles empty fields and quoted values.
+    const parseCsvRow = (row: string): string[] => {
+        const values: string[] = [];
+        let currentVal = '';
+        let inQuotes = false;
+        for (let i = 0; i < row.length; i++) {
+            const char = row[i];
+            if (char === '"') {
+                if (inQuotes && i + 1 < row.length && row[i + 1] === '"') {
+                    // This is an escaped quote (e.g., "a""b")
+                    currentVal += '"';
+                    i++; // Skip the next quote
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                values.push(currentVal);
+                currentVal = '';
+            } else {
+                currentVal += char;
+            }
+        }
+        values.push(currentVal); // Add the last value
+        return values;
+    };
 
-          const headers = headerLine.split(',').map(h => h.trim());
-          
-          let updatedCount = 0;
-          let createdCount = 0;
+    try {
+        const text = await selectedFile.text();
+        const rows = text.split(/\r?\n/).map(row => row.trim()).filter(row => row);
+        const headerLine = rows.shift();
+        if (!headerLine) throw new Error("CSV file is empty or has no header.");
 
-          for (const row of rows) {
-              const values = row.split(',');
-              const rowData: any = headers.reduce((obj, header, index) => {
-                  const value = values[index]?.trim() || '';
-                  // Basic un-quoting
-                  if (value.startsWith('"') && value.endsWith('"')) {
-                      obj[header] = value.slice(1, -1).replace(/""/g, '"');
-                  } else {
-                      obj[header] = value;
-                  }
-                  return obj;
-              }, {} as any);
+        const headers = parseCsvRow(headerLine).map(h => h.trim());
+        
+        let updatedCount = 0;
+        let createdCount = 0;
+
+        for (const row of rows) {
+            const values = parseCsvRow(row);
+            
+            if (values.length !== headers.length) {
+              console.warn(`Skipping malformed row. Has ${values.length} columns, expected ${headers.length}. Row: "${row}"`);
+              continue; // Skip rows that don't have the same number of columns as the header
+            }
+            
+            const rowData: any = headers.reduce((obj, header, index) => {
+                obj[header] = values[index]?.trim() || '';
+                return obj;
+            }, {} as any);
 
               const sku = rowData.sku;
               if (!sku) continue;
