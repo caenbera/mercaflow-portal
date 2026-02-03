@@ -279,11 +279,14 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
                            const cost = supplierInfo?.cost ?? 0;
                            const productName = product.name?.[locale] || product.name?.es || (product.name as any);
                            const unitText = typeof product.unit === 'object' && product.unit?.[locale] ? product.unit[locale] : (product.unit as any);
+                           const imageUrl = product.photoUrl && (product.photoUrl.startsWith('http') || product.photoUrl.startsWith('/'))
+                            ? product.photoUrl
+                            : '/placeholder.svg';
                           return (
                           <TableRow key={product.id}>
                               <TableCell className="pl-6 font-medium">
                                   <div className="flex items-center gap-3">
-                                      <Image src={product.photoUrl || '/placeholder.svg'} alt={productName} width={40} height={40} className="rounded-md object-cover"/>
+                                      <Image src={imageUrl} alt={productName} width={40} height={40} className="rounded-md object-cover"/>
                                       <div>
                                           <div className="font-semibold">{productName}</div>
                                           <div className="text-xs text-muted-foreground">SKU: {product.sku}</div>
@@ -316,5 +319,4 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
     </>
   );
 }
-
     
