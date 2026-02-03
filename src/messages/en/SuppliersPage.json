@@ -100,11 +100,16 @@
     "import_products_button": "Import Products",
     "import_dialog_title": "Import Products for {supplierName}",
     "import_dialog_desc": "Upload a CSV file to create new products or update existing ones for this supplier. The system uses the SKU to match existing products.",
-    "import_step1_title": "Step 1: Download Template",
-    "import_step1_desc": "Start by downloading the CSV template. This file contains the required columns and format.",
-    "download_template_button": "Download Template",
+    "import_step1_title": "Step 1: Choose a Template",
+    "import_step1_desc_new": "Choose an option to get started.",
+    "download_empty_template_button": "Download Empty Template",
+    "download_empty_template_desc": "Ideal for adding brand new products from scratch.",
+    "download_current_catalog_button": "Download Current Catalog",
+    "download_current_catalog_desc": "Perfect for bulk updating prices or stock.",
     "import_step2_title": "Step 2: Upload File",
     "import_step2_desc": "Once you have filled out the template with your product data, upload the CSV file here.",
     "upload_file_button": "Select CSV File",
-    "import_button": "Import"
+    "import_button": "Import",
+    "toast_no_products_title": "No Products to Export",
+    "toast_no_products_desc": "This supplier does not have any products in their catalog yet."
 }

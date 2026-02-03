@@ -143,6 +143,7 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
         onOpenChange={setIsImportDialogOpen}
         supplierId={supplier.id}
         supplierName={supplier.name}
+        products={supplierCatalog}
       />
       <div className="flex flex-col gap-6">
         <div className="mb-4">
