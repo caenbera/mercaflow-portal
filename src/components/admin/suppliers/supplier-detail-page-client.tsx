@@ -30,6 +30,7 @@ import {
   Pencil,
   BotMessageSquare,
   Trash2,
+  Upload,
 } from 'lucide-react';
 import { ProductDialog } from '@/components/dashboard/products/product-dialog';
 import { DeleteProductAlert } from '@/components/dashboard/products/delete-product-alert';
@@ -37,6 +38,7 @@ import { AddSupplierDialog } from './add-supplier-dialog';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ProductImportDialog } from './product-import-dialog';
 
 interface SupplierDetailPageClientProps {
     supplier: Supplier;
@@ -93,6 +95,7 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [isAlertOpen, setAlertOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const handleRatingChange = (newRating: number) => {
       setCurrentSupplier(prev => ({...prev, rating: newRating}));
@@ -134,6 +137,12 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
         open={isSupplierDialogOpen}
         onOpenChange={setIsSupplierDialogOpen}
         supplier={currentSupplier}
+      />
+      <ProductImportDialog 
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        supplierId={supplier.id}
+        supplierName={supplier.name}
       />
       <div className="flex flex-col gap-6">
         <div className="mb-4">
@@ -239,6 +248,10 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
                           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                           <Input placeholder={t('search_product_placeholder')} className="pl-8" />
                       </div>
+                      <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+                          <Upload className="mr-2 h-4 w-4" />
+                          {t('import_products_button')}
+                      </Button>
                       <Button onClick={handleAddProduct}>
                           <Plus className="mr-2 h-4 w-4" />
                           {t('add_product_button')}

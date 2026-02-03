@@ -1,3 +1,4 @@
+
 {
     "title": "Proveedores",
     "subtitle": "Gestiona tus fuentes de abastecimiento",
@@ -95,5 +96,15 @@
     "discount_threshold_unit_currency": "$",
     "discount_percentage_label": "Descuento (%)",
     "add_discount_rule_button": "Añadir Regla de Descuento",
-    "product_select_placeholder": "Seleccionar producto..."
+    "product_select_placeholder": "Seleccionar producto...",
+    "import_products_button": "Importar Productos",
+    "import_dialog_title": "Importar Productos para {supplierName}",
+    "import_dialog_desc": "Sube un archivo CSV para crear nuevos productos o actualizar existentes para este proveedor. El sistema usa el SKU para encontrar productos existentes.",
+    "import_step1_title": "Paso 1: Descarga la Plantilla",
+    "import_step1_desc": "Comienza descargando la plantilla CSV. Este archivo contiene las columnas y el formato requeridos.",
+    "download_template_button": "Descargar Plantilla",
+    "import_step2_title": "Paso 2: Sube el Archivo",
+    "import_step2_desc": "Una vez que hayas llenado la plantilla con los datos de tus productos, sube el archivo CSV aquí.",
+    "upload_file_button": "Seleccionar Archivo CSV",
+    "import_button": "Importar"
 }

@@ -1,3 +1,4 @@
+
 {
     "title": "Suppliers",
     "subtitle": "Manage your sourcing channels",
@@ -95,5 +96,15 @@
     "discount_threshold_unit_currency": "$",
     "discount_percentage_label": "Discount (%)",
     "add_discount_rule_button": "Add Discount Rule",
-    "product_select_placeholder": "Select product..."
+    "product_select_placeholder": "Select product...",
+    "import_products_button": "Import Products",
+    "import_dialog_title": "Import Products for {supplierName}",
+    "import_dialog_desc": "Upload a CSV file to create new products or update existing ones for this supplier. The system uses the SKU to match existing products.",
+    "import_step1_title": "Step 1: Download Template",
+    "import_step1_desc": "Start by downloading the CSV template. This file contains the required columns and format.",
+    "download_template_button": "Download Template",
+    "import_step2_title": "Step 2: Upload File",
+    "import_step2_desc": "Once you have filled out the template with your product data, upload the CSV file here.",
+    "upload_file_button": "Select CSV File",
+    "import_button": "Import"
 }
