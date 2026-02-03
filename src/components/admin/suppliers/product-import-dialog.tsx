@@ -32,7 +32,8 @@ const CSV_TEMPLATE_HEADERS = [
   'subcategoria_es',
   'subcategoria_en',
   'unidad_es',
-  'unidad_en'
+  'unidad_en',
+  'es_caja' // VERDADERO o FALSO
 ];
 
 export function ProductImportDialog({ open, onOpenChange, supplierId, supplierName, products }: ProductImportDialogProps) {
@@ -71,8 +72,9 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
     for (const product of products) {
         const supplierInfo = product.suppliers.find(s => s.supplierId === supplierId);
         
-        const formatForCsv = (value: string | number | undefined | null) => {
+        const formatForCsv = (value: string | number | boolean | undefined | null) => {
           if (value === null || value === undefined) return '';
+          if (typeof value === 'boolean') return value ? 'VERDADERO' : 'FALSO';
           const stringValue = String(value);
           // Quote the string if it contains a comma, double quote, or newline
           if (/[",\n]/.test(stringValue)) {
@@ -98,6 +100,7 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
           product.subcategory?.en ?? '',
           product.unit.es,
           product.unit.en,
+          product.isBox,
         ].map(formatForCsv);
         
         csvRows.push(row.join(','));
@@ -205,3 +208,4 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
     </Dialog>
   );
 }
+    
