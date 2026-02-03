@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Download, Upload, FileText, Loader2 } from 'lucide-react';
 import type { Product, ProductInput } from '@/types';
 import { getProductBySku, addProduct, updateProduct } from '@/lib/firestore/products';
+import Papa from 'papaparse';
 
 interface ProductImportDialogProps {
   open: boolean;
@@ -25,6 +26,7 @@ const CSV_TEMPLATE_HEADERS = [
   'precio_venta',
   'margen',
   'markup',
+  'metodo_precios', // 'margin' or 'markup'
   'foto_url',
   'stock_actual',
   'stock_minimo',
@@ -97,6 +99,7 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
           price,
           typeof margin === 'number' ? margin.toFixed(1) : '',
           typeof markup === 'number' ? markup.toFixed(1) : '',
+          product.pricingMethod ?? 'margin',
           product.photoUrl ?? '',
           product.stock,
           product.minStock,
@@ -147,147 +150,118 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
     if (!selectedFile) return;
     setIsProcessing(true);
 
-    const parseCsvRow = (row: string): string[] => {
-      const values: string[] = [];
-      let currentVal = '';
-      let inQuotes = false;
-      for (let i = 0; i < row.length; i++) {
-        const char = row[i];
-        if (char === '"') {
-          if (inQuotes && i + 1 < row.length && row[i + 1] === '"') {
-            currentVal += '"';
-            i++;
-          } else {
-            inQuotes = !inQuotes;
-          }
-        } else if (char === ',' && !inQuotes) {
-          values.push(currentVal.trim());
-          currentVal = '';
-        } else {
-          currentVal += char;
-        }
-      }
-      values.push(currentVal.trim());
-      return values;
-    };
-
-
-    try {
-        const text = await selectedFile.text();
-        const rows = text.split(/\r?\n/).map(row => row.trim()).filter(row => row);
-        const headerLine = rows.shift();
-        if (!headerLine) throw new Error("CSV file is empty or has no header.");
-
-        const headers = parseCsvRow(headerLine);
-        
+    Papa.parse(selectedFile, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const data = results.data as any[];
         let updatedCount = 0;
         let createdCount = 0;
 
-        for (const row of rows) {
-            const values = parseCsvRow(row);
-            
-            if (values.length > headers.length) {
-              console.warn(`Skipping malformed row. Has too many columns. Row: "${row}"`);
-              continue;
+        for (const rowData of data) {
+          try {
+            const sku = rowData.sku;
+            if (!sku) continue;
+
+            let costo_proveedor = rowData.costo_proveedor && !isNaN(parseFloat(rowData.costo_proveedor)) ? parseFloat(rowData.costo_proveedor) : null;
+            let precio_venta = rowData.precio_venta && !isNaN(parseFloat(rowData.precio_venta)) ? parseFloat(rowData.precio_venta) : null;
+            const margen = rowData.margen && !isNaN(parseFloat(rowData.margen)) ? parseFloat(rowData.margen) : null;
+            const markup = rowData.markup && !isNaN(parseFloat(rowData.markup)) ? parseFloat(rowData.markup) : null;
+            let metodo_precios = rowData.metodo_precios === 'markup' ? 'markup' : 'margin';
+            let calculationDirection: 'costToPrice' | 'priceToCost' = 'costToPrice';
+
+            if (costo_proveedor === null && precio_venta !== null && (margen !== null || markup !== null)) {
+              calculationDirection = 'priceToCost';
+              if (metodo_precios === 'margin' && margen !== null && margen < 100) {
+                costo_proveedor = precio_venta * (1 - (margen / 100));
+              } else if (metodo_precios === 'markup' && markup !== null) {
+                costo_proveedor = precio_venta / (1 + (markup / 100));
+              }
+            } else if (precio_venta === null && costo_proveedor !== null && (margen !== null || markup !== null)) {
+              calculationDirection = 'costToPrice';
+              if (metodo_precios === 'margin' && margen !== null && margen < 100) {
+                precio_venta = costo_proveedor / (1 - (margen / 100));
+              } else if (metodo_precios === 'markup' && markup !== null) {
+                precio_venta = costo_proveedor * (1 + (markup / 100));
+              }
             }
-            
-            const rowData: any = headers.reduce((obj, header, index) => {
-                obj[header] = values[index] || '';
-                return obj;
-            }, {} as any);
 
-              const sku = rowData.sku;
-              if (!sku) continue;
+            const existingProduct = await getProductBySku(sku);
 
-              let costo_proveedor = rowData.costo_proveedor ? parseFloat(rowData.costo_proveedor) : null;
-              let precio_venta = rowData.precio_venta ? parseFloat(rowData.precio_venta) : null;
-              const margen = rowData.margen ? parseFloat(rowData.margen) : null;
-              const markup = rowData.markup ? parseFloat(rowData.markup) : null;
-              
-              let calculationDirection: 'costToPrice' | 'priceToCost' = 'costToPrice';
+            if (existingProduct) {
+              // UPDATE logic
+              const updatePayload: any = {};
+              const suppliers = [...existingProduct.suppliers];
+              let supplierEntry = suppliers.find(s => s.supplierId === supplierId);
 
-              if (costo_proveedor === null && precio_venta !== null && (margen !== null || markup !== null)) {
-                  calculationDirection = 'priceToCost';
-                  if (margen !== null && margen < 100) {
-                      costo_proveedor = precio_venta * (1 - (margen / 100));
-                  } else if (markup !== null) {
-                      costo_proveedor = precio_venta / (1 + (markup / 100));
-                  }
-              } else if (precio_venta === null && costo_proveedor !== null && (margen !== null || markup !== null)) {
-                  calculationDirection = 'costToPrice';
-                  if (margen !== null && margen < 100) {
-                      precio_venta = costo_proveedor / (1 - (margen / 100));
-                  } else if (markup !== null) {
-                      precio_venta = costo_proveedor * (1 + (markup / 100));
-                  }
-              }
-              
-              const existingProduct = await getProductBySku(sku);
-
-              if (existingProduct) {
-                  // UPDATE logic
-                  const updatePayload: any = {};
-                  const suppliers = [...existingProduct.suppliers];
-                  let supplierEntry = suppliers.find(s => s.supplierId === supplierId);
-
-                  if (supplierEntry) {
-                      if (costo_proveedor !== null) supplierEntry.cost = costo_proveedor;
-                      if (rowData.nombre_producto_proveedor) supplierEntry.supplierProductName = rowData.nombre_producto_proveedor;
-                  } else {
-                      suppliers.push({ supplierId, cost: costo_proveedor ?? 0, isPrimary: suppliers.length === 0, supplierProductName: rowData.nombre_producto_proveedor ?? '' });
-                  }
-                  updatePayload.suppliers = suppliers;
-
-                  if (precio_venta !== null) updatePayload.salePrice = precio_venta;
-                  if (rowData.foto_url) updatePayload.photoUrl = rowData.foto_url;
-                  if (margen !== null) updatePayload.pricingMethod = 'margin';
-                  if (markup !== null) updatePayload.pricingMethod = 'markup';
-                  if (rowData.stock_actual) updatePayload.stock = parseInt(rowData.stock_actual);
-                  if (rowData.stock_minimo) updatePayload.minStock = parseInt(rowData.stock_minimo);
-                  if (rowData.es_caja) updatePayload.isBox = rowData.es_caja.toUpperCase() === 'VERDADERO';
-                  if (calculationDirection) updatePayload.calculationDirection = calculationDirection;
-
-                  await updateProduct(existingProduct.id, updatePayload);
-                  updatedCount++;
+              if (supplierEntry) {
+                if (costo_proveedor !== null) supplierEntry.cost = costo_proveedor;
+                if (rowData.nombre_producto_proveedor) supplierEntry.supplierProductName = rowData.nombre_producto_proveedor;
               } else {
-                  // CREATE logic
-                  const createPayload: ProductInput = {
-                      sku,
-                      name: { es: rowData.nombre_interno_es, en: rowData.nombre_interno_en },
-                      category: { es: rowData.categoria_es, en: rowData.categoria_en },
-                      subcategory: { es: rowData.subcategoria_es, en: rowData.subcategoria_en },
-                      unit: { es: rowData.unidad_es, en: rowData.unidad_en },
-                      salePrice: precio_venta ?? 0,
-                      stock: parseInt(rowData.stock_actual) || 0,
-                      minStock: parseInt(rowData.stock_minimo) || 10,
-                      active: true,
-                      isBox: rowData.es_caja?.toUpperCase() === 'VERDADERO',
-                      suppliers: [{ supplierId, cost: costo_proveedor ?? 0, isPrimary: true, supplierProductName: rowData.nombre_producto_proveedor || '' }],
-                      photoUrl: rowData.foto_url || '',
-                      pricingMethod: (margen !== null ? 'margin' : (markup !== null ? 'markup' : 'margin')),
-                      calculationDirection: calculationDirection,
-                  };
-
-                  if (!createPayload.name.es || !createPayload.category.es || !createPayload.unit.es || createPayload.salePrice <= 0) {
-                      console.warn(`Skipping creation for SKU ${sku} due to missing essential data.`);
-                      continue;
-                  }
-
-                  await addProduct(createPayload);
-                  createdCount++;
+                suppliers.push({ supplierId, cost: costo_proveedor ?? 0, isPrimary: suppliers.length === 0, supplierProductName: rowData.nombre_producto_proveedor ?? '' });
               }
+              updatePayload.suppliers = suppliers;
+
+              if (precio_venta !== null) updatePayload.salePrice = precio_venta;
+              updatePayload.photoUrl = rowData.foto_url || '';
+              updatePayload.pricingMethod = metodo_precios;
+              updatePayload.calculationDirection = calculationDirection;
+              if (rowData.stock_actual) updatePayload.stock = parseInt(rowData.stock_actual);
+              if (rowData.stock_minimo) updatePayload.minStock = parseInt(rowData.stock_minimo);
+              updatePayload.isBox = rowData.es_caja?.toUpperCase() === 'VERDADERO';
+              
+              if (rowData.nombre_interno_es) updatePayload.name = { ...existingProduct.name, es: rowData.nombre_interno_es };
+              if (rowData.nombre_interno_en) updatePayload.name = { ...(updatePayload.name || existingProduct.name), en: rowData.nombre_interno_en };
+
+
+              await updateProduct(existingProduct.id, updatePayload);
+              updatedCount++;
+            } else {
+              // CREATE logic
+              const createPayload: ProductInput = {
+                sku,
+                name: { es: rowData.nombre_interno_es || '', en: rowData.nombre_interno_en || '' },
+                category: { es: rowData.categoria_es || '', en: rowData.categoria_en || '' },
+                subcategory: { es: rowData.subcategoria_es || '', en: rowData.subcategoria_en || '' },
+                unit: { es: rowData.unidad_es || '', en: rowData.unidad_en || '' },
+                salePrice: precio_venta ?? 0,
+                stock: parseInt(rowData.stock_actual) || 0,
+                minStock: parseInt(rowData.stock_minimo) || 10,
+                active: true,
+                isBox: rowData.es_caja?.toUpperCase() === 'VERDADERO',
+                suppliers: [{ supplierId, cost: costo_proveedor ?? 0, isPrimary: true, supplierProductName: rowData.nombre_producto_proveedor || '' }],
+                photoUrl: rowData.foto_url || '',
+                pricingMethod: metodo_precios,
+                calculationDirection: calculationDirection,
+              };
+
+              if (!createPayload.name.es || !createPayload.category.es || !createPayload.unit.es || createPayload.salePrice <= 0) {
+                console.warn(`Skipping creation for SKU ${sku} due to missing essential data.`);
+                continue;
+              }
+
+              await addProduct(createPayload);
+              createdCount++;
+            }
+          } catch(e: any) {
+             console.error(`Failed to process row: ${JSON.stringify(rowData)}`, e);
           }
-          toast({
-              title: "Importación Completada",
-              description: `${createdCount} productos creados y ${updatedCount} actualizados.`,
-          });
-      } catch (e: any) {
-          console.error(e);
-          toast({ variant: 'destructive', title: 'Error de Importación', description: e.message || 'Hubo un problema al procesar el archivo CSV.' });
-      } finally {
-          setIsProcessing(false);
-          onOpenChange(false);
+        }
+
+        toast({
+          title: "Importación Completada",
+          description: `${createdCount} productos creados y ${updatedCount} actualizados.`,
+        });
+
+        setIsProcessing(false);
+        onOpenChange(false);
+      },
+      error: (error) => {
+        console.error("CSV Parsing Error:", error);
+        toast({ variant: 'destructive', title: 'Error de Lectura de CSV', description: error.message });
+        setIsProcessing(false);
       }
+    });
   }
 
   return (
