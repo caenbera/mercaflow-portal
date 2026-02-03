@@ -16,20 +16,23 @@ interface ProductImportDialogProps {
 
 const CSV_TEMPLATE_HEADERS = [
   'sku',
-  'nombre_producto_proveedor',
   'costo_proveedor',
+  'nombre_producto_proveedor',
+  'precio_venta',
+  'metodo_precios', // 'margin' or 'markup'
+  'foto_url',
+  'stock_actual',
+  'stock_minimo',
   'nombre_interno_es',
   'nombre_interno_en',
-  'precio_venta',
   'categoria_es',
   'categoria_en',
   'subcategoria_es',
   'subcategoria_en',
   'unidad_es',
-  'unidad_en',
-  'stock_actual',
-  'stock_minimo'
+  'unidad_en'
 ];
+
 
 export function ProductImportDialog({ open, onOpenChange, supplierId, supplierName }: ProductImportDialogProps) {
   const t = useTranslations('SuppliersPage');
