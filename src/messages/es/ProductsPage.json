@@ -1,4 +1,3 @@
-
 {
   "title": "Catálogo de Productos",
   "subtitle": "Gestiona precios, inventario y proveedores",
@@ -54,7 +53,7 @@
   "form_label_active": "Producto Activo",
   "form_label_active_true": "Producto Activo",
   "form_label_active_false": "Producto Inactivo",
-  "form_label_is_box": "¿Contar como bulto en pedidos?",
+  "form_label_is_box": "¿Contar como caja en pedidos?",
   "form_label_change_image": "Cambiar Imagen",
   "form_label_image_url_modal_title": "Imagen del Producto",
   "form_label_image_url_modal_desc": "Pega la URL de la imagen",

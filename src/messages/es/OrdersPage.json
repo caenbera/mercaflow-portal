@@ -1,4 +1,3 @@
-
 {
     "title": "Pedidos",
     "subtitle": "Gestiona y despacha las órdenes entrantes",
@@ -29,7 +28,7 @@
     "details_client_note": "Nota del cliente:",
     "details_print_button": "Imprimir",
     "details_update_button": "Marcar como {status}",
-    "total_boxes_label": "Total de Bultos",
+    "total_boxes_label": "Total de Cajas",
     "status_new": "Nuevo",
     "status_preparing": "Preparando",
     "status_in_route": "En Ruta",

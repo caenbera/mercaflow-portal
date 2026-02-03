@@ -1,4 +1,3 @@
-
 {
   "title": "Product Catalog",
   "subtitle": "Manage prices, inventory, and suppliers",
@@ -54,7 +53,7 @@
   "form_label_active": "Product Active",
   "form_label_active_true": "Product Active",
   "form_label_active_false": "Product Inactive",
-  "form_label_is_box": "Count as package in orders?",
+  "form_label_is_box": "Count as box in orders?",
   "form_label_change_image": "Change Image",
   "form_label_image_url_modal_title": "Product Image",
   "form_label_image_url_modal_desc": "Paste the image URL",
