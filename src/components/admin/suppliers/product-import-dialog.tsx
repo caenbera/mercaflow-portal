@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef } from 'react';
@@ -5,8 +6,9 @@ import { useTranslations } from 'next-intl';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Upload, FileText } from 'lucide-react';
-import type { Product } from '@/types';
+import { Download, Upload, FileText, Loader2 } from 'lucide-react';
+import type { Product, ProductInput } from '@/types';
+import { getProductBySku, addProduct, updateProduct } from '@/lib/firestore/products';
 
 interface ProductImportDialogProps {
   open: boolean;
@@ -21,6 +23,8 @@ const CSV_TEMPLATE_HEADERS = [
   'costo_proveedor',
   'nombre_producto_proveedor',
   'precio_venta',
+  'margen',
+  'markup',
   'metodo_precios', // 'margin' or 'markup'
   'foto_url',
   'stock_actual',
@@ -41,10 +45,11 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleDownloadTemplate = () => {
     const csvContent = CSV_TEMPLATE_HEADERS.join(',');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     if (link.download !== undefined) {
       const url = URL.createObjectURL(blob);
@@ -69,25 +74,30 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
 
     const csvRows = [CSV_TEMPLATE_HEADERS.join(',')];
 
+    const formatForCsv = (value: string | number | boolean | undefined | null) => {
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'boolean') return value ? 'VERDADERO' : 'FALSO';
+        const stringValue = String(value);
+        if (/[",\n]/.test(stringValue)) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+    };
+
     for (const product of products) {
         const supplierInfo = product.suppliers.find(s => s.supplierId === supplierId);
-        
-        const formatForCsv = (value: string | number | boolean | undefined | null) => {
-          if (value === null || value === undefined) return '';
-          if (typeof value === 'boolean') return value ? 'VERDADERO' : 'FALSO';
-          const stringValue = String(value);
-          // Quote the string if it contains a comma, double quote, or newline
-          if (/[",\n]/.test(stringValue)) {
-            return `"${stringValue.replace(/"/g, '""')}"`;
-          }
-          return stringValue;
-        };
+        const cost = supplierInfo?.cost ?? 0;
+        const price = product.salePrice;
+        const margin = price > 0 && cost > 0 ? ((price - cost) / price) * 100 : '';
+        const markup = cost > 0 ? ((price - cost) / cost) * 100 : '';
         
         const row = [
           product.sku,
-          supplierInfo?.cost ?? '',
+          cost,
           supplierInfo?.supplierProductName ?? '',
-          product.salePrice,
+          price,
+          typeof margin === 'number' ? margin.toFixed(1) : '',
+          typeof markup === 'number' ? markup.toFixed(1) : '',
           product.pricingMethod ?? 'margin',
           product.photoUrl ?? '',
           product.stock,
@@ -107,7 +117,7 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
     }
 
     const csvContent = csvRows.join('\n');
-    const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' }); // Add BOM for Excel
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     if (link.download !== undefined) {
       const url = URL.createObjectURL(blob);
@@ -132,16 +142,127 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
       });
       setSelectedFile(null);
     }
-    // Reset file input to allow uploading the same file again
     if(fileInputRef.current) fileInputRef.current.value = "";
   };
   
-  const handleImport = () => {
-      // Phase 2: This is where the file processing logic will go.
-      toast({
-          title: "Función no implementada",
-          description: "La lógica para procesar el archivo se añadirá en un paso futuro."
-      });
+  const handleImport = async () => {
+      if (!selectedFile) return;
+      setIsProcessing(true);
+
+      try {
+          const text = await selectedFile.text();
+          const rows = text.split(/\r?\n/).map(row => row.trim()).filter(row => row);
+          const headerLine = rows.shift();
+          if (!headerLine) throw new Error("CSV file is empty or has no header.");
+
+          const headers = headerLine.split(',').map(h => h.trim());
+          
+          let updatedCount = 0;
+          let createdCount = 0;
+
+          for (const row of rows) {
+              const values = row.split(',');
+              const rowData: any = headers.reduce((obj, header, index) => {
+                  const value = values[index]?.trim() || '';
+                  // Basic un-quoting
+                  if (value.startsWith('"') && value.endsWith('"')) {
+                      obj[header] = value.slice(1, -1).replace(/""/g, '"');
+                  } else {
+                      obj[header] = value;
+                  }
+                  return obj;
+              }, {} as any);
+
+              const sku = rowData.sku;
+              if (!sku) continue;
+
+              let costo_proveedor = rowData.costo_proveedor ? parseFloat(rowData.costo_proveedor) : null;
+              let precio_venta = rowData.precio_venta ? parseFloat(rowData.precio_venta) : null;
+              const margen = rowData.margen ? parseFloat(rowData.margen) : null;
+              const markup = rowData.markup ? parseFloat(rowData.markup) : null;
+              const metodo_precios = rowData.metodo_precios === 'markup' ? 'markup' : 'margin';
+
+              if (costo_proveedor !== null && precio_venta === null) {
+                  if (metodo_precios === 'margin' && margen !== null && margen < 100) {
+                      precio_venta = costo_proveedor / (1 - (margen / 100));
+                  } else if (metodo_precios === 'markup' && markup !== null) {
+                      precio_venta = costo_proveedor * (1 + (markup / 100));
+                  }
+              } else if (precio_venta !== null && costo_proveedor === null) {
+                  if (metodo_precios === 'margin' && margen !== null && margen < 100) {
+                      costo_proveedor = precio_venta * (1 - (margen / 100));
+                  } else if (metodo_precios === 'markup' && markup !== null) {
+                      costo_proveedor = precio_venta / (1 + (markup / 100));
+                  }
+              }
+
+              const existingProduct = await getProductBySku(sku);
+
+              if (existingProduct) {
+                  // UPDATE logic
+                  const updatePayload: any = {};
+                  const suppliers = [...existingProduct.suppliers];
+                  let supplierEntry = suppliers.find(s => s.supplierId === supplierId);
+
+                  if (supplierEntry) {
+                      if (costo_proveedor !== null) supplierEntry.cost = costo_proveedor;
+                      if (rowData.nombre_producto_proveedor) supplierEntry.supplierProductName = rowData.nombre_producto_proveedor;
+                  } else {
+                      suppliers.push({ supplierId, cost: costo_proveedor ?? 0, isPrimary: suppliers.length === 0, supplierProductName: rowData.nombre_producto_proveedor ?? '' });
+                  }
+                  updatePayload.suppliers = suppliers;
+
+                  if (precio_venta !== null) updatePayload.salePrice = precio_venta;
+                  
+                  // Update other fields if they exist in CSV
+                  if (rowData.nombre_interno_es) updatePayload.name = { ...existingProduct.name, es: rowData.nombre_interno_es };
+                  if (rowData.nombre_interno_en) updatePayload.name = { ...(updatePayload.name || existingProduct.name), en: rowData.nombre_interno_en };
+                  // ... you can add similar logic for all other updatable fields ...
+                  if (rowData.stock_actual) updatePayload.stock = parseInt(rowData.stock_actual);
+                  if (rowData.stock_minimo) updatePayload.minStock = parseInt(rowData.stock_minimo);
+                  if (rowData.es_caja) updatePayload.isBox = rowData.es_caja.toUpperCase() === 'VERDADERO';
+
+
+                  await updateProduct(existingProduct.id, updatePayload);
+                  updatedCount++;
+              } else {
+                  // CREATE logic
+                  const createPayload: ProductInput = {
+                      sku,
+                      name: { es: rowData.nombre_interno_es, en: rowData.nombre_interno_en },
+                      category: { es: rowData.categoria_es, en: rowData.categoria_en },
+                      subcategory: { es: rowData.subcategoria_es, en: rowData.subcategoria_en },
+                      unit: { es: rowData.unidad_es, en: rowData.unidad_en },
+                      salePrice: precio_venta ?? 0,
+                      stock: parseInt(rowData.stock_actual) || 0,
+                      minStock: parseInt(rowData.stock_minimo) || 10,
+                      active: true,
+                      isBox: rowData.es_caja?.toUpperCase() === 'VERDADERO',
+                      suppliers: [{ supplierId, cost: costo_proveedor ?? 0, isPrimary: true, supplierProductName: rowData.nombre_producto_proveedor || '' }],
+                      photoUrl: rowData.foto_url || '',
+                      pricingMethod: metodo_precios,
+                  };
+
+                  if (!createPayload.name.es || !createPayload.category.es || !createPayload.unit.es || createPayload.salePrice <= 0) {
+                      console.warn(`Skipping creation for SKU ${sku} due to missing essential data.`);
+                      continue;
+                  }
+
+                  await addProduct(createPayload);
+                  createdCount++;
+              }
+          }
+          toast({
+              title: "Importación Completada",
+              description: `${createdCount} productos creados y ${updatedCount} actualizados.`,
+          });
+      } catch (e: any) {
+          console.error(e);
+          toast({ variant: 'destructive', title: 'Error de Importación', description: e.message || 'Hubo un problema al procesar el archivo CSV.' });
+      } finally {
+          setIsProcessing(false);
+          onOpenChange(false);
+      }
   }
 
   return (
@@ -200,7 +321,8 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             {t('cancel')}
           </Button>
-          <Button onClick={handleImport} disabled={!selectedFile}>
+          <Button onClick={handleImport} disabled={!selectedFile || isProcessing}>
+            {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t('import_button')}
           </Button>
         </DialogFooter>
@@ -209,3 +331,5 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
   );
 }
     
+
+      

@@ -74,6 +74,8 @@ export interface Product {
   createdAt: Timestamp;
 }
 
+export type ProductInput = Omit<Product, 'id' | 'createdAt'>;
+
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface OrderItem {
@@ -334,3 +336,5 @@ export interface PurchaseOrder {
 
 // Exporting Firebase User type for components
 export type { User };
+
+      
