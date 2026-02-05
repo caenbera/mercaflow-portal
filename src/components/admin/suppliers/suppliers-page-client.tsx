@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { FileText, Handshake, PlusCircle, Truck } from 'lucide-react';
@@ -48,6 +49,27 @@ export function SuppliersPageClient() {
   const { toast } = useToast();
 
   const totalPayable = loading ? 0 : suppliers.reduce((acc, s) => acc + s.finance.pendingBalance, 0);
+
+  const deliveriesToday = useMemo(() => {
+    if (loading) return 0;
+    const dayMap: { [key: number]: string[] } = {
+        0: ['domingo', 'sun'],
+        1: ['lunes', 'mon'],
+        2: ['martes', 'tue'],
+        3: ['miércoles', 'wed'],
+        4: ['jueves', 'thu'],
+        5: ['viernes', 'fri'],
+        6: ['sábado', 'sat'],
+    };
+    const today = new Date().getDay();
+    const todayShortNames = dayMap[today];
+    
+    return suppliers.filter(supplier => {
+        if (!supplier.deliveryDays) return false;
+        const deliveryDaysLower = supplier.deliveryDays.toLowerCase().replace(/é/g, 'e'); // Normalize accents
+        return todayShortNames.some(name => deliveryDaysLower.includes(name));
+    }).length;
+  }, [suppliers, loading]);
 
   const filters = [
     { id: 'all', label: t('all') },
@@ -114,7 +136,7 @@ export function SuppliersPageClient() {
               />
               <KpiCard 
                 title={t('deliveries_today')}
-                value="3"
+                value={deliveriesToday}
                 icon={Truck}
                 iconBg="bg-blue-100"
                 iconColor="text-blue-600"

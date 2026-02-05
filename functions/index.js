@@ -193,6 +193,43 @@ async function awardPointsForOrder(order, userProfile, allOrders, allRules) {
     }
 }
 
+// --- NEW CLIENT NOTIFICATION ---
+exports.onNewClientSignup = functions.firestore
+    .document("users/{userId}")
+    .onCreate(async (snap) => {
+        const user = snap.data();
+        if (user.role === 'client' && user.status === 'pending_approval') {
+            const adminPayload = {
+              title: "Nuevo Cliente Registrado",
+              body: `${user.businessName} se ha registrado y necesita aprobación.`,
+              icon: NOTIFICATION_ICON,
+              data: { url: `/admin/clients/${snap.id}` },
+            };
+            await sendNotificationToRoles(['admin', 'superadmin'], adminPayload);
+        }
+        return null;
+    });
+
+// --- INVOICE PAID NOTIFICATION ---
+exports.onInvoiceUpdate = functions.firestore
+    .document("invoices/{invoiceId}")
+    .onUpdate(async (change) => {
+        const newValue = change.after.data();
+        const previousValue = change.before.data();
+
+        if (newValue.status === 'paid' && previousValue.status !== 'paid') {
+            const clientPayload = {
+              title: "✅ Pago Recibido",
+              body: `Hemos recibido tu pago para la factura #${change.after.id.substring(0, 6)}. ¡Gracias!`,
+              icon: NOTIFICATION_ICON,
+              data: { url: `/client/invoices` },
+            };
+            await sendNotificationToUser(newValue.userId, clientPayload);
+        }
+
+        return null;
+    });
+
 
 // --- SUPPORT TICKET NOTIFICATIONS ---
 exports.onNewSupportTicket = functions.firestore

@@ -38,5 +38,6 @@
     "actions_view_details": "View Details",
     "actions_print": "Print",
     "actions_change_status_label": "Change Status",
-    "actions_set_to": "Set to {status}"
+    "actions_set_to": "Set to {status}",
+    "details_delivery_not_set": "Not Specified"
 }

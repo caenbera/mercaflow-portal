@@ -26,6 +26,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Printer, CalendarDays, Info } from 'lucide-react';
 import type { Order } from '@/types';
 import { useTranslations } from 'next-intl';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface OrderDetailsDialogProps {
   order: Order | null;
@@ -109,7 +111,7 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
               <h3 className="text-xs text-muted-foreground font-bold uppercase">{t('details_delivery_label')}</h3>
               <p className="font-bold flex items-center gap-2 justify-start sm:justify-end">
                 <CalendarDays className="h-4 w-4" />
-                Tomorrow, {new Date(new Date().getTime() + 24*60*60*1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric'})}
+                {order.deliveryDate ? format(order.deliveryDate.toDate(), 'PPP', { locale: locale === 'es' ? es : undefined }) : t('details_delivery_not_set')}
               </p>
               <Badge variant="secondary">North Route</Badge>
             </div>

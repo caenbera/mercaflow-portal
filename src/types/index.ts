@@ -98,6 +98,7 @@ export interface Order {
   total: number;
   status: OrderStatus;
   createdAt: Timestamp;
+  deliveryDate?: Timestamp;
   shippingAddress: string;
   discountApplied?: number;
   notes?: {

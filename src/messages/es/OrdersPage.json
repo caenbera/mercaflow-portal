@@ -38,5 +38,6 @@
     "actions_view_details": "Ver Detalles",
     "actions_print": "Imprimir",
     "actions_change_status_label": "Cambiar Estado",
-    "actions_set_to": "Marcar como {status}"
+    "actions_set_to": "Marcar como {status}",
+    "details_delivery_not_set": "No Especificada"
 }
