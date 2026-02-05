@@ -104,22 +104,20 @@
   }
 
   html {
-    @apply scroll-smooth;
+    scroll-behavior: auto;
   }
 
   body {
     @apply bg-background text-foreground;
-    /* Previene rebote en iOS (igual que en el HTML) */
     overscroll-behavior-y: none;
   }
 
-  /* 👇 Clase para ocultar scrollbar en contenedores con scroll horizontal 👇 */
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
   .hide-scrollbar {
-    -ms-overflow-style: none;  /* IE y Edge */
-    scrollbar-width: none;     /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 
@@ -143,7 +141,6 @@
       @apply bg-[#ffebee] text-[#c62828] hover:bg-[#ffebee]/80;
   }
   
-  /* Client History Statuses */
   .status-delivered { 
     @apply bg-green-100 text-green-800 border-green-200;
   }
@@ -154,7 +151,6 @@
     @apply bg-red-100 text-red-800 border-red-200;
   }
 
-  /* Margin badges from prototype */
   .margin-good { @apply bg-green-100 text-green-700; } 
   .margin-warn { @apply bg-yellow-100 text-yellow-700; } 
   .margin-bad { @apply bg-red-100 text-red-700; }
@@ -189,4 +185,60 @@
     margin-bottom: -80px; /* Adjust based on card height */
     transition: all 0.4s ease-in-out;
   }
+}
+
+@layer components {
+    .hero-scroll-container {
+      @apply relative w-screen bg-gray-900;
+      height: 250vh; /* Default height for mobile */
+    }
+    @screen md {
+      .hero-scroll-container {
+        height: 300vh;
+      }
+    }
+
+    .scroll-video-wrapper {
+      @apply sticky top-0 flex h-screen w-screen items-center justify-center overflow-hidden;
+    }
+
+    .scroll-video {
+      @apply h-full w-full object-cover pointer-events-none select-none;
+      -webkit-user-drag: none;
+    }
+
+    .scroll-indicator {
+      @apply absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-2 opacity-100 transition-opacity duration-500 pointer-events-none;
+    }
+
+    .scroll-indicator.hidden {
+      @apply opacity-0;
+    }
+
+    .scroll-indicator span {
+      @apply text-xs uppercase tracking-widest text-white/50;
+    }
+    
+    .scroll-arrow {
+      @apply h-6 w-6 text-white/80;
+      animation: bounce 2s infinite;
+    }
+    
+    .preloader {
+      @apply fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900 transition-opacity duration-500;
+    }
+
+    .preloader.loaded {
+      @apply opacity-0 pointer-events-none;
+    }
+
+    .loader-text {
+      @apply text-sm tracking-widest text-gray-400;
+    }
+
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(10px); }
+        60% { transform: translateY(5px); }
+    }
 }
