@@ -93,7 +93,7 @@ export function Hero() {
           </video>
           
           {/* Contenido - relative para que respete el flujo del sticky container */}
-          <div className="relative z-10 flex h-full w-full flex-col items-center justify-center px-4 text-center text-white">
+          <div className="relative flex h-full w-full flex-col items-center justify-center px-4 text-center text-white">
             <div className="mx-auto max-w-7xl">
               <h1 className="mb-6 text-3xl font-bold sm:text-5xl" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
                 {t.rich('hero_title_html', {

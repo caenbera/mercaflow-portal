@@ -204,7 +204,7 @@
   }
 
   .scroll-video {
-    @apply absolute top-0 left-0 h-full w-full object-cover pointer-events-none select-none z-[1];
+    @apply absolute top-0 left-0 h-full w-full object-cover pointer-events-none select-none;
     -webkit-user-drag: none;
   }
 
