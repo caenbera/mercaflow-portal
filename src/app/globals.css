@@ -16,7 +16,7 @@
     --primary: 145 63% 42%; /* green-600 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 5.9% 90%;
+    --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
 
     --muted: 240 4.8% 95.9%;
@@ -188,57 +188,58 @@
 }
 
 @layer components {
+  .hero-scroll-container {
+    @apply relative w-screen bg-gray-900;
+    height: 300vh; /* Desktop default */
+  }
+  
+  @media (max-width: 768px) {
     .hero-scroll-container {
-      @apply relative w-screen bg-gray-900;
-      height: 250vh; /* Default height for mobile */
+      height: 250vh;
     }
-    @screen md {
-      .hero-scroll-container {
-        height: 300vh;
-      }
-    }
+  }
 
-    .scroll-video-wrapper {
-      @apply sticky top-0 flex h-screen w-screen items-center justify-center overflow-hidden;
-    }
+  .scroll-video-wrapper {
+    @apply sticky top-0 h-screen w-screen overflow-hidden flex items-center justify-center;
+  }
 
-    .scroll-video {
-      @apply h-full w-full object-cover pointer-events-none select-none;
-      -webkit-user-drag: none;
-    }
+  .scroll-video {
+    @apply absolute top-0 left-0 h-full w-full object-cover pointer-events-none select-none z-[1];
+    -webkit-user-drag: none;
+  }
 
-    .scroll-indicator {
-      @apply absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-2 opacity-100 transition-opacity duration-500 pointer-events-none;
-    }
+  .scroll-indicator {
+    @apply absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-2 opacity-100 transition-opacity duration-500 pointer-events-none;
+  }
 
-    .scroll-indicator.hidden {
-      @apply opacity-0;
-    }
+  .scroll-indicator.hidden {
+    @apply opacity-0;
+  }
 
-    .scroll-indicator span {
-      @apply text-xs uppercase tracking-widest text-white/50;
-    }
-    
-    .scroll-arrow {
-      @apply h-6 w-6 text-white/80;
-      animation: bounce 2s infinite;
-    }
-    
-    .preloader {
-      @apply fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900 transition-opacity duration-500;
-    }
+  .scroll-indicator span {
+    @apply text-xs uppercase tracking-widest text-white/70;
+  }
+  
+  .scroll-arrow {
+    @apply h-6 w-6 text-white;
+    animation: bounce 2s infinite;
+  }
+  
+  .preloader {
+    @apply fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900 transition-all duration-500;
+  }
 
-    .preloader.loaded {
-      @apply opacity-0 pointer-events-none;
-    }
+  .preloader.loaded {
+    @apply opacity-0 invisible;
+  }
 
-    .loader-text {
-      @apply text-sm tracking-widest text-gray-400;
-    }
+  .loader-text {
+    @apply text-sm tracking-widest text-gray-400;
+  }
 
-    @keyframes bounce {
-        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-        40% { transform: translateY(10px); }
-        60% { transform: translateY(5px); }
-    }
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(10px); }
+    60% { transform: translateY(5px); }
+  }
 }

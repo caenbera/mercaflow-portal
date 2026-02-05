@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -27,18 +26,14 @@ export function Hero() {
       video.currentTime = 0;
     };
 
-    // Fallback timer
     const loadingFallback = setTimeout(() => {
-      if (!isReady) {
-        handleVideoReady();
-      }
+      if (!isReady) handleVideoReady();
     }, 5000);
 
-    // Check readyState immediately in case the video is cached
-    if (video.readyState >= 2) { // HAVE_CURRENT_DATA or more
+    if (video.readyState >= 2) {
       handleVideoReady();
     } else {
-      video.addEventListener('loadedmetadata', handleVideoReady);
+      video.addEventListener('loadeddata', handleVideoReady);
     }
 
     const handleScroll = () => {
@@ -49,9 +44,7 @@ export function Hero() {
       const rect = containerEl.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       
-      if (rect.bottom < 0 || rect.top > windowHeight) {
-          return;
-      }
+      if (rect.bottom < 0 || rect.top > windowHeight) return;
       
       const scrollTop = -rect.top;
       const maxScroll = containerEl.scrollHeight - windowHeight;
@@ -61,19 +54,19 @@ export function Hero() {
       
       const scrollIndicator = scrollIndicatorRef.current;
       if (scrollIndicator) {
-        if (progress > 0.05) {
-          scrollIndicator.style.opacity = '0';
-        } else {
-          scrollIndicator.style.opacity = '1';
-        }
+        scrollIndicator.style.opacity = progress > 0.05 ? '0' : '1';
       }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+    // Trigger inicial
+    handleScroll();
 
     return () => {
       clearTimeout(loadingFallback);
-      video.removeEventListener('loadedmetadata', handleVideoReady);
+      if (video) {
+        video.removeEventListener('loadeddata', handleVideoReady);
+      }
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
@@ -89,7 +82,7 @@ export function Hero() {
           <video
             ref={videoRef}
             className="scroll-video"
-            preload="metadata"
+            preload="auto"
             muted
             playsInline
             disablePictureInPicture
@@ -99,20 +92,23 @@ export function Hero() {
             <source src="/hero-video.mp4" type="video/mp4" />
           </video>
           
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-white text-center">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <h1 className="text-3xl sm:text-5xl font-bold mb-6" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.7)' }}>
+          {/* Contenido - relative para que respete el flujo del sticky container */}
+          <div className="relative z-10 flex h-full w-full flex-col items-center justify-center px-4 text-center text-white">
+            <div className="mx-auto max-w-7xl">
+              <h1 className="mb-6 text-3xl font-bold sm:text-5xl" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
                 {t.rich('hero_title_html', {
                   yellow: (chunks) => <span className="text-yellow-300">{chunks}</span>
                 })}
               </h1>
-              <p className="text-base sm:text-xl mb-8" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.7)' }}>
+              
+              <p className="mb-8 text-base sm:text-xl" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
                 {t.rich('hero_subtitle_html', {
                   br: () => <br className="hidden md:block" />,
                   lightYellow: (chunks) => <span className="text-yellow-200">{chunks}</span>
                 })}
               </p>
-              <div className="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-6 mb-12" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>
+              
+              <div className="mb-12 flex flex-col items-center justify-center space-y-4 md:flex-row md:space-x-6 md:space-y-0" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.6)' }}>
                 <div className="flex items-center space-x-2">
                   <CheckCircle className="text-yellow-300" />
                   <span>{t('hero_feature1')}</span>
@@ -126,15 +122,18 @@ export function Hero() {
                   <span>{t('hero_feature3')}</span>
                 </div>
               </div>
-              <div className="space-y-4 md:space-y-0 md:space-x-4 md:flex justify-center">
-                <Button asChild className="w-full md:w-auto bg-accent text-white px-6 py-2.5 text-sm md:text-base md:px-8 md:py-3 font-bold hover:bg-orange-600 transition animate-pulse h-auto">
+              
+              <div className="flex flex-col justify-center space-y-4 md:flex-row md:space-x-4 md:space-y-0">
+                <Button asChild className="h-auto w-full bg-accent px-6 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600 animate-pulse md:w-auto md:px-8 md:py-3 md:text-base">
                   <a href="#cotizacion">
-                    <Calculator className="mr-2" />{t('hero_cta_quote')}
+                    <Calculator className="mr-2" />
+                    {t('hero_cta_quote')}
                   </a>
                 </Button>
-                <Button asChild className="w-full md:w-auto bg-yellow-400 text-gray-900 px-6 py-2.5 text-sm md:text-base md:px-8 md:py-3 font-bold hover:bg-yellow-300 transition h-auto">
+                <Button asChild className="h-auto w-full bg-yellow-400 px-6 py-2.5 text-sm font-bold text-gray-900 transition hover:bg-yellow-300 md:w-auto md:px-8 md:py-3 md:text-base">
                   <a href="#muestra">
-                    <Gift className="mr-2" />{t('hero_cta_sample')}
+                    <Gift className="mr-2" />
+                    {t('hero_cta_sample')}
                   </a>
                 </Button>
               </div>
