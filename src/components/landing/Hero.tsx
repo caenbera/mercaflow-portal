@@ -10,111 +10,75 @@ export function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollIndicatorRef = useRef<HTMLDivElement>(null);
-  const preloaderRef = useRef<HTMLDivElement>(null);
-  
-  const [videoDuration, setVideoDuration] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const video = videoRef.current;
-    const heroContainer = containerRef.current;
-    const scrollIndicator = scrollIndicatorRef.current;
-    const preloader = preloaderRef.current;
+    const container = containerRef.current;
+    if (!video || !container) return;
 
-    if (!video || !heroContainer || !preloader) return;
+    let videoDuration = 0;
 
-    let rafId: number | null = null;
-    let currentScroll = 0;
-    let scrollTarget = 0;
-    const smoothFactor = 0.1;
-
-    // --- Corrected Loading Logic ---
-    const onVideoLoaded = () => {
-      // Ensure this only runs once
+    const handleVideoReady = () => {
       if (video.duration) {
-        setVideoDuration(video.duration);
-        preloader.classList.add('loaded');
+        videoDuration = video.duration;
+        setIsLoading(false);
         video.pause();
         video.currentTime = 0;
-        startAnimationLoop();
-        // Remove listener after it has done its job
-        video.removeEventListener('loadeddata', onVideoLoaded);
-        video.removeEventListener('error', onVideoError);
       }
     };
     
-    const onVideoError = (e: Event) => {
-      console.error('Error loading video:', e);
-      preloader.classList.add('loaded'); // Hide preloader even on error
-    };
+    const loadingFallback = setTimeout(() => {
+        setIsLoading(false);
+    }, 5000);
 
-    // Check if video is already loaded (from cache)
-    if (video.readyState >= 2) { // HAVE_CURRENT_DATA or more
-      onVideoLoaded();
-    } else {
-      // Otherwise, add listeners
-      video.addEventListener('loadeddata', onVideoLoaded);
-      video.addEventListener('error', onVideoError);
+    // Use 'loadedmetadata' as it's sufficient and fires earlier
+    video.addEventListener('loadedmetadata', handleVideoReady);
+    // In some cases, especially with cached videos, the event might have already fired.
+    if (video.readyState >= 1) { // HAVE_METADATA
+        handleVideoReady();
     }
-    // --- End of Corrected Logic ---
-    
-    const getScrollProgress = () => {
-      const rect = heroContainer.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      const scrollTop = -rect.top;
-      const maxScroll = rect.height - windowHeight;
-      if (maxScroll <= 0) return 0;
-      return Math.max(0, Math.min(1, scrollTop / maxScroll));
-    };
 
-    const updateVideoFromScroll = (progress: number) => {
+
+    const handleScroll = () => {
       if (videoDuration === 0) return;
-      const targetTime = progress * videoDuration;
-      if (Math.abs(video.currentTime - targetTime) > 0.05) {
-        video.currentTime = targetTime;
+
+      const rect = container.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      
+      if (rect.bottom < 0 || rect.top > windowHeight) {
+          return;
       }
-      if(scrollIndicator) {
-          if (progress > 0.05) {
-              scrollIndicator.classList.add('hidden');
-          } else {
-              scrollIndicator.classList.remove('hidden');
-          }
+      
+      const scrollTop = -rect.top;
+      const maxScroll = container.scrollHeight - windowHeight;
+      const progress = Math.max(0, Math.min(1, scrollTop / maxScroll));
+
+      // Direct manipulation for performance
+      video.currentTime = progress * videoDuration;
+      
+      const scrollIndicator = scrollIndicatorRef.current;
+      if (scrollIndicator) {
+        if (progress > 0.05) {
+          scrollIndicator.style.opacity = '0';
+        } else {
+          scrollIndicator.style.opacity = '1';
+        }
       }
     };
 
-    const startAnimationLoop = () => {
-      const animate = () => {
-        const diff = scrollTarget - currentScroll;
-        currentScroll += diff * smoothFactor;
-        updateVideoFromScroll(currentScroll);
-        rafId = requestAnimationFrame(animate);
-      };
-      animate();
-    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
-    const onScroll = () => {
-      scrollTarget = getScrollProgress();
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    
-    // Initial setup
-    video.pause();
-    onScroll();
-
-    // Cleanup function
     return () => {
-      video.removeEventListener('loadeddata', onVideoLoaded);
-      video.removeEventListener('error', onVideoError);
-      window.removeEventListener('scroll', onScroll);
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-      }
+      window.removeEventListener('scroll', handleScroll);
+      video.removeEventListener('loadedmetadata', handleVideoReady);
+      clearTimeout(loadingFallback);
     };
-  }, [videoDuration]); // Keep videoDuration as a dependency to react to its change
+  }, []);
 
   return (
     <>
-      <div ref={preloaderRef} className="preloader">
+      <div className={`preloader ${!isLoading ? 'loaded' : ''}`}>
         <div className="loader-text">Cargando experiencia...</div>
       </div>
 
@@ -123,13 +87,12 @@ export function Hero() {
           <video
             ref={videoRef}
             className="scroll-video"
-            preload="auto"
-            muted // Muted is critical for autoplay
+            preload="metadata"
+            muted
             playsInline
             disablePictureInPicture
-            disableRemotePlayback // Added for more control
+            disableRemotePlayback
           >
-            {/* Provide multiple sources for better browser compatibility */}
             <source src="/hero-video.webm" type="video/webm" />
             <source src="/hero-video.mp4" type="video/mp4" />
           </video>
