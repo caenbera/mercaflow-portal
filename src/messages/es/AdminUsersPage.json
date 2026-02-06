@@ -11,6 +11,7 @@
   "invite_role_admin": "Admin",
   "invite_role_picker": "Picker",
   "invite_role_purchaser": "Comprador",
+  "invite_role_salesperson": "Vendedor",
   "invite_button_text": "Pre-Aprobar",
   "invite_button_loading_text": "Pre-Aprobando...",
   "table_header_business": "Nombre del Negocio",

@@ -13,7 +13,7 @@ import { useTranslations } from 'next-intl';
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
-  role: z.enum(['admin', 'picker', 'purchaser'], { required_error: 'Please select a role.'}),
+  role: z.enum(['admin', 'picker', 'purchaser', 'salesperson'], { required_error: 'Please select a role.'}),
 });
 
 interface InviteAdminFormProps {
@@ -69,6 +69,7 @@ export function InviteAdminForm({ onInvite }: InviteAdminFormProps) {
                     <SelectItem value="admin">{t('invite_role_admin')}</SelectItem>
                     <SelectItem value="picker">{t('invite_role_picker')}</SelectItem>
                     <SelectItem value="purchaser">{t('invite_role_purchaser')}</SelectItem>
+                    <SelectItem value="salesperson">{t('invite_role_salesperson')}</SelectItem>
                   </SelectContent>
                 </Select>
               <FormMessage />

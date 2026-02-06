@@ -1,7 +1,7 @@
 
 import type { Timestamp, User } from 'firebase/firestore';
 
-export type UserRole = 'client' | 'admin' | 'superadmin' | 'picker' | 'purchaser';
+export type UserRole = 'client' | 'admin' | 'superadmin' | 'picker' | 'purchaser' | 'salesperson';
 export type UserStatus = 'active' | 'pending_approval' | 'blocked';
 export type ClientTier = 'standard' | 'bronze' | 'silver' | 'gold';
 
@@ -333,6 +333,34 @@ export interface PurchaseOrder {
   status: PurchaseOrderStatus;
   createdAt: Timestamp;
   completedAt?: Timestamp;
+}
+
+export type ProspectStatus = 'pending' | 'contacted' | 'visited' | 'client' | 'not_interested';
+
+export interface Prospect {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  phone?: string;
+  web?: string;
+  category: 'Restaurante' | 'Supermercado' | 'Carnicería' | 'Otro';
+  ethnic: 'mexicano' | 'peruano' | 'colombiano' | 'ecuatoriano' | 'venezolano' | 'salvadoreno' | 'guatemalteco' | 'otro';
+  zone?: string;
+  status: ProspectStatus;
+  priority: boolean;
+  salespersonId: string; // ID of the user with 'salesperson' role
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  notes?: string;
+}
+
+export interface ProspectVisit {
+    id: string;
+    date: Timestamp;
+    notes: string;
+    outcome: 'successful' | 'follow-up' | 'no_show';
 }
 
 
