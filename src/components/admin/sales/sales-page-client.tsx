@@ -24,21 +24,25 @@ import type { Prospect } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ProspectDialog } from './prospect-dialog';
 import { ProspectImportDialog } from './prospect-import-dialog';
+import { ProspectDetailsDialog } from './prospect-details-dialog';
+import { updateProspect, addProspectVisit } from '@/lib/firestore/prospects';
+import { useToast } from '@/hooks/use-toast';
 
 export function SalesPageClient() {
   const t = useTranslations('AdminSalesPage');
   const { prospects, loading, error } = useProspects();
   const { role } = useAuth();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
 
   const kpis = useMemo(() => {
     if (loading) return { total: 0, visited: 0, conversion: 0 };
     const visitedToday = prospects.filter(p => {
-        // This is a simplification. A real app would check today's date.
         return p.status === 'visited' || p.status === 'client';
     }).length;
     const clients = prospects.filter(p => p.status === 'client').length;
@@ -70,101 +74,130 @@ export function SalesPageClient() {
     { id: 'carnicería', label: t('filter_butchers'), icon: <Drumstick/> },
   ];
 
-  const handleOpenDialog = (prospect: Prospect | null) => {
+  const handleEditProspect = (prospect: Prospect) => {
     setSelectedProspect(prospect);
+    setIsDialogOpen(true);
+  };
+  
+  const handleSelectProspect = (prospect: Prospect) => {
+    setSelectedProspect(prospect);
+    setIsDetailsOpen(true);
+  };
+  
+  const handleCheckIn = async (prospect: Prospect) => {
+    try {
+      await updateProspect(prospect.id, { status: 'visited' });
+      await addProspectVisit(prospect.id, { notes: 'Check-in rápido realizado.', outcome: 'follow-up' });
+      toast({ title: "Check-in realizado", description: `Visita registrada para ${prospect.name}` });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo registrar la visita.'})
+    }
+  };
+
+  const handleNewProspect = () => {
+    setSelectedProspect(null);
     setIsDialogOpen(true);
   };
 
   return (
     <>
-    <ProspectDialog 
-      open={isDialogOpen} 
-      onOpenChange={setIsDialogOpen} 
-      prospect={selectedProspect} 
-    />
-    <ProspectImportDialog
-        open={isImportDialogOpen}
-        onOpenChange={setIsImportDialogOpen}
-    />
-    <div className="flex flex-col h-full bg-slate-50/50">
-      {/* Header */}
-      <div className="bg-primary text-primary-foreground p-4 sticky top-0 z-20">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-xl font-bold">{t('title')}</h1>
-           <div className="flex gap-2">
-            {(role === 'admin' || role === 'superadmin') && (
-              <Button variant="secondary" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-                <Upload className="mr-2 h-4 w-4" />
-                {t('import_button')}
+      <ProspectDialog 
+        open={isDialogOpen} 
+        onOpenChange={setIsDialogOpen} 
+        prospect={selectedProspect} 
+      />
+      <ProspectImportDialog
+          open={isImportDialogOpen}
+          onOpenChange={setIsImportDialogOpen}
+      />
+      <ProspectDetailsDialog
+        open={isDetailsOpen}
+        onOpenChange={setIsDetailsOpen}
+        prospect={selectedProspect}
+      />
+
+      <div className="flex flex-col h-full bg-slate-50/50">
+        <div className="bg-primary text-primary-foreground p-4 sticky top-0 z-20">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-xl font-bold">{t('title')}</h1>
+            <div className="flex gap-2">
+              {(role === 'admin' || role === 'superadmin') && (
+                <Button variant="secondary" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  {t('import_button')}
+                </Button>
+              )}
+              <Button variant="secondary" size="sm" onClick={handleNewProspect}>
+                <Plus className="mr-2 h-4 w-4" />
+                {t('new_prospect_button')}
               </Button>
-            )}
-            <Button variant="secondary" size="sm" onClick={() => handleOpenDialog(null)}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('new_prospect_button')}
-            </Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <Card className="bg-white/10 text-white border-white/20 p-2">
+              <div className="text-xs font-bold uppercase flex items-center gap-1 opacity-80"><Users className="h-3 w-3"/>{t('kpi_total')}</div>
+              <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-12 bg-white/20"/> : kpis.total}</div>
+            </Card>
+            <Card className="bg-white/10 text-white border-white/20 p-2">
+              <div className="text-xs font-bold uppercase flex items-center gap-1 opacity-80"><CheckCircle className="h-3 w-3"/>{t('kpi_visited')}</div>
+              <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-12 bg-white/20"/> : kpis.visited}</div>
+            </Card>
+            <Card className="bg-white/10 text-white border-white/20 p-2">
+              <div className="text-xs font-bold uppercase flex items-center gap-1 opacity-80"><TrendingUp className="h-3 w-3"/>{t('kpi_conversion')}</div>
+              <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-12 bg-white/20"/> : `${kpis.conversion}%`}</div>
+            </Card>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          <Card className="bg-white/10 text-white border-white/20 p-2">
-            <div className="text-xs font-bold uppercase flex items-center gap-1 opacity-80"><Users className="h-3 w-3"/>{t('kpi_total')}</div>
-            <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-12 bg-white/20"/> : kpis.total}</div>
-          </Card>
-          <Card className="bg-white/10 text-white border-white/20 p-2">
-            <div className="text-xs font-bold uppercase flex items-center gap-1 opacity-80"><CheckCircle className="h-3 w-3"/>{t('kpi_visited')}</div>
-            <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-12 bg-white/20"/> : kpis.visited}</div>
-          </Card>
-          <Card className="bg-white/10 text-white border-white/20 p-2">
-            <div className="text-xs font-bold uppercase flex items-center gap-1 opacity-80"><TrendingUp className="h-3 w-3"/>{t('kpi_conversion')}</div>
-            <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-12 bg-white/20"/> : `${kpis.conversion}%`}</div>
-          </Card>
-        </div>
-      </div>
 
-      {/* Filters */}
-      <div className="p-4 bg-background border-b sticky top-[132px] z-10">
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder={t('search_placeholder')} 
-            className="pl-10" 
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-          />
+        <div className="p-4 bg-background border-b sticky top-[132px] z-10">
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder={t('search_placeholder')} 
+              className="pl-10" 
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+            {filters.map(filter => (
+              <Button
+                key={filter.id}
+                variant={activeFilter === filter.id ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveFilter(filter.id)}
+                className="rounded-full shrink-0"
+              >
+                {filter.icon} {filter.label}
+              </Button>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
-          {filters.map(filter => (
-            <Button
-              key={filter.id}
-              variant={activeFilter === filter.id ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveFilter(filter.id)}
-              className="rounded-full shrink-0"
-            >
-              {filter.icon} {filter.label}
-            </Button>
-          ))}
+        
+        <div className="p-4 space-y-3">
+          {loading ? (
+            <>
+              <Skeleton className="h-40 w-full rounded-xl"/>
+              <Skeleton className="h-40 w-full rounded-xl"/>
+              <Skeleton className="h-40 w-full rounded-xl"/>
+            </>
+          ) : error ? (
+              <div className="text-center py-10 text-destructive">{t('error_loading')}</div>
+          ) : filteredProspects.length > 0 ? (
+              filteredProspects.map(prospect => (
+                <ProspectCard 
+                  key={prospect.id} 
+                  prospect={prospect} 
+                  onSelect={handleSelectProspect}
+                  onEdit={handleEditProspect}
+                  onCheckIn={handleCheckIn}
+                />
+              ))
+          ) : (
+              <div className="text-center py-10 text-muted-foreground">{t('no_prospects_found')}</div>
+          )}
         </div>
       </div>
-      
-      {/* Prospect List */}
-      <div className="p-4 space-y-3">
-        {loading ? (
-          <>
-            <Skeleton className="h-40 w-full rounded-xl"/>
-            <Skeleton className="h-40 w-full rounded-xl"/>
-            <Skeleton className="h-40 w-full rounded-xl"/>
-          </>
-        ) : error ? (
-            <div className="text-center py-10 text-destructive">{t('error_loading')}</div>
-        ) : filteredProspects.length > 0 ? (
-            filteredProspects.map(prospect => (
-              <ProspectCard key={prospect.id} prospect={prospect} onEdit={handleOpenDialog} />
-            ))
-        ) : (
-            <div className="text-center py-10 text-muted-foreground">{t('no_prospects_found')}</div>
-        )}
-      </div>
-    </div>
     </>
   );
 }

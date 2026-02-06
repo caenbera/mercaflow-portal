@@ -12,7 +12,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 type ProspectInput = Omit<Prospect, 'id' | 'createdAt' | 'updatedAt'>;
-type VisitInput = Omit<ProspectVisit, 'id'>;
+type VisitInput = Omit<ProspectVisit, 'id' | 'date'>;
 
 export const addProspect = (prospectData: ProspectInput) => {
   const prospectsCollection = collection(db, 'prospects');
@@ -63,11 +63,15 @@ export const deleteProspect = (prospectId: string) => {
 
 export const addProspectVisit = (prospectId: string, visitData: VisitInput) => {
     const visitsCollection = collection(db, 'prospects', prospectId, 'visits');
-    return addDoc(visitsCollection, visitData).catch(async (serverError) => {
+    const dataWithTimestamp = {
+      ...visitData,
+      date: serverTimestamp(),
+    };
+    return addDoc(visitsCollection, dataWithTimestamp).catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
           path: visitsCollection.path,
           operation: 'create',
-          requestResourceData: visitData,
+          requestResourceData: dataWithTimestamp,
         });
         errorEmitter.emit('permission-error', permissionError);
         throw serverError;

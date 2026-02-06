@@ -50,5 +50,16 @@
     "cancel": "Cancel",
     "toast_create_success_title": "Prospect Created",
     "toast_update_success_title": "Prospect Updated",
-    "toast_error_title": "Error"
+    "toast_error_title": "Error",
+    "details_title": "Prospect Details",
+    "contact_info_title": "Contact Info",
+    "visit_history_title": "Visit History",
+    "add_visit_note_label": "Add Visit Note",
+    "add_visit_note_placeholder": "Details of the visit, next steps...",
+    "outcome_label": "Outcome",
+    "outcome_successful": "Successful",
+    "outcome_followup": "Follow-up",
+    "outcome_noshow": "No show",
+    "save_visit_button": "Save Visit",
+    "no_visits_yet": "No visits have been logged for this prospect yet."
 }

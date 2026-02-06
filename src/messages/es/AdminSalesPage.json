@@ -50,5 +50,16 @@
     "cancel": "Cancelar",
     "toast_create_success_title": "Prospecto Creado",
     "toast_update_success_title": "Prospecto Actualizado",
-    "toast_error_title": "Error"
+    "toast_error_title": "Error",
+    "details_title": "Detalles del Prospecto",
+    "contact_info_title": "Información de Contacto",
+    "visit_history_title": "Historial de Visitas",
+    "add_visit_note_label": "Añadir Nota de Visita",
+    "add_visit_note_placeholder": "Detalles de la visita, próximos pasos...",
+    "outcome_label": "Resultado",
+    "outcome_successful": "Exitosa",
+    "outcome_followup": "Seguimiento",
+    "outcome_noshow": "No se presentó",
+    "save_visit_button": "Guardar Visita",
+    "no_visits_yet": "Aún no se han registrado visitas para este prospecto."
 }

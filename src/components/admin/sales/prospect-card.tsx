@@ -11,9 +11,11 @@ import { cn } from '@/lib/utils';
 interface ProspectCardProps {
   prospect: Prospect;
   onEdit: (prospect: Prospect) => void;
+  onSelect: (prospect: Prospect) => void;
+  onCheckIn: (prospect: Prospect) => void;
 }
 
-export function ProspectCard({ prospect, onEdit }: ProspectCardProps) {
+export function ProspectCard({ prospect, onEdit, onSelect, onCheckIn }: ProspectCardProps) {
   const t = useTranslations('AdminSalesPage');
 
   const statusConfig: Record<ProspectStatus, { label: string; className: string }> = {
@@ -27,12 +29,15 @@ export function ProspectCard({ prospect, onEdit }: ProspectCardProps) {
   const statusInfo = statusConfig[prospect.status] || statusConfig.pending;
 
   return (
-    <Card className={cn("p-4 shadow-sm group", prospect.priority && "border-l-4 border-accent")}>
+    <Card 
+      className={cn("p-4 shadow-sm group cursor-pointer", prospect.priority && "border-l-4 border-accent")}
+      onClick={() => onSelect(prospect)}
+    >
       <div className="flex justify-between items-start mb-2">
         <h3 className="font-bold text-base pr-2">{prospect.name}</h3>
         <div className="flex items-center gap-1">
           <Badge variant="outline" className={statusInfo.className}>{statusInfo.label}</Badge>
-           <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => onEdit(prospect)}>
+           <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); onEdit(prospect); }}>
             <Pencil className="h-4 w-4" />
           </Button>
         </div>
@@ -55,7 +60,7 @@ export function ProspectCard({ prospect, onEdit }: ProspectCardProps) {
         {prospect.zone && <Badge variant="secondary" className="capitalize">{prospect.zone}</Badge>}
       </div>
 
-      <div className="flex gap-2 pt-3 border-t">
+      <div className="flex gap-2 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
         <Button variant="outline" size="sm" className="flex-1">
           <Phone className="mr-2" />
           {t('action_call')}
@@ -64,7 +69,7 @@ export function ProspectCard({ prospect, onEdit }: ProspectCardProps) {
           <Navigation className="mr-2" />
           {t('action_route')}
         </Button>
-        <Button size="sm" className="flex-1">
+        <Button size="sm" className="flex-1" onClick={() => onCheckIn(prospect)}>
           <Check className="mr-2" />
           {t('action_visit')}
         </Button>
