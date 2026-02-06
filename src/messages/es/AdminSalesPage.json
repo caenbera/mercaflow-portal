@@ -69,5 +69,11 @@
     "cancel_selection": "Cancelar Selección",
     "create_route_button": "Crear Ruta para {count} Prospectos",
     "toast_no_address_title": "No se Encontraron Direcciones",
-    "toast_no_address_desc": "Ninguno de los prospectos seleccionados tiene una dirección válida para la ruta."
+    "toast_no_address_desc": "Ninguno de los prospectos seleccionados tiene una dirección válida para la ruta.",
+    "district_prospects": "{count} prospectos en este distrito",
+    "select_all": "Seleccionar Todos",
+    "uncategorized": "Sin Categorizar",
+    "district_name_pilsen": "Pilsen / Lower West Side",
+    "district_name_little_village": "La Villita",
+    "district_name_albany_park": "Albany Park / Lawrence Ave"
 }

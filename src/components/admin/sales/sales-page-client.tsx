@@ -27,6 +27,7 @@ import { ProspectDialog } from './prospect-dialog';
 import { ProspectImportDialog } from './prospect-import-dialog';
 import { updateProspect, addProspectVisit } from '@/lib/firestore/prospects';
 import { useToast } from '@/hooks/use-toast';
+import { DistrictCard } from './district-card';
 
 export function SalesPageClient() {
   const t = useTranslations('AdminSalesPage');
@@ -71,6 +72,27 @@ export function SalesPageClient() {
     });
   }, [prospects, activeFilter, searchTerm]);
 
+  const districtNames: Record<string, string> = {
+    "CHI-PIL": t('district_name_pilsen'),
+    "CHI-LV": t('district_name_little_village'),
+    "CHI-AP": t('district_name_albany_park'),
+    "Unzoned": t('uncategorized')
+  };
+
+  const prospectsByDistrict = useMemo(() => {
+    return filteredProspects.reduce((acc, prospect) => {
+        const districtCode = prospect.zone?.split('-').slice(0, 2).join('-') || 'Unzoned';
+        if (!acc[districtCode]) {
+            acc[districtCode] = {
+                name: districtNames[districtCode] || districtCode,
+                prospects: []
+            };
+        }
+        acc[districtCode].prospects.push(prospect);
+        return acc;
+    }, {} as Record<string, { name: string; prospects: Prospect[] }>);
+  }, [filteredProspects]);
+
   const filters = [
     { id: 'all', label: t('filter_all'), icon: <MapPin/> },
     { id: 'restaurante', label: t('filter_restaurants'), icon: <Utensils/> },
@@ -112,6 +134,18 @@ export function SalesPageClient() {
       }
     });
   };
+  
+  const handleSelectAllInDistrict = (prospectIds: string[], select: boolean) => {
+    setSelectedProspects(prev => {
+      const newSelected = new Set(prev);
+      if (select) {
+        prospectIds.forEach(id => newSelected.add(id));
+      } else {
+        prospectIds.forEach(id => newSelected.delete(id));
+      }
+      return Array.from(newSelected);
+    });
+  };
 
   const handleCreateRoute = () => {
     const selected = prospects.filter(p => selectedProspects.includes(p.id) && p.address);
@@ -147,7 +181,7 @@ export function SalesPageClient() {
         <div className="bg-primary text-primary-foreground p-4 sticky top-0 z-20">
           <div className="flex flex-col md:flex-row justify-between md:items-center gap-2 mb-4">
             <h1 className="text-xl font-bold">{t('title')}</h1>
-            <div className="flex gap-2 flex-wrap">
+             <div className="flex gap-2 flex-wrap items-center">
                 <Button variant="secondary" size="sm" onClick={handleToggleSelectionMode}>
                     {isSelectionMode ? t('cancel_selection') : t('select_for_route')}
                 </Button>
@@ -204,27 +238,30 @@ export function SalesPageClient() {
           </div>
         </div>
         
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-4">
           {loading ? (
             <>
-              <Skeleton className="h-28 w-full rounded-xl"/>
+              <Skeleton className="h-40 w-full rounded-xl"/>
               <Skeleton className="h-28 w-full rounded-xl"/>
               <Skeleton className="h-28 w-full rounded-xl"/>
             </>
           ) : error ? (
               <div className="text-center py-10 text-destructive">{t('error_loading')}</div>
-          ) : filteredProspects.length > 0 ? (
-              filteredProspects.map(prospect => (
-                <ProspectCard 
-                  key={prospect.id} 
-                  prospect={prospect} 
-                  onEdit={handleEditProspect}
-                  onCheckIn={handleCheckIn}
-                  isSelectionMode={isSelectionMode}
-                  isSelected={selectedProspects.includes(prospect.id)}
-                  onSelectionChange={handleProspectSelectionChange}
+          ) : Object.keys(prospectsByDistrict).length > 0 ? (
+              Object.entries(prospectsByDistrict).map(([districtCode, { name, prospects: districtProspects }]) => (
+                <DistrictCard
+                    key={districtCode}
+                    districtCode={districtCode}
+                    districtName={name}
+                    prospects={districtProspects}
+                    onEdit={handleEditProspect}
+                    onCheckIn={handleCheckIn}
+                    isSelectionMode={isSelectionMode}
+                    selectedProspects={selectedProspects}
+                    onSelectionChange={handleProspectSelectionChange}
+                    onSelectAll={handleSelectAllInDistrict}
                 />
-              ))
+            ))
           ) : (
               <div className="text-center py-10 text-muted-foreground">{t('no_prospects_found')}</div>
           )}

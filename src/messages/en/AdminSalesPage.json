@@ -69,5 +69,11 @@
     "cancel_selection": "Cancel Selection",
     "create_route_button": "Create Route for {count} Prospects",
     "toast_no_address_title": "No Addresses Found",
-    "toast_no_address_desc": "None of the selected prospects have a valid address for routing."
+    "toast_no_address_desc": "None of the selected prospects have a valid address for routing.",
+    "district_prospects": "{count} prospects in this district",
+    "select_all": "Select All",
+    "uncategorized": "Uncategorized",
+    "district_name_pilsen": "Pilsen / Lower West Side",
+    "district_name_little_village": "Little Village / La Villita",
+    "district_name_albany_park": "Albany Park / Lawrence Ave"
 }
