@@ -160,7 +160,7 @@ export function SalesPageClient() {
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-xl font-bold">{t('title')}</h1>
             <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleToggleSelectionMode}>
+                <Button variant="secondary" size="sm" onClick={handleToggleSelectionMode}>
                     {isSelectionMode ? t('cancel_selection') : t('select_for_route')}
                 </Button>
               {(role === 'admin' || role === 'superadmin') && (
