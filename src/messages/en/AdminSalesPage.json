@@ -20,6 +20,7 @@
     "filter_butchers": "Butchers",
     "no_phone": "No phone available",
     "action_call": "Call",
+    "action_whatsapp": "WhatsApp",
     "action_route": "Route",
     "action_visit": "Visit",
     "error_loading": "Error loading prospects. Please try again.",

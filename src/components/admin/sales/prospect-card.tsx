@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { MapPin, Phone, Check, Navigation, Star, Pencil } from 'lucide-react';
+import { MapPin, Phone, Check, Navigation, Star, Pencil, BotMessageSquare } from 'lucide-react';
 import type { Prospect, ProspectStatus } from '@/types';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
@@ -38,6 +38,10 @@ export function ProspectCard({ prospect, onEdit, onSelect, onCheckIn, isSelectio
     } else {
       onSelect(prospect);
     }
+  };
+
+  const cleanPhoneNumber = (phone: string | undefined) => {
+    return phone?.replace(/\D/g, '') || '';
   };
 
   return (
@@ -90,21 +94,29 @@ export function ProspectCard({ prospect, onEdit, onSelect, onCheckIn, isSelectio
                     {prospect.zone && <Badge variant="secondary" className="capitalize">{prospect.zone}</Badge>}
                 </div>
 
-                <div className="flex gap-2 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
-                    <Button variant="outline" size="sm" className="flex-1">
-                    <Phone className="mr-2" />
-                    {t('action_call')}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
+                    <Button asChild variant="outline" size="sm" className="flex-1" disabled={!prospect.phone}>
+                        <a href={`tel:${cleanPhoneNumber(prospect.phone)}`}>
+                            <Phone className="mr-2" />
+                            {t('action_call')}
+                        </a>
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1" onClick={(e) => {
+                     <Button asChild variant="outline" size="sm" className="flex-1" disabled={!prospect.phone}>
+                        <a href={`https://wa.me/${cleanPhoneNumber(prospect.phone)}`} target="_blank" rel="noopener noreferrer">
+                            <BotMessageSquare className="mr-2" />
+                            {t('action_whatsapp')}
+                        </a>
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1" disabled={!prospect.address} onClick={(e) => {
                          e.stopPropagation();
                          window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(prospect.address)}`, '_blank');
                     }}>
-                    <Navigation className="mr-2" />
-                    {t('action_route')}
+                        <Navigation className="mr-2" />
+                        {t('action_route')}
                     </Button>
                     <Button size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); onCheckIn(prospect); }}>
-                    <Check className="mr-2" />
-                    {t('action_visit')}
+                        <Check className="mr-2" />
+                        {t('action_visit')}
                     </Button>
                 </div>
             </div>

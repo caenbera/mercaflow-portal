@@ -20,6 +20,7 @@
     "filter_butchers": "Carnicerías",
     "no_phone": "Sin teléfono",
     "action_call": "Llamar",
+    "action_whatsapp": "WhatsApp",
     "action_route": "Ruta",
     "action_visit": "Visitar",
     "error_loading": "Error al cargar los prospectos. Por favor, intenta de nuevo.",
