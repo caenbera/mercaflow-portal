@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useProspects } from '@/hooks/use-prospects';
+import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -15,19 +16,23 @@ import {
   Utensils,
   Store,
   Drumstick,
-  Plus
+  Plus,
+  Upload
 } from 'lucide-react';
 import { ProspectCard } from './prospect-card';
 import type { Prospect } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ProspectDialog } from './prospect-dialog';
+import { ProspectImportDialog } from './prospect-import-dialog';
 
 export function SalesPageClient() {
   const t = useTranslations('AdminSalesPage');
   const { prospects, loading, error } = useProspects();
+  const { role } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
 
   const kpis = useMemo(() => {
@@ -48,7 +53,7 @@ export function SalesPageClient() {
   const filteredProspects = useMemo(() => {
     return prospects.filter(prospect => {
       const matchesFilter = activeFilter === 'all' ||
-                            prospect.ethnic === activeFilter ||
+                            (prospect.ethnic && prospect.ethnic.toLowerCase().includes(activeFilter)) ||
                             prospect.category.toLowerCase().includes(activeFilter);
       const matchesSearch = searchTerm === '' ||
                             prospect.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -77,15 +82,27 @@ export function SalesPageClient() {
       onOpenChange={setIsDialogOpen} 
       prospect={selectedProspect} 
     />
+    <ProspectImportDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+    />
     <div className="flex flex-col h-full bg-slate-50/50">
       {/* Header */}
       <div className="bg-primary text-primary-foreground p-4 sticky top-0 z-20">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold">{t('title')}</h1>
-          <Button variant="secondary" size="sm" onClick={() => handleOpenDialog(null)}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t('new_prospect_button')}
-          </Button>
+           <div className="flex gap-2">
+            {(role === 'admin' || role === 'superadmin') && (
+              <Button variant="secondary" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+                <Upload className="mr-2 h-4 w-4" />
+                {t('import_button')}
+              </Button>
+            )}
+            <Button variant="secondary" size="sm" onClick={() => handleOpenDialog(null)}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t('new_prospect_button')}
+            </Button>
+          </div>
         </div>
         <div className="grid grid-cols-3 gap-2">
           <Card className="bg-white/10 text-white border-white/20 p-2">
