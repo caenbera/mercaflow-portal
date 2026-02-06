@@ -14,7 +14,7 @@ import {
   MapPin,
   Utensils,
   Store,
-  DrumstickBite,
+  Drumstick,
   Plus
 } from 'lucide-react';
 import { ProspectCard } from './prospect-card';
@@ -59,7 +59,7 @@ export function SalesPageClient() {
     { id: 'all', label: t('filter_all'), icon: <MapPin/> },
     { id: 'restaurante', label: t('filter_restaurants'), icon: <Utensils/> },
     { id: 'supermercado', label: t('filter_supermarkets'), icon: <Store/> },
-    { id: 'carnicería', label: t('filter_butchers'), icon: <DrumstickBite/> },
+    { id: 'carnicería', label: t('filter_butchers'), icon: <Drumstick/> },
   ];
 
   return (
