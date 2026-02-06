@@ -20,12 +20,15 @@ import {
 import { ProspectCard } from './prospect-card';
 import type { Prospect } from '@/types';
 import { Button } from '@/components/ui/button';
+import { ProspectDialog } from './prospect-dialog';
 
 export function SalesPageClient() {
   const t = useTranslations('AdminSalesPage');
   const { prospects, loading, error } = useProspects();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
 
   const kpis = useMemo(() => {
     if (loading) return { total: 0, visited: 0, conversion: 0 };
@@ -62,13 +65,24 @@ export function SalesPageClient() {
     { id: 'carnicería', label: t('filter_butchers'), icon: <Drumstick/> },
   ];
 
+  const handleOpenDialog = (prospect: Prospect | null) => {
+    setSelectedProspect(prospect);
+    setIsDialogOpen(true);
+  };
+
   return (
+    <>
+    <ProspectDialog 
+      open={isDialogOpen} 
+      onOpenChange={setIsDialogOpen} 
+      prospect={selectedProspect} 
+    />
     <div className="flex flex-col h-full bg-slate-50/50">
       {/* Header */}
       <div className="bg-primary text-primary-foreground p-4 sticky top-0 z-20">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold">{t('title')}</h1>
-          <Button variant="secondary" size="sm">
+          <Button variant="secondary" size="sm" onClick={() => handleOpenDialog(null)}>
             <Plus className="mr-2 h-4 w-4" />
             {t('new_prospect_button')}
           </Button>
@@ -127,12 +141,13 @@ export function SalesPageClient() {
             <div className="text-center py-10 text-destructive">{t('error_loading')}</div>
         ) : filteredProspects.length > 0 ? (
             filteredProspects.map(prospect => (
-              <ProspectCard key={prospect.id} prospect={prospect} />
+              <ProspectCard key={prospect.id} prospect={prospect} onEdit={handleOpenDialog} />
             ))
         ) : (
             <div className="text-center py-10 text-muted-foreground">{t('no_prospects_found')}</div>
         )}
       </div>
     </div>
+    </>
   );
 }
