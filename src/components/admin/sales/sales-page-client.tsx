@@ -145,9 +145,9 @@ export function SalesPageClient() {
 
       <div className="flex flex-col h-full bg-slate-50/50">
         <div className="bg-primary text-primary-foreground p-4 sticky top-0 z-20">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-4">
             <h1 className="text-xl font-bold">{t('title')}</h1>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
                 <Button variant="secondary" size="sm" onClick={handleToggleSelectionMode}>
                     {isSelectionMode ? t('cancel_selection') : t('select_for_route')}
                 </Button>
@@ -164,22 +164,22 @@ export function SalesPageClient() {
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <Card className="bg-white/10 text-white border-white/20 p-2">
-              <div className="text-xs font-bold uppercase flex items-center gap-1 opacity-80"><Users className="h-3 w-3"/>{t('kpi_total')}</div>
-              <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-12 bg-white/20"/> : kpis.total}</div>
+             <Card className="bg-white/10 text-white border-white/20 p-2">
+              <div className="text-[10px] md:text-xs font-bold uppercase flex items-center gap-1 opacity-80"><Users className="h-3 w-3"/>{t('kpi_total')}</div>
+              <div className="text-xl md:text-2xl font-bold">{loading ? <Skeleton className="h-6 md:h-7 w-12 bg-white/20"/> : kpis.total}</div>
             </Card>
             <Card className="bg-white/10 text-white border-white/20 p-2">
-              <div className="text-xs font-bold uppercase flex items-center gap-1 opacity-80"><CheckCircle className="h-3 w-3"/>{t('kpi_visited')}</div>
-              <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-12 bg-white/20"/> : kpis.visited}</div>
+               <div className="text-[10px] md:text-xs font-bold uppercase flex items-center gap-1 opacity-80"><CheckCircle className="h-3 w-3"/>{t('kpi_visited')}</div>
+               <div className="text-xl md:text-2xl font-bold">{loading ? <Skeleton className="h-6 md:h-7 w-12 bg-white/20"/> : kpis.visited}</div>
             </Card>
             <Card className="bg-white/10 text-white border-white/20 p-2">
-              <div className="text-xs font-bold uppercase flex items-center gap-1 opacity-80"><TrendingUp className="h-3 w-3"/>{t('kpi_conversion')}</div>
-              <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-12 bg-white/20"/> : `${kpis.conversion}%`}</div>
+                <div className="text-[10px] md:text-xs font-bold uppercase flex items-center gap-1 opacity-80"><TrendingUp className="h-3 w-3"/>{t('kpi_conversion')}</div>
+                <div className="text-xl md:text-2xl font-bold">{loading ? <Skeleton className="h-6 md:h-7 w-12 bg-white/20"/> : `${kpis.conversion}%`}</div>
             </Card>
           </div>
         </div>
 
-        <div className="p-4 bg-background border-b sticky top-[132px] z-10">
+        <div className="p-4 bg-background border-b sticky top-[178px] md:top-[132px] z-10">
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
