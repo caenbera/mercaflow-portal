@@ -1,26 +1,51 @@
 'use client';
 
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { MapPin, Phone, Check, Navigation, Star, Pencil, BotMessageSquare } from 'lucide-react';
-import type { Prospect, ProspectStatus } from '@/types';
-import { useTranslations } from 'next-intl';
+import { MapPin, Phone, Check, Navigation, Plus, Minus, Pencil, BotMessageSquare, Clock, CircleDot, UserX } from 'lucide-react';
+import type { Prospect, ProspectStatus, ProspectVisit } from '@/types';
+import { useTranslations, useLocale } from 'next-intl';
 import { cn } from '@/lib/utils';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { useProspectVisits } from '@/hooks/useProspectVisits';
+import { Skeleton } from '@/components/ui/skeleton';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface ProspectCardProps {
   prospect: Prospect;
   onEdit: (prospect: Prospect) => void;
-  onSelect: (prospect: Prospect) => void;
   onCheckIn: (prospect: Prospect) => void;
   isSelectionMode: boolean;
   isSelected: boolean;
   onSelectionChange: (prospectId: string, isSelected: boolean) => void;
 }
 
-export function ProspectCard({ prospect, onEdit, onSelect, onCheckIn, isSelectionMode, isSelected, onSelectionChange }: ProspectCardProps) {
+const OutcomeIcon = ({ outcome }: { outcome: ProspectVisit['outcome'] }) => {
+  switch (outcome) {
+    case 'successful':
+      return <Check className="h-4 w-4 text-green-500" />;
+    case 'follow-up':
+      return <CircleDot className="h-4 w-4 text-blue-500" />;
+    case 'no_show':
+      return <UserX className="h-4 w-4 text-red-500" />;
+    default:
+      return <BotMessageSquare className="h-4 w-4 text-gray-500" />;
+  }
+};
+
+export function ProspectCard({ prospect, onEdit, onCheckIn, isSelectionMode, isSelected, onSelectionChange }: ProspectCardProps) {
   const t = useTranslations('AdminSalesPage');
+  const locale = useLocale();
+  const [isOpen, setIsOpen] = useState(false);
+  const { visits, loading: visitsLoading } = useProspectVisits(isOpen ? prospect.id : null); // Only fetch visits when expanded
 
   const statusConfig: Record<ProspectStatus, { label: string; className: string }> = {
     pending: { label: t('status_pending'), className: 'bg-yellow-100 text-yellow-800' },
@@ -35,66 +60,74 @@ export function ProspectCard({ prospect, onEdit, onSelect, onCheckIn, isSelectio
   const handleCardClick = () => {
     if (isSelectionMode) {
       onSelectionChange(prospect.id, !isSelected);
-    } else {
-      onSelect(prospect);
     }
   };
-
+  
   const cleanPhoneNumber = (phone: string | undefined) => {
     return phone?.replace(/\D/g, '') || '';
   };
 
   return (
-    <Card 
-      className={cn(
-        "p-4 shadow-sm group cursor-pointer", 
-        prospect.priority && "border-l-4 border-accent",
-        isSelected && "ring-2 ring-primary border-primary"
-      )}
-      onClick={handleCardClick}
-    >
-        <div className="flex items-start">
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <Card 
+        className={cn(
+          "p-0 shadow-sm group transition-all duration-200 overflow-hidden", 
+          prospect.priority && "border-l-4 border-accent",
+          isSelected && "ring-2 ring-primary border-primary"
+        )}
+      >
+        <div 
+          className="flex items-start p-4 cursor-pointer" 
+          onClick={handleCardClick}
+        >
             {isSelectionMode && (
                 <div className="p-2 mr-2 self-center">
                     <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={(checked) => onSelectionChange(prospect.id, !!checked)}
-                    onClick={(e) => e.stopPropagation()} 
-                    className="h-5 w-5"
+                      checked={isSelected}
+                      onCheckedChange={(checked) => onSelectionChange(prospect.id, !!checked)}
+                      onClick={(e) => e.stopPropagation()} 
+                      className="h-5 w-5"
                     />
                 </div>
             )}
             <div className="flex-grow">
-                <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-base pr-2">{prospect.name}</h3>
-                    <div className="flex items-center gap-1">
-                    <Badge variant="outline" className={statusInfo.className}>{statusInfo.label}</Badge>
-                    {!isSelectionMode && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); onEdit(prospect); }}>
-                            <Pencil className="h-4 w-4" />
-                        </Button>
-                    )}
-                    </div>
-                </div>
-
-                <div className="space-y-1.5 text-sm text-muted-foreground mb-3">
-                    <div className="flex items-center gap-2">
+                <h3 className="font-bold text-base pr-2">{prospect.name}</h3>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                     <MapPin className="h-4 w-4 shrink-0" />
-                    <span>{prospect.address}</span>
-                    </div>
+                    <span className="line-clamp-1">{prospect.address}</span>
+                </div>
+                <div className='mt-2'>
+                    <Badge variant="outline" className={statusInfo.className}>{statusInfo.label}</Badge>
+                </div>
+            </div>
+            <div className="flex flex-col items-center gap-2 ml-2">
+                <CollapsibleTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={(e) => e.stopPropagation()}>
+                        {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                        <span className="sr-only">Toggle details</span>
+                    </Button>
+                </CollapsibleTrigger>
+                <Button size="sm" className="h-9 px-3" onClick={(e) => { e.stopPropagation(); onCheckIn(prospect); }}>
+                    <Check className="mr-2" />
+                    {t('action_visit')}
+                </Button>
+            </div>
+        </div>
+
+        <CollapsibleContent>
+            <div className="px-4 pb-4 space-y-4 border-t pt-4">
+                 <div className="space-y-2 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 shrink-0" />
-                    <span>{prospect.phone || t('no_phone')}</span>
+                        <Phone className="h-4 w-4 shrink-0" />
+                        <span>{prospect.phone || t('no_phone')}</span>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                        <Badge variant="secondary" className="capitalize">{prospect.ethnic}</Badge>
+                        <Badge variant="secondary" className="capitalize">{prospect.category}</Badge>
+                        {prospect.zone && <Badge variant="secondary" className="capitalize">{prospect.zone}</Badge>}
                     </div>
                 </div>
-
-                <div className="flex gap-2 flex-wrap mb-4">
-                    <Badge variant="secondary" className="capitalize">{prospect.ethnic}</Badge>
-                    <Badge variant="secondary" className="capitalize">{prospect.category}</Badge>
-                    {prospect.zone && <Badge variant="secondary" className="capitalize">{prospect.zone}</Badge>}
-                </div>
-
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
+                <div className="grid grid-cols-2 gap-2" onClick={(e) => e.stopPropagation()}>
                     <Button asChild variant="outline" size="sm" className="flex-1" disabled={!prospect.phone}>
                         <a href={`tel:${cleanPhoneNumber(prospect.phone)}`}>
                             <Phone className="mr-2" />
@@ -114,13 +147,40 @@ export function ProspectCard({ prospect, onEdit, onSelect, onCheckIn, isSelectio
                         <Navigation className="mr-2" />
                         {t('action_route')}
                     </Button>
-                    <Button size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); onCheckIn(prospect); }}>
-                        <Check className="mr-2" />
-                        {t('action_visit')}
+                     <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onEdit(prospect); }}>
+                        <Pencil className="mr-2" />
+                        {t('action_edit')}
                     </Button>
                 </div>
+                 <div>
+                  <h4 className="text-xs font-semibold mb-2 uppercase text-muted-foreground">{t('visit_history_title')}</h4>
+                  <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
+                    {visitsLoading ? (
+                      <Skeleton className="h-12 w-full"/>
+                    ) : visits.length > 0 ? (
+                      visits.map(visit => (
+                        <div key={visit.id} className="flex gap-3 text-sm">
+                          <div className="flex flex-col items-center mt-1">
+                            <OutcomeIcon outcome={visit.outcome} />
+                            <div className="w-px h-full bg-border mt-1"></div>
+                          </div>
+                          <div>
+                            <p className="text-sm text-foreground">{visit.notes}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                              <Clock className="h-3 w-3"/>
+                              {formatDistanceToNow(visit.date.toDate(), { addSuffix: true, locale: locale === 'es' ? es : undefined })}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-center text-muted-foreground py-4">{t('no_visits_yet')}</p>
+                    )}
+                  </div>
+                </div>
             </div>
-      </div>
-    </Card>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }

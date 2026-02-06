@@ -25,7 +25,6 @@ import type { Prospect } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ProspectDialog } from './prospect-dialog';
 import { ProspectImportDialog } from './prospect-import-dialog';
-import { ProspectDetailsDialog } from './prospect-details-dialog';
 import { updateProspect, addProspectVisit } from '@/lib/firestore/prospects';
 import { useToast } from '@/hooks/use-toast';
 
@@ -40,7 +39,6 @@ export function SalesPageClient() {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
 
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -83,11 +81,6 @@ export function SalesPageClient() {
   const handleEditProspect = (prospect: Prospect) => {
     setSelectedProspect(prospect);
     setIsDialogOpen(true);
-  };
-  
-  const handleSelectProspect = (prospect: Prospect) => {
-    setSelectedProspect(prospect);
-    setIsDetailsOpen(true);
   };
   
   const handleCheckIn = async (prospect: Prospect) => {
@@ -148,11 +141,6 @@ export function SalesPageClient() {
       <ProspectImportDialog
           open={isImportDialogOpen}
           onOpenChange={setIsImportDialogOpen}
-      />
-      <ProspectDetailsDialog
-        open={isDetailsOpen}
-        onOpenChange={setIsDetailsOpen}
-        prospect={selectedProspect}
       />
 
       <div className="flex flex-col h-full bg-slate-50/50">
@@ -219,9 +207,9 @@ export function SalesPageClient() {
         <div className="p-4 space-y-3">
           {loading ? (
             <>
-              <Skeleton className="h-40 w-full rounded-xl"/>
-              <Skeleton className="h-40 w-full rounded-xl"/>
-              <Skeleton className="h-40 w-full rounded-xl"/>
+              <Skeleton className="h-28 w-full rounded-xl"/>
+              <Skeleton className="h-28 w-full rounded-xl"/>
+              <Skeleton className="h-28 w-full rounded-xl"/>
             </>
           ) : error ? (
               <div className="text-center py-10 text-destructive">{t('error_loading')}</div>
@@ -230,7 +218,6 @@ export function SalesPageClient() {
                 <ProspectCard 
                   key={prospect.id} 
                   prospect={prospect} 
-                  onSelect={handleSelectProspect}
                   onEdit={handleEditProspect}
                   onCheckIn={handleCheckIn}
                   isSelectionMode={isSelectionMode}
