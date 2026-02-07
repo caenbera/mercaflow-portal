@@ -17,6 +17,7 @@ import {
 import { ProspectDialog } from '@/components/admin/sales/prospect-dialog';
 import { ProspectImportDialog } from '@/components/admin/sales/prospect-import-dialog';
 import { DistrictCard } from '@/components/admin/sales/district-card';
+import { ProspectCard } from '@/components/admin/sales/prospect-card';
 import type { Prospect } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { updateProspect, addProspectVisit } from '@/lib/firestore/prospects';
