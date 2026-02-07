@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -25,7 +26,6 @@ import { DistrictCard } from '@/components/admin/sales/district-card';
 import { ProspectCard } from '@/components/admin/sales/prospect-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ZoneFilterBar } from '@/components/admin/sales/zone-filter-bar';
-import { MapView } from '@/components/admin/sales/map-view';
 import dynamic from 'next/dynamic';
 
 const KpiCard = ({ title, value, icon: Icon, loading }: { title: string, value: string | number, icon: React.ElementType, loading: boolean }) => (
@@ -159,7 +159,7 @@ export default function SalesPage() {
       <ProspectImportDialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen} />
 
       <div className="flex flex-col h-full bg-slate-50/50">
-        <div className="p-4 sticky top-0 z-20 bg-background border-b">
+        <div className="p-4 bg-background border-b">
            <div className="flex flex-col md:flex-row justify-between md:items-center gap-2 mb-4">
             <h1 className="text-xl font-bold">{t('title')}</h1>
              <div className="flex gap-2 flex-wrap items-center">
@@ -186,7 +186,7 @@ export default function SalesPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col">
-          <div className="p-4 bg-background border-b sticky top-[214px] md:top-[160px] z-10 space-y-4">
+          <div className="p-4 bg-background border-b space-y-4">
             <ZoneFilterBar
               prospects={prospects}
               selectedZone={selectedZone}
@@ -244,7 +244,7 @@ export default function SalesPage() {
                     prospects={filteredProspects}
                     selectedProspects={selectedProspects}
                     onToggleSelection={handleProspectSelectionChange}
-                    onMarkerClick={handleCheckIn}
+                    onCreateRoute={handleCreateRoute}
                />
             </TabsContent>
 
