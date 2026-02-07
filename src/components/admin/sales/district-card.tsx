@@ -1,4 +1,3 @@
-// src/components/admin/sales/district-card.tsx
 'use client';
 
 import { useMemo } from 'react';
@@ -8,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { MapPin, Grid3X3, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 interface DistrictCardProps {
   districtCode: string;
