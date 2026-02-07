@@ -23,22 +23,6 @@ import { useToast } from '@/hooks/use-toast';
 import { updateProspect, addProspectVisit } from '@/lib/firestore/prospects';
 import { MapView } from '@/components/admin/sales/map-view';
 
-// Placeholder for Map View
-<TabsContent value="map" className="h-full m-0">
-  <MapView 
-    prospects={filteredProspects}
-    selectedProspects={selectedProspects}
-    onToggleSelection={(id) => {
-      setSelectedProspects(prev => 
-        prev.includes(id) 
-          ? prev.filter(p => p !== id)
-          : [...prev, id]
-      );
-    }}
-    onCreateRoute={handleCreateRoute}
-  />
-</TabsContent>
-
 
 export default function SalesPage() {
   const t = useTranslations('AdminSalesPage');
@@ -241,8 +225,12 @@ export default function SalesPage() {
                             districtCode={districtCode}
                             districtName={name}
                             prospects={districtProspects}
-                            onBulkSelect={handleBulkSelect}
+                            onEdit={handleEditProspect}
+                            onCheckIn={handleCheckIn}
+                            isSelectionMode={isSelectionMode}
                             selectedProspects={selectedProspects}
+                            onSelectionChange={handleProspectSelectionChange}
+                            onSelectAll={handleBulkSelect}
                         />
                       ))
                     ) : (
@@ -250,8 +238,19 @@ export default function SalesPage() {
                     )}
                   </div>
                 </TabsContent>
-                <TabsContent value="map" className="h-full">
-                    <MapView />
+                <TabsContent value="map" className="h-full m-0">
+                    <MapView 
+                      prospects={filteredProspects}
+                      selectedProspects={selectedProspects}
+                      onToggleSelection={(id) => {
+                        setSelectedProspects(prev => 
+                          prev.includes(id) 
+                            ? prev.filter(p => p !== id)
+                            : [...prev, id]
+                        );
+                      }}
+                      onCreateRoute={handleCreateRoute}
+                    />
                 </TabsContent>
                 <TabsContent value="list" className="space-y-3">
                   {loading ? <Skeleton className="h-40 w-full rounded-xl"/> : filteredProspects.map(prospect => (
