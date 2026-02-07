@@ -8,7 +8,7 @@ import { DashboardHeader } from '@/components/layout/dashboard-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sprout } from 'lucide-react';
 import { useRouter } from '@/navigation';
-import { useIsMobile } from '@/hooks/use-is-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function MainLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
