@@ -1,5 +1,5 @@
 'use client';
-import { ThLarge, Map, List, ChartLine } from 'lucide-react';
+import { LayoutGrid, Map, List, ChartLine } from 'lucide-react';
 
 interface TabNavigationProps {
   activeTab: string;
@@ -8,7 +8,7 @@ interface TabNavigationProps {
 
 export function TabNavigation({ activeTab, setActiveTab }: TabNavigationProps) {
   const tabs = [
-    { id: 'districts', icon: ThLarge, label: 'Distritos' },
+    { id: 'districts', icon: LayoutGrid, label: 'Distritos' },
     { id: 'map', icon: Map, label: 'Mapa' },
     { id: 'list', icon: List, label: 'Prospectos' },
     { id: 'stats', icon: ChartLine, label: 'Ventas' },

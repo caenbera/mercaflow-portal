@@ -1,5 +1,5 @@
 'use client';
-import { Route, User, Walking, CheckCircle, Clock } from 'lucide-react';
+import { Route, User, Footprints, CheckCircle, Clock } from 'lucide-react';
 
 export function SalesHeader({ user }: { user: any }) {
   return (
@@ -15,7 +15,7 @@ export function SalesHeader({ user }: { user: any }) {
       </div>
       <div className="user-stats">
         <div className="stat-pill">
-          <Walking size={14} />
+          <Footprints size={14} />
           <span>5 visitas hoy</span>
         </div>
         <div className="stat-pill">
