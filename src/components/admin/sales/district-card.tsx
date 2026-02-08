@@ -1,13 +1,10 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { Prospect } from '@/types';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
-import { MapPin, Grid3X3, Zap } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Map, Users, Target, Grid3X3, Check } from 'lucide-react';
 import { districts } from '@/lib/district-config';
 
 interface DistrictCardProps {
@@ -45,261 +42,106 @@ export function DistrictCard({
   const totalProspects = prospects.length;
   
   const areaKm = useMemo(() => {
-    const density = totalProspects / 10; // aproximación
-    return Math.max(0.5, Math.min(10, density)).toFixed(1);
-  }, [totalProspects]);
+    return districts[districtCode]?.areaKm2 || 2.5;
+  }, [districtCode]);
+
+  const density = totalProspects / areaKm;
+  const potentialValue = totalProspects * 1500; // Placeholder calculation
+
+  const getDensityClass = (density: number): string => {
+    if (density > 5) return 'high-density';
+    if (density > 2) return 'medium-density';
+    if (density > 0) return 'low-density';
+    return 'empty';
+  };
 
   const miniMapGridCells = useMemo(() => {
-    const cells: ({ code: string; name: string; status: string; count: number; selectedCount: number; } | null)[] = Array(12).fill(null);
+    const cells: ({ code: string; name: string; status: string; count: number; prospects: Prospect[] } | null)[] = Array(12).fill(null);
     const subZoneEntries = Object.values(subZones).slice(0, 12);
     
     subZoneEntries.forEach((sz, index) => {
       if (index >= 12) return;
-      const prospectIds = sz.prospects.map(p => p.id);
-      const selectedCount = prospectIds.filter(id => selectedProspects.includes(id)).length;
       const totalCount = sz.prospects.length;
-      const density = totalCount / (parseFloat(areaKm) || 1);
-      
-      let status: 'empty' | 'low' | 'medium' | 'high' | 'selected' | 'partial' = 'empty';
-      
-      if (selectedCount === totalCount && totalCount > 0) {
-        status = 'selected';
-      } else if (selectedCount > 0) {
-        status = 'partial';
-      } else if (totalCount > 0) {
-        if (density > 5) status = 'high';
-        else if (density > 2) status = 'medium';
-        else status = 'low';
-      }
+      const subZoneDensity = totalCount / (areaKm / 12);
       
       cells[index] = {
         code: sz.code.split('-').pop() || '??',
         name: sz.name,
-        status,
+        status: getDensityClass(subZoneDensity),
         count: totalCount,
-        selectedCount,
+        prospects: sz.prospects
       };
     });
     return cells;
-  }, [subZones, selectedProspects, areaKm]);
+  }, [subZones, areaKm]);
 
-  const smartCluster = useMemo(() => {
-    const bestSubZone = Object.values(subZones).sort((a, b) => 
-      b.prospects.length - a.prospects.length
-    )[0];
-    
-    if (!bestSubZone || bestSubZone.prospects.length < 3) return null;
-    
-    const count = bestSubZone.prospects.length;
-    const estimatedDistance = (count * 0.3).toFixed(1);
-    const efficiency = Math.min(95, 60 + (count * 5));
-    
-    return {
-      subZone: bestSubZone,
-      count,
-      estimatedDistance,
-      efficiency,
-    };
-  }, [subZones]);
-
-  const handleSubZoneClick = (subZoneProspects: Prospect[]) => {
-    const prospectIds = subZoneProspects.map(p => p.id);
-    const areAllSelected = prospectIds.length > 0 && 
-      prospectIds.every(id => selectedProspects.includes(id));
+  const handleSubZoneClick = (cellProspects: Prospect[]) => {
+    const prospectIds = cellProspects.map(p => p.id);
+    if(prospectIds.length === 0) return;
+    const areAllSelected = prospectIds.every(id => selectedProspects.includes(id));
     onBulkSelect(prospectIds, !areAllSelected);
   };
-
-  const getDistrictColor = () => {
-    if (districtCode.includes('PIL')) return 'from-green-600 to-green-700';
-    if (districtCode.includes('LV')) return 'from-blue-600 to-blue-700';
-    if (districtCode.includes('AP')) return 'from-orange-500 to-orange-600';
-    if (districtCode.includes('WI')) return 'from-red-500 to-red-600';
-    if (districtCode.includes('IN')) return 'from-indigo-500 to-indigo-600';
-    return 'from-gray-600 to-gray-700';
+  
+  const getDistrictHeaderStyle = (code: string) => {
+    if (code.includes('PIL')) return { background: 'linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)' };
+    if (code.includes('LV')) return { background: 'linear-gradient(135deg, #FF9800 0%, #E65100 100%)' };
+    if (code.includes('AP')) return { background: 'linear-gradient(135deg, #1976D2 0%, #0D47A1 100%)' };
+    return { background: 'linear-gradient(135deg, #616161 0%, #212121 100%)' };
   };
 
   return (
-    <Card className="overflow-hidden shadow-lg border-0">
-      <CardHeader className={cn(
-        "p-4 text-white bg-gradient-to-r",
-        getDistrictColor()
-      )}>
-        <div className="flex justify-between items-start">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <MapPin className="h-5 w-5 opacity-80" />
-              <CardTitle className="font-mono text-2xl font-bold tracking-wider">
-                {districtCode}
-              </CardTitle>
+    <div className="district-card">
+        <div className="district-header" style={getDistrictHeaderStyle(districtCode)}>
+            <div className="district-code">{districtCode}</div>
+            <div className="district-name">{districtName}</div>
+            <div className="district-stats">
+                <div className="district-stat">
+                    <div className="district-stat-value">{totalProspects}</div>
+                    <div className="district-stat-label">Prospectos</div>
+                </div>
+                <div className="district-stat">
+                    <div className="district-stat-value">{density.toFixed(1)}</div>
+                    <div className="district-stat-label">Pros/km²</div>
+                </div>
+                <div className="district-stat">
+                    <div className="district-stat-value">${(potentialValue / 1000).toFixed(0)}k</div>
+                    <div className="district-stat-label">Potencial</div>
+                </div>
             </div>
-            <CardDescription className="text-white/90 font-medium text-base">
-              {districtName}
-            </CardDescription>
-          </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold">{totalProspects}</div>
-            <div className="text-xs opacity-80 uppercase tracking-wide">
-              {t('district_prospects', { count: totalProspects })}
-            </div>
-            <div className="text-xs opacity-70 mt-1">
-              ~{areaKm} km²
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="p-4 space-y-4">
-        <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-              <Grid3X3 className="h-4 w-4" />
-              Distribución de Sub-zonas
-            </div>
-            <div className="flex gap-2 text-xs">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-green-600"></span>
-                Alta
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-green-300"></span>
-                Media
-              </span>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-4 grid-rows-3 gap-2 h-40">
-            {miniMapGridCells.map((cell, index) => (
-              <div 
-                key={index} 
-                className={cn(
-                  "rounded-lg flex flex-col items-center justify-center text-xs font-bold transition-all cursor-pointer hover:scale-105 text-center p-1",
-                  !cell && "bg-gray-200 text-gray-400",
-                  cell?.status === 'high' && "bg-green-600 text-white shadow-md",
-                  cell?.status === 'medium' && "bg-green-400 text-white",
-                  cell?.status === 'low' && "bg-green-200 text-green-800",
-                  cell?.status === 'selected' && "bg-orange-500 text-white shadow-lg animate-pulse",
-                  cell?.status === 'partial' && "bg-amber-400 text-white border-2 border-orange-500",
-                  cell && cell.status === 'empty' && "bg-gray-100 text-gray-300"
-                )}
-                onClick={() => {
-                  const subZone = Object.values(subZones)[index];
-                  if (subZone) handleSubZoneClick(subZone.prospects);
-                }}
-              >
-                {cell && (
-                  <>
-                    <span className="text-base font-bold">{cell.code}</span>
-                    <span className="text-[10px] font-medium leading-tight truncate w-full">{cell.name}</span>
-                    <span className={cn(
-                      "text-[10px] font-normal mt-0.5",
-                      ['selected', 'high', 'medium'].includes(cell.status) ? "text-white/80" : "text-current"
-                    )}>
-                      {cell.status === 'partial' 
-                        ? `${cell.selectedCount}/${cell.count}`
-                        : cell.count
-                      }
-                    </span>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
         </div>
 
-        {smartCluster && smartCluster.count >= 3 && (
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-orange-200">
-            <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-orange-500" />
-                <span className="font-bold text-gray-800">Cluster Inteligente Sugerido</span>
-              </div>
-              <Badge className="bg-green-100 text-green-700 border-green-200">
-                {smartCluster.efficiency}% eficiente
-              </Badge>
+        <div className="mini-map-container">
+            <div className="mini-map-header">
+                <div className="mini-map-title">
+                    <Grid3X3 size={16} /> Grid de Sub-zonas
+                </div>
+                <div className="density-legend">
+                    <span><span className="legend-dot" style={{background: '#2E7D32'}}></span>Alta</span>
+                    <span><span className="legend-dot" style={{background: '#FF9800'}}></span>Media</span>
+                    <span><span className="legend-dot" style={{background: '#E53935'}}></span>Baja</span>
+                </div>
             </div>
             
-            <div className="text-sm text-gray-600 mb-3">
-              <span className="font-semibold text-orange-600">
-                {smartCluster.count} clientes
-              </span>
-              {' '}en {smartCluster.subZone.name} • ~{smartCluster.estimatedDistance}km total
+            <div className="mini-map-grid">
+                {miniMapGridCells.map((cell, index) => {
+                    const isSelected = cell ? cell.prospects.length > 0 && cell.prospects.every(p => selectedProspects.includes(p.id)) : false;
+                    return (
+                        <div 
+                            key={index}
+                            className={cn('grid-cell', cell?.status, isSelected && 'selected')}
+                            onClick={() => cell && handleSubZoneClick(cell.prospects)}
+                        >
+                            {cell && cell.status !== 'empty' && <div className="cell-check"><Check size={10} strokeWidth={3}/></div>}
+                            <div className="cell-code">{cell?.code || ''}</div>
+                            {cell && cell.status !== 'empty' && <div className="cell-count">{cell.count}</div>}
+                            <div className="cell-label">{cell?.name}</div>
+                        </div>
+                    )
+                })}
             </div>
-
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full"
-                  style={{ width: `${smartCluster.efficiency}%` }}
-                />
-              </div>
-            </div>
-
-            <Button 
-              size="sm" 
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white"
-              onClick={() => handleSubZoneClick(smartCluster.subZone.prospects)}
-            >
-              Seleccionar {smartCluster.count} clientes de {smartCluster.subZone.code}
-            </Button>
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {Object.entries(subZones).map(([code, { name, prospects: subZoneProspects }]) => {
-            const prospectIds = subZoneProspects.map(p => p.id);
-            const selectedCount = prospectIds.filter(id => selectedProspects.includes(id)).length;
-            const totalCount = prospectIds.length;
-            const isFullySelected = selectedCount === totalCount && totalCount > 0;
-            const isPartiallySelected = selectedCount > 0 && !isFullySelected;
-
-            return (
-              <button 
-                key={code}
-                onClick={() => handleSubZoneClick(subZoneProspects)}
-                className={cn(
-                  "p-3 rounded-xl text-left transition-all border-2 relative overflow-hidden group",
-                  isFullySelected 
-                    ? 'bg-green-50 border-green-500 shadow-sm' 
-                    : isPartiallySelected
-                      ? 'bg-amber-50 border-amber-400'
-                      : 'bg-gray-50 border-transparent hover:border-green-200 hover:bg-green-50/50'
-                )}
-              >
-                {(isFullySelected || isPartiallySelected) && (
-                  <div className={cn(
-                    "absolute top-2 right-2 w-2.5 h-2.5 rounded-full border-2 border-white",
-                    isFullySelected ? "bg-green-500" : "bg-amber-400"
-                  )} />
-                )}
-                
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-mono text-sm font-bold text-green-700">
-                    {code}
-                  </span>
-                  <Badge 
-                    variant={isFullySelected ? "default" : "secondary"}
-                    className={cn(
-                      "text-xs px-2 py-0.5",
-                      isFullySelected && "bg-green-600"
-                    )}
-                  >
-                    {totalCount}
-                  </Badge>
-                </div>
-                <div className="text-xs text-gray-600 truncate group-hover:text-gray-900">
-                  {name}
-                </div>
-                
-                {isPartiallySelected && (
-                  <div className="text-[10px] text-amber-600 mt-1 font-medium">
-                    {selectedCount} de {totalCount} seleccionados
-                  </div>
-                )}
-              </button>
-            );
-          })}
         </div>
-      </CardContent>
-    </Card>
+        
+        {/* The list of subzones is now represented visually in the grid above, so we don't render it separately. */}
+    </div>
   );
 }

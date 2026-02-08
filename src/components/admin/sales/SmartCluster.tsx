@@ -1,5 +1,6 @@
 'use client';
 import { Wand, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface SmartClusterProps {
     onAcceptCluster: (subZoneCodes: string[]) => void;
@@ -32,9 +33,9 @@ export function SmartCluster({ onAcceptCluster }: SmartClusterProps) {
           <div className="cluster-stat-label">Km</div>
         </div>
       </div>
-      <button className="btn btn-primary w-full" onClick={() => onAcceptCluster(clusterSubZones)}>
+      <Button className="w-full" onClick={() => onAcceptCluster(clusterSubZones)}>
         <Check size={16} /> Aceptar Sugerencia
-      </button>
+      </Button>
     </div>
   );
 }
