@@ -22,6 +22,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { DistrictCard } from '@/components/admin/sales/district-card';
 import type { Prospect } from '@/types';
+import { SalesDashboard } from '@/components/admin/sales/SalesDashboard';
+import { SmartCluster } from '@/components/admin/sales/SmartCluster';
 
 
 export default function SalesPage() {
