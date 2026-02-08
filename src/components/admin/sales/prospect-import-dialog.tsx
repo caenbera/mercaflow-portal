@@ -114,10 +114,13 @@ export function ProspectImportDialog({ open, onOpenChange }: ProspectImportDialo
             }
             
             let zone = rowData.zone || '';
-            if (lat && lng && !zone) {
-                zone = getZoneFromCoordinates(lat, lng) || '';
+            if (lat && lng) {
+                const calculatedZone = getZoneFromCoordinates(lat, lng);
+                if (calculatedZone) {
+                    zone = calculatedZone;
+                }
             }
-
+            
             // Fallback to assign a general zone based on state if zoning fails
             if (!zone && rowData.state) {
               const state = String(rowData.state).toUpperCase().trim();

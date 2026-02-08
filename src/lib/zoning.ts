@@ -1,4 +1,3 @@
-
 import { point, polygon } from '@turf/turf';
 import { booleanPointInPolygon } from '@turf/turf';
 import { districts, type District } from '@/lib/district-config';
@@ -32,26 +31,23 @@ function findDistrictForPoint(lat: number, lng: number): District | null {
  * @returns The calculated sub-zone code.
  */
 function calculateSubZone(lat: number, lng: number, district: District): string {
-    const boundaries = district.boundaries;
-    const lats = boundaries.map(b => b[1]);
-    const lngs = boundaries.map(b => b[0]);
+    const { minLat, maxLat, minLng, maxLng } = district.grid;
   
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
-  
-    // Normalize position within the bounding box (0 to 1)
-    const latNorm = maxLat !== minLat ? (lat - minLat) / (maxLat - minLat) : 0;
-    const lngNorm = maxLng !== minLng ? (lng - minLng) / (maxLng - minLng) : 0;
+    // Normalize position within the bounding box (0 to 1), clamping the values to handle edge cases.
+    const latNorm = Math.max(0, Math.min(1, maxLat !== minLat ? (lat - minLat) / (maxLat - minLat) : 0));
+    const lngNorm = Math.max(0, Math.min(1, maxLng !== minLng ? (lng - minLng) / (maxLng - minLng) : 0));
   
     // Map normalized coordinates to a 4x3 grid
-    const col = Math.min(Math.floor(lngNorm * 4), 3); // 4 columns (0-3)
-    // Invert row calculation so 0 is the top row, matching visual grid layout
-    const row = 2 - Math.min(Math.floor(latNorm * 3), 2); // 3 rows (0-2)
+    const col = Math.floor(lngNorm * 4);
+    // Invert row calculation so higher latitude means a lower row index (top of the grid)
+    const row = 2 - Math.floor(latNorm * 3);
   
+    // Clamp values to be safe
+    const finalCol = Math.max(0, Math.min(col, 3));
+    const finalRow = Math.max(0, Math.min(row, 2));
+
     // Calculate cell number (1-12)
-    const cellNumber = row * 4 + col + 1;
+    const cellNumber = finalRow * 4 + finalCol + 1;
     const subZoneIndex = String(cellNumber).padStart(2, '0');
     
     return `${district.code}-${subZoneIndex}`;
