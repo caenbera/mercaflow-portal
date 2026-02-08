@@ -94,8 +94,9 @@ export function MapView({
   const handleMarkerClick = useCallback((prospect: ProspectWithCoords) => {
     setSelectedClient(prospect);
   }, []);
-
+  
   const getMarkerIcon = useCallback((prospect: Prospect, isSelected: boolean) => {
+    if (!isLoaded) return undefined;
     const color = STATUS_COLORS[prospect.status as keyof typeof STATUS_COLORS] || '#6b7280';
     const scale = isSelected ? 1.5 : 1;
     const pinPath = "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5-2.5-1.12 2.5-2.5-2.5z";
@@ -109,7 +110,7 @@ export function MapView({
       scale: scale,
       anchor: new google.maps.Point(12, 24),
     };
-  }, []);
+  }, [isLoaded]);
 
   const markers = useMemo(() => {
     if (!isLoaded) return [];
