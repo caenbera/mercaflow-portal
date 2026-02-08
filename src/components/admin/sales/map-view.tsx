@@ -1,3 +1,4 @@
+
 // src/components/admin/sales/map-view.tsx
 'use client';
 
@@ -67,17 +68,6 @@ export function MapView({
     lng: -87.6298,
   };
 
-  const mapOptions = {
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: false,
-      zoomControl: true,
-      zoomControlOptions: {
-          position: google.maps.ControlPosition.RIGHT_BOTTOM
-      }
-  };
-
-
   const prospectsWithCoords: ProspectWithCoords[] = useMemo(() => {
     const districtCoordsCount: Record<string, number> = {};
     
@@ -108,7 +98,7 @@ export function MapView({
   const getMarkerIcon = useCallback((prospect: Prospect, isSelected: boolean) => {
     const color = STATUS_COLORS[prospect.status as keyof typeof STATUS_COLORS] || '#6b7280';
     const scale = isSelected ? 1.5 : 1;
-    const pinPath = "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5-2.5z";
+    const pinPath = "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5-2.5-1.12 2.5-2.5-2.5z";
 
     return {
       path: pinPath,
@@ -122,6 +112,7 @@ export function MapView({
   }, []);
 
   const markers = useMemo(() => {
+    if (!isLoaded) return [];
     return prospectsWithCoords.map(prospect => (
       <MarkerF
         key={prospect.id}
@@ -131,7 +122,7 @@ export function MapView({
         zIndex={selectedProspects.includes(prospect.id) ? 100 : 1}
       />
     ));
-  }, [prospectsWithCoords, selectedProspects, handleMarkerClick, getMarkerIcon]);
+  }, [prospectsWithCoords, selectedProspects, handleMarkerClick, getMarkerIcon, isLoaded]);
 
   const districtPolygons = useMemo(() => {
     return Object.values(districts).map((config) => {
@@ -163,6 +154,16 @@ export function MapView({
         </div>
     )
   }
+
+  const mapOptions = {
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+      zoomControl: true,
+      zoomControlOptions: {
+          position: google.maps.ControlPosition.RIGHT_BOTTOM
+      }
+  };
 
   return (
     <div className="relative h-full min-h-[500px] bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
