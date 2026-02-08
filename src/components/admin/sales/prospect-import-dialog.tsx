@@ -7,10 +7,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
-import { batchAddProspects } from '@/lib/firestore/prospects';
+import { addProspect, updateProspect, findProspectByNameAndCity } from '@/lib/firestore/prospects';
 import { Download, Upload, FileText, Loader2 } from 'lucide-react';
 import Papa from 'papaparse';
 import { getZoneFromCoordinates } from '@/lib/zoning';
+import type { ProspectInput } from '@/types';
 
 interface ProspectImportDialogProps {
   open: boolean;
@@ -75,7 +76,8 @@ export function ProspectImportDialog({ open, onOpenChange }: ProspectImportDialo
       skipEmptyLines: true,
       complete: async (results) => {
         const data = results.data as any[];
-        const prospectsToCreate: any[] = [];
+        let createdCount = 0;
+        let updatedCount = 0;
         let errorCount = 0;
 
         for (const rowData of data) {
@@ -89,12 +91,10 @@ export function ProspectImportDialog({ open, onOpenChange }: ProspectImportDialo
             let lat: number | null = null;
             let lng: number | null = null;
 
-            // 1. Check for coordinates in the CSV
             if (rowData.lat && rowData.lng && !isNaN(parseFloat(rowData.lat)) && !isNaN(parseFloat(rowData.lng))) {
               lat = parseFloat(rowData.lat);
               lng = parseFloat(rowData.lng);
             } else {
-              // 2. Geocode address if coordinates are missing
               const fullAddress = `${rowData.address}, ${rowData.city}, ${rowData.state || 'IL'}`;
               const encodedAddress = encodeURIComponent(fullAddress);
               const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -102,7 +102,6 @@ export function ProspectImportDialog({ open, onOpenChange }: ProspectImportDialo
               if (apiKey) {
                 const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`);
                 const geoData = await response.json();
-
                 if (geoData.status === 'OK' && geoData.results.length > 0) {
                   const location = geoData.results[0].geometry.location;
                   lat = location.lat;
@@ -110,18 +109,16 @@ export function ProspectImportDialog({ open, onOpenChange }: ProspectImportDialo
                 } else {
                   console.warn(`Geocoding failed for: ${fullAddress}. Status: ${geoData.status}`);
                 }
-                // Add a small delay to not hit API rate limits too fast
                 await new Promise(resolve => setTimeout(resolve, 50)); 
               }
             }
             
-            // 3. Determine zone from coordinates if not provided
             let zone = rowData.zone || '';
             if (lat && lng && !zone) {
                 zone = getZoneFromCoordinates(lat, lng) || '';
             }
 
-            const prospectData = {
+            const prospectData: Partial<ProspectInput> = {
               name: rowData.name,
               address: rowData.address,
               city: rowData.city,
@@ -140,7 +137,15 @@ export function ProspectImportDialog({ open, onOpenChange }: ProspectImportDialo
               salespersonId: user.uid,
             };
 
-            prospectsToCreate.push(prospectData);
+            const existingProspect = await findProspectByNameAndCity(rowData.name, rowData.city);
+
+            if (existingProspect) {
+              await updateProspect(existingProspect.id, prospectData);
+              updatedCount++;
+            } else {
+              await addProspect(prospectData as ProspectInput);
+              createdCount++;
+            }
 
           } catch (e: any) {
             errorCount++;
@@ -148,20 +153,10 @@ export function ProspectImportDialog({ open, onOpenChange }: ProspectImportDialo
           }
         }
 
-        if (prospectsToCreate.length > 0) {
-          try {
-            await batchAddProspects(prospectsToCreate);
-            toast({
-              title: "Import Complete",
-              description: `${prospectsToCreate.length} prospects imported. ${errorCount > 0 ? `${errorCount} rows failed.` : ''}`,
-            });
-          } catch (batchError) {
-            toast({ variant: 'destructive', title: 'Batch Import Error', description: 'Could not save prospects to database.' });
-          }
-        } else {
-          toast({ variant: 'destructive', title: 'Import Failed', description: 'No valid prospect data found in the file.' });
-        }
-
+        toast({
+          title: "Import Complete",
+          description: `${createdCount} created, ${updatedCount} updated. ${errorCount > 0 ? `${errorCount} rows failed.` : ''}`,
+        });
 
         setIsProcessing(false);
         setSelectedFile(null);

@@ -1,3 +1,4 @@
+
 import {
   collection,
   addDoc,
@@ -6,13 +7,17 @@ import {
   doc,
   serverTimestamp,
   writeBatch,
+  query,
+  where,
+  getDocs,
+  limit,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { Prospect, ProspectVisit } from '@/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
-type ProspectInput = Omit<Prospect, 'id' | 'createdAt' | 'updatedAt'>;
+export type ProspectInput = Omit<Prospect, 'id' | 'createdAt' | 'updatedAt'>;
 type VisitInput = Omit<ProspectVisit, 'id' | 'date'>;
 
 export const addProspect = (prospectData: ProspectInput) => {
@@ -27,31 +32,6 @@ export const addProspect = (prospectData: ProspectInput) => {
       path: prospectsCollection.path,
       operation: 'create',
       requestResourceData: dataWithTimestamp,
-    });
-    errorEmitter.emit('permission-error', permissionError);
-    throw serverError;
-  });
-};
-
-export const batchAddProspects = async (prospectsData: ProspectInput[]) => {
-  const batch = writeBatch(db);
-  const prospectsCollection = collection(db, 'prospects');
-
-  prospectsData.forEach(prospect => {
-    const docRef = doc(prospectsCollection); // Create a new doc reference
-    const dataWithTimestamp = {
-      ...prospect,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-    batch.set(docRef, dataWithTimestamp);
-  });
-
-  return batch.commit().catch(async (serverError) => {
-    const permissionError = new FirestorePermissionError({
-      path: prospectsCollection.path,
-      operation: 'create',
-      requestResourceData: { note: `${prospectsData.length} documents` },
     });
     errorEmitter.emit('permission-error', permissionError);
     throw serverError;
@@ -74,6 +54,29 @@ export const updateProspect = (prospectId: string, prospectData: Partial<Prospec
     throw serverError;
   });
 };
+
+export const findProspectByNameAndCity = async (name: string, city: string): Promise<(Prospect & { id: string }) | null> => {
+  const q = query(
+    collection(db, 'prospects'),
+    where('name', '==', name),
+    where('city', '==', city),
+    limit(1)
+  );
+
+  try {
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0];
+      return { id: doc.id, ...doc.data() } as Prospect & { id: string };
+    }
+    return null;
+  } catch (error) {
+    console.error("Error finding prospect:", error);
+    // You might want to handle permission errors specifically here if needed
+    return null;
+  }
+};
+
 
 export const deleteProspect = (prospectId: string) => {
   const prospectDoc = doc(db, 'prospects', prospectId);
