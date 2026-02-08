@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { MapPin, Grid3X3, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { districts } from '@/lib/district-config';
 
 interface DistrictCardProps {
   districtCode: string;
@@ -32,36 +33,33 @@ export function DistrictCard({
     return prospects.reduce((acc, prospect) => {
       const subZoneCode = prospect.zone || 'Uncategorized';
       if (!acc[subZoneCode]) {
-        const subZoneName = subZoneCode.includes('-') 
-          ? `Sub-zona ${subZoneCode.split('-').pop()}` 
-          : 'General';
+        const districtConfig = districts[districtCode];
+        const subZoneName = districtConfig?.subZones[subZoneCode]?.name || `Sub-zona ${subZoneCode.split('-').pop()}` || 'General';
         acc[subZoneCode] = { code: subZoneCode, name: subZoneName, prospects: [] };
       }
       acc[subZoneCode].prospects.push(prospect);
       return acc;
     }, {} as Record<string, { code: string; name: string; prospects: Prospect[] }>);
-  }, [prospects]);
+  }, [prospects, districtCode]);
 
   const totalProspects = prospects.length;
   
-  // Calcular área aproximada basada en densidad
   const areaKm = useMemo(() => {
     const density = totalProspects / 10; // aproximación
     return Math.max(0.5, Math.min(10, density)).toFixed(1);
   }, [totalProspects]);
 
-  // Generar grid de 12 celdas con colores según densidad y selección
   const miniMapGridCells = useMemo(() => {
-    const cells = Array(12).fill(null);
+    const cells: ({ code: string; name: string; status: string; count: number; selectedCount: number; } | null)[] = Array(12).fill(null);
     const subZoneEntries = Object.values(subZones).slice(0, 12);
     
     subZoneEntries.forEach((sz, index) => {
+      if (index >= 12) return;
       const prospectIds = sz.prospects.map(p => p.id);
       const selectedCount = prospectIds.filter(id => selectedProspects.includes(id)).length;
       const totalCount = sz.prospects.length;
-      const density = totalCount / (areaKm as unknown as number);
+      const density = totalCount / (parseFloat(areaKm) || 1);
       
-      // Determinar color según densidad y selección
       let status: 'empty' | 'low' | 'medium' | 'high' | 'selected' | 'partial' = 'empty';
       
       if (selectedCount === totalCount && totalCount > 0) {
@@ -76,6 +74,7 @@ export function DistrictCard({
       
       cells[index] = {
         code: sz.code.split('-').pop() || '??',
+        name: sz.name,
         status,
         count: totalCount,
         selectedCount,
@@ -84,9 +83,7 @@ export function DistrictCard({
     return cells;
   }, [subZones, selectedProspects, areaKm]);
 
-  // Calcular cluster inteligente sugerido
   const smartCluster = useMemo(() => {
-    // Encontrar la sub-zona con más prospectos
     const bestSubZone = Object.values(subZones).sort((a, b) => 
       b.prospects.length - a.prospects.length
     )[0];
@@ -112,7 +109,6 @@ export function DistrictCard({
     onBulkSelect(prospectIds, !areAllSelected);
   };
 
-  // Color del header según distrito
   const getDistrictColor = () => {
     if (districtCode.includes('PIL')) return 'from-green-600 to-green-700';
     if (districtCode.includes('LV')) return 'from-blue-600 to-blue-700';
@@ -124,7 +120,6 @@ export function DistrictCard({
 
   return (
     <Card className="overflow-hidden shadow-lg border-0">
-      {/* Header con gradiente */}
       <CardHeader className={cn(
         "p-4 text-white bg-gradient-to-r",
         getDistrictColor()
@@ -154,7 +149,6 @@ export function DistrictCard({
       </CardHeader>
 
       <CardContent className="p-4 space-y-4">
-        {/* Mini Map Grid */}
         <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
@@ -173,12 +167,12 @@ export function DistrictCard({
             </div>
           </div>
           
-          <div className="grid grid-cols-4 grid-rows-3 gap-2 h-32">
+          <div className="grid grid-cols-4 grid-rows-3 gap-2 h-40">
             {miniMapGridCells.map((cell, index) => (
               <div 
                 key={index} 
                 className={cn(
-                  "rounded-lg flex flex-col items-center justify-center text-xs font-bold transition-all cursor-pointer hover:scale-105",
+                  "rounded-lg flex flex-col items-center justify-center text-xs font-bold transition-all cursor-pointer hover:scale-105 text-center p-1",
                   !cell && "bg-gray-200 text-gray-400",
                   cell?.status === 'high' && "bg-green-600 text-white shadow-md",
                   cell?.status === 'medium' && "bg-green-400 text-white",
@@ -194,9 +188,10 @@ export function DistrictCard({
               >
                 {cell && (
                   <>
-                    <span className="text-lg">{cell.code}</span>
+                    <span className="text-base font-bold">{cell.code}</span>
+                    <span className="text-[10px] font-medium leading-tight truncate w-full">{cell.name}</span>
                     <span className={cn(
-                      "text-[10px] font-normal",
+                      "text-[10px] font-normal mt-0.5",
                       ['selected', 'high', 'medium'].includes(cell.status) ? "text-white/80" : "text-current"
                     )}>
                       {cell.status === 'partial' 
@@ -211,7 +206,6 @@ export function DistrictCard({
           </div>
         </div>
 
-        {/* Smart Cluster Suggestion */}
         {smartCluster && smartCluster.count >= 3 && (
           <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-orange-200">
             <div className="flex justify-between items-center mb-3">
@@ -250,7 +244,6 @@ export function DistrictCard({
           </div>
         )}
 
-        {/* Sub-zones Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           {Object.entries(subZones).map(([code, { name, prospects: subZoneProspects }]) => {
             const prospectIds = subZoneProspects.map(p => p.id);
@@ -272,7 +265,6 @@ export function DistrictCard({
                       : 'bg-gray-50 border-transparent hover:border-green-200 hover:bg-green-50/50'
                 )}
               >
-                {/* Indicador de selección */}
                 {(isFullySelected || isPartiallySelected) && (
                   <div className={cn(
                     "absolute top-2 right-2 w-2.5 h-2.5 rounded-full border-2 border-white",
