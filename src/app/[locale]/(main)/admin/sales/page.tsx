@@ -14,7 +14,7 @@ import { SalesStatsView } from '@/components/admin/sales/SalesStatsView';
 import { BottomActions } from '@/components/admin/sales/BottomActions';
 import { Loader2 } from 'lucide-react';
 import { ProspectDialog } from '@/components/admin/sales/prospect-dialog';
-import { ProspectDetailsDialog } from '@/components/admin/sales/prospect-details-dialog';
+import { ProspectImportDialog } from '@/components/admin/sales/prospect-import-dialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Upload } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -27,9 +27,7 @@ export default function SalesPage() {
   const [selectedForRoute, setSelectedForRoute] = useState<string[]>([]); // Array of sub-zone codes
 
   const [isProspectDialogOpen, setIsProspectDialogOpen] = useState(false);
-  const [editingProspect, setEditingProspect] = useState(null);
-  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
-  const [viewingProspect, setViewingProspect] = useState(null);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const t = useTranslations('AdminSalesPage');
 
@@ -66,7 +64,6 @@ export default function SalesPage() {
   };
 
   const handleOpenNewProspect = () => {
-    setEditingProspect(null);
     setIsProspectDialogOpen(true);
   };
   
@@ -96,12 +93,11 @@ export default function SalesPage() {
     <ProspectDialog 
       open={isProspectDialogOpen}
       onOpenChange={setIsProspectDialogOpen}
-      prospect={editingProspect}
+      prospect={null} // Always null for creation from this page
     />
-     <ProspectDetailsDialog 
-      open={isDetailsDialogOpen}
-      onOpenChange={setIsDetailsDialogOpen}
-      prospect={viewingProspect}
+    <ProspectImportDialog 
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
     />
     <div className="min-h-screen">
       <SalesHeader user={user} />
@@ -113,7 +109,7 @@ export default function SalesPage() {
       <div className="flex justify-between items-center bg-white border-b px-2 md:px-4">
         <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
         <div className="flex items-center gap-2 pr-2">
-            <Button variant="outline" size="sm"><Upload className="h-4 w-4 mr-2"/>{t('import_button')}</Button>
+            <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}><Upload className="h-4 w-4 mr-2"/>{t('import_button')}</Button>
             <Button size="sm" onClick={handleOpenNewProspect}><Plus className="h-4 w-4 mr-2"/>{t('new_prospect_button')}</Button>
         </div>
       </div>
@@ -139,8 +135,6 @@ export default function SalesPage() {
         <div className={`view ${activeTab === 'list' ? 'active' : ''}`}>
           <ProspectsListView 
             prospects={filteredProspects}
-            selectedForRoute={selectedForRoute}
-            onToggleSubZone={handleToggleSubZone}
           />
         </div>
         <div className={`view ${activeTab === 'stats' ? 'active' : ''}`}>
