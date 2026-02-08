@@ -37,6 +37,13 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['picker', 'admin', 'superadmin'];
     }
 
+    // Helper function for roles with salesperson responsibilities.
+    function hasSalesRole() {
+      return isAuthed() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'salesperson'];
+    }
+
     // USERS Collection
     match /users/{userId} {
       allow create: if isAuthed() && request.auth.uid == userId;
@@ -65,12 +72,30 @@ service cloud.firestore {
         allow read: if request.auth.uid == userId || hasAdminRole();
         allow write: if hasAdminRole(); // Only admins (via triggered logic) can grant points
       }
+      
+      // NOTIFICATIONS sub-collection inside USERS
+      match /notifications/{notificationId} {
+        allow read, update, delete: if request.auth.uid == userId;
+        // Writes are only from backend functions
+      }
     }
 
     // PRODUCTS Collection
     match /products/{productId} {
       allow read: if isAuthed();
       allow write: if hasPurchasingPermissions();
+    }
+    
+    // PRODUCT CATEGORIES Collection
+    match /productCategories/{categoryId} {
+      allow read: if isAuthed();
+      allow write: if hasAdminRole();
+    }
+
+    // PRODUCT UNITS Collection
+    match /productUnits/{unitId} {
+      allow read: if isAuthed();
+      allow write: if hasAdminRole();
     }
 
     // ORDERS Collection
@@ -116,7 +141,7 @@ service cloud.firestore {
       allow write: if hasAdminRole();
     }
 
-    // PURCHASE ORDERS Collection
+     // PURCHASE ORDERS Collection
     match /purchaseOrders/{poId} {
       // Only admins/purchasers can manage POs
       allow read, write: if hasPurchasingPermissions();
@@ -169,6 +194,18 @@ service cloud.firestore {
       // This rule is simplified to avoid query issues for non-admins.
       allow read: if isAuthed() && resource.data.userId == request.auth.uid;
       allow write: if hasAdminRole(); // Only admins can create/update invoices (e.g. mark as paid)
+    }
+
+    // PROSPECTS Collection (for salespeople)
+    match /prospects/{prospectId} {
+      allow read, update: if hasSalesRole() && (resource.data.salespersonId == request.auth.uid || hasAdminRole());
+      allow create: if hasSalesRole(); // Salesperson can be assigned on creation
+      allow delete: if hasAdminRole();
+
+      // VISITS sub-collection inside PROSPECTS
+      match /visits/{visitId} {
+        allow read, write: if hasSalesRole() && (get(/databases/$(database)/documents/prospects/$(prospectId)).data.salespersonId == request.auth.uid || hasAdminRole());
+      }
     }
   }
 }
