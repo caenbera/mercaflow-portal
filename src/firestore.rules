@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -101,8 +100,7 @@ service cloud.firestore {
     // ORDERS Collection
     match /orders/{orderId} {
       allow create: if isAuthed() && request.resource.data.userId == request.auth.uid;
-      // This rule has a potential issue for list queries by admins. We will address it if it becomes a problem.
-      allow read: if isAuthed() && (resource.data.userId == request.auth.uid || hasPickingPermissions());
+      // This rule has a potential issue for list queries by admins. We will address it if it becomes a problem.\n      allow read: if isAuthed() && (resource.data.userId == request.auth.uid || hasPickingPermissions());
       allow update: if hasPickingPermissions();
       allow delete: if hasAdminRole();
     }
@@ -127,12 +125,8 @@ service cloud.firestore {
       // Unauthenticated users can check for their own invite during signup by email.
       allow get: if request.auth == null;
       
-      // An authenticated user can "claim" their invite by updating its status.
-      // This is safe because they must be authenticated with the email that matches the document ID.
-      // It only allows the status field to be changed to 'claimed'.
-      allow update: if isAuthed() && request.auth.token.email == email
-                      && request.resource.data.status == 'claimed'
-                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      // An authenticated user can \"claim\" their invite by updating its status.\n      // This is safe because they must be authenticated with the email that matches the document ID.\n      // It only allows the status field to be changed to 'claimed'.
+      allow update: if isAuthed() && request.auth.token.email == email\n                      && request.resource.data.status == 'claimed'\n                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
     }
 
     // PRICE LISTS Collection
@@ -150,8 +144,7 @@ service cloud.firestore {
     // OFFERS Collection
     match /offers/{offerId} {
       allow read: if isAuthed();
-      // Only admins/superadmins can create, update, or delete offers
-      allow write: if hasAdminRole();
+      // Only admins/superadmins can create, update, or delete offers\n      allow write: if hasAdminRole();
     }
     
     // OFFER CATEGORIES Collection
@@ -190,8 +183,7 @@ service cloud.firestore {
 
     // INVOICES Collection
     match /invoices/{invoiceId} {
-      // A user can read their own invoices. Admins can also read them via the get() helper.
-      // This rule is simplified to avoid query issues for non-admins.
+      // A user can read their own invoices. Admins can also read them via the get() helper.\n      // This rule is simplified to avoid query issues for non-admins.
       allow read: if isAuthed() && resource.data.userId == request.auth.uid;
       allow write: if hasAdminRole(); // Only admins can create/update invoices (e.g. mark as paid)
     }

@@ -1,40 +1,97 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useProspects } from '@/hooks/use-prospects';
 import { useAuth } from '@/context/auth-context';
 import { districts } from '@/lib/district-config';
+import { useTranslations } from 'next-intl';
 
 import { SalesHeader } from '@/components/admin/sales/SalesHeader';
 import { ZoneSelector } from '@/components/admin/sales/ZoneSelector';
 import { TabNavigation } from '@/components/admin/sales/TabNavigation';
-import { DistrictsView } from '@/components/admin/sales/DistrictsView';
 import { MapView } from '@/components/admin/sales/map-view';
-import { ProspectsListView } from '@/components/admin/sales/ProspectsListView';
+import { ProspectCard } from '@/components/admin/sales/prospect-card';
 import { SalesStatsView } from '@/components/admin/sales/SalesStatsView';
 import { BottomActions } from '@/components/admin/sales/BottomActions';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, Upload, Route, Trash, Check, X, Wand } from 'lucide-react';
 import { ProspectDialog } from '@/components/admin/sales/prospect-dialog';
+import { ProspectDetailsDialog } from '@/components/admin/sales/prospect-details-dialog';
 import { ProspectImportDialog } from '@/components/admin/sales/prospect-import-dialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Upload } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { DistrictCard } from '@/components/admin/sales/district-card';
+import type { Prospect } from '@/types';
+
 
 export default function SalesPage() {
   const { prospects, loading } = useProspects();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('districts');
-  const [selectedZone, setSelectedZone] = useState('all');
-  const [selectedForRoute, setSelectedForRoute] = useState<string[]>([]); // Array of sub-zone codes
-
-  const [isProspectDialogOpen, setIsProspectDialogOpen] = useState(false);
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-
   const t = useTranslations('AdminSalesPage');
 
+  const [activeTab, setActiveTab] = useState('list');
+  const [selectedZone, setSelectedZone] = useState('all');
+  
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedProspects, setSelectedProspects] = useState<string[]>([]);
+  
+  const [prospectToEdit, setProspectToEdit] = useState<Prospect | null>(null);
+  const [prospectForVisit, setProspectForVisit] = useState<Prospect | null>(null);
+
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  
+  const handleEditProspect = (prospect: Prospect | null) => {
+    setProspectToEdit(prospect);
+  };
+  
+  const handleCheckIn = (prospect: Prospect) => {
+    setProspectForVisit(prospect);
+  };
+
+  const handleSelectionChange = (prospectId: string, isSelected: boolean) => {
+    setSelectedProspects(prev => {
+      const newSet = new Set(prev);
+      if (isSelected) {
+        newSet.add(prospectId);
+      } else {
+        newSet.delete(prospectId);
+      }
+      return Array.from(newSet);
+    });
+  };
+
+  const handleBulkSelect = (prospectIds: string[], select: boolean) => {
+    setSelectedProspects(prev => {
+      const newSet = new Set(prev);
+      if (select) {
+        prospectIds.forEach(id => newSet.add(id));
+      } else {
+        prospectIds.forEach(id => newSet.delete(id));
+      }
+      return Array.from(newSet);
+    });
+  };
+
+  const handleCreateRoute = () => {
+    if (selectedProspects.length === 0) return;
+    const selected = prospects.filter(p => selectedProspects.includes(p.id));
+    const validAddresses = selected.filter(p => p.address).map(p => encodeURIComponent(p.address));
+    if (validAddresses.length === 0) {
+      // toast...
+      return;
+    }
+    const origin = validAddresses[0];
+    const destination = validAddresses[validAddresses.length - 1];
+    const waypoints = validAddresses.slice(1, -1).join('|');
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}`;
+    window.open(mapsUrl, '_blank');
+  };
+
   const filteredProspects = useMemo(() => {
-    if (!selectedZone || selectedZone === 'all') return prospects;
+    if (loading) return [];
+    if (selectedZone === 'all') return prospects;
     return prospects.filter(p => p.zone?.startsWith(selectedZone));
-  }, [prospects, selectedZone]);
+  }, [prospects, selectedZone, loading]);
 
   const groupedByDistrict = useMemo(() => {
     return filteredProspects.reduce((acc, prospect) => {
@@ -44,29 +101,9 @@ export default function SalesPage() {
       }
       acc[districtCode].push(prospect);
       return acc;
-    }, {} as Record<string, typeof prospects>);
+    }, {} as Record<string, Prospect[]>);
   }, [filteredProspects]);
 
-  const handleToggleSubZone = (subZoneCode: string) => {
-    setSelectedForRoute(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(subZoneCode)) {
-        newSet.delete(subZoneCode);
-      } else {
-        newSet.add(subZoneCode);
-      }
-      return Array.from(newSet);
-    });
-  };
-
-  const handleAcceptCluster = (subZoneCodes: string[]) => {
-    setSelectedForRoute(subZoneCodes);
-  };
-
-  const handleOpenNewProspect = () => {
-    setIsProspectDialogOpen(true);
-  };
-  
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -86,70 +123,133 @@ export default function SalesPage() {
       count: prospects.filter(p => p.zone?.startsWith(zone.code)).length
   }));
 
-  const totalSelectedProspects = prospects.filter(p => selectedForRoute.includes(p.zone || '')).length;
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'districts':
+        return (
+          <div className="space-y-4">
+             <SalesDashboard />
+              <SmartCluster onAcceptCluster={(codes) => {
+                const prospectIds = prospects.filter(p => codes.includes(p.zone || '')).map(p => p.id);
+                handleBulkSelect(prospectIds, true);
+                setIsSelectionMode(true);
+              }} />
+            {Object.keys(groupedByDistrict)
+              .filter(code => code !== 'Uncategorized')
+              .map(districtCode => (
+                <DistrictCard
+                  key={districtCode}
+                  districtCode={districtCode}
+                  districtName={districts[districtCode]?.name || districtCode}
+                  prospects={groupedByDistrict[districtCode]}
+                  selectedProspects={selectedProspects}
+                  onBulkSelect={handleBulkSelect}
+                />
+            ))}
+          </div>
+        );
+      case 'map':
+        return (
+          <MapView 
+            prospects={filteredProspects}
+            selectedProspects={selectedProspects}
+            onToggleSelection={handleSelectionChange}
+            onCreateRoute={handleCreateRoute}
+          />
+        );
+      case 'list':
+        return (
+          <div className="space-y-3">
+            {filteredProspects.map(prospect => (
+              <ProspectCard 
+                key={prospect.id}
+                prospect={prospect}
+                onEdit={handleEditProspect}
+                onCheckIn={handleCheckIn}
+                isSelectionMode={isSelectionMode}
+                isSelected={selectedProspects.includes(prospect.id)}
+                onSelectionChange={handleSelectionChange}
+              />
+            ))}
+          </div>
+        );
+      case 'stats':
+        return <SalesStatsView />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <>
-    <ProspectDialog 
-      open={isProspectDialogOpen}
-      onOpenChange={setIsProspectDialogOpen}
-      prospect={null} // Always null for creation from this page
-    />
-    <ProspectImportDialog 
+      <ProspectDialog
+        open={!!prospectToEdit}
+        onOpenChange={(isOpen) => !isOpen && setProspectToEdit(null)}
+        prospect={prospectToEdit}
+      />
+      <ProspectDetailsDialog 
+        prospect={prospectForVisit}
+        open={!!prospectForVisit}
+        onOpenChange={(isOpen) => !isOpen && setProspectForVisit(null)}
+      />
+      <ProspectImportDialog
         open={isImportDialogOpen}
         onOpenChange={setIsImportDialogOpen}
-    />
-    <div className="min-h-screen">
-      <SalesHeader user={user} />
-      <ZoneSelector 
-        zones={zoneCounts} 
-        selectedZone={selectedZone}
-        onSelectZone={setSelectedZone}
       />
-      <div className="flex justify-between items-center bg-white border-b px-2 md:px-4 z-30 relative">
-        <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
-        <div className="flex items-center gap-2 pr-2">
-            <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}><Upload className="h-4 w-4 mr-2"/>{t('import_button')}</Button>
-            <Button size="sm" onClick={handleOpenNewProspect}><Plus className="h-4 w-4 mr-2"/>{t('new_prospect_button')}</Button>
-        </div>
-      </div>
       
-      <main className="view-container">
-        <div className={`view ${activeTab === 'districts' ? 'active' : ''}`}>
-          <DistrictsView 
-            groupedProspects={groupedByDistrict}
-            districtConfigs={districts}
-            selectedSubZones={selectedForRoute}
-            onToggleSubZone={handleToggleSubZone}
-            onAcceptCluster={handleAcceptCluster}
+      <div className="min-h-screen">
+        <SalesHeader user={user} />
+        
+        <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm">
+          <ZoneSelector 
+            zones={zoneCounts} 
+            selectedZone={selectedZone}
+            onSelectZone={setSelectedZone}
           />
+          <div className="flex justify-between items-center bg-white border-b px-2 md:px-4">
+            <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+            <div className="flex items-center gap-2 pr-2">
+              <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+                <Upload className="h-4 w-4 mr-2"/>
+                {t('import_button')}
+              </Button>
+              <Button size="sm" onClick={() => handleEditProspect(null)}>
+                <Plus className="h-4 w-4 mr-2"/>
+                {t('new_prospect_button')}
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className={`view ${activeTab === 'map' ? 'active' : ''}`}>
-          <MapView 
-            prospects={filteredProspects}
-            onToggleSelection={(id) => {}}
-            selectedProspects={[]}
-            onCreateRoute={() => {}}
-          />
-        </div>
-        <div className={`view ${activeTab === 'list' ? 'active' : ''}`}>
-          <ProspectsListView 
-            prospects={filteredProspects}
-          />
-        </div>
-        <div className={`view ${activeTab === 'stats' ? 'active' : ''}`}>
-          <SalesStatsView />
-        </div>
-      </main>
 
-      {selectedForRoute.length > 0 && (
-        <BottomActions 
-            count={totalSelectedProspects} 
-            onClear={() => setSelectedForRoute([])}
-            onGenerate={() => alert(`Generating route for ${totalSelectedProspects} prospects`)}
-        />
-      )}
-    </div>
+        <main className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="selection-mode" 
+                checked={isSelectionMode}
+                onCheckedChange={setIsSelectionMode}
+              />
+              <Label htmlFor="selection-mode" className="text-sm font-medium">
+                {t('select_for_route')}
+              </Label>
+            </div>
+          </div>
+          
+          {renderContent()}
+        </main>
+        
+        {isSelectionMode && selectedProspects.length > 0 && (
+           <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm p-3 border-t shadow-[0_-4px_20px_rgba(0,0,0,0.08)] flex items-center justify-between gap-3 z-40 md:left-auto md:w-auto md:bottom-5 md:right-5 md:rounded-xl">
+              <div className="text-sm font-semibold">
+                {t('create_route_button', { count: selectedProspects.length })}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setSelectedProspects([])}><Trash className="h-4 w-4"/></Button>
+                <Button className="h-9" onClick={handleCreateRoute}><Route className="h-4 w-4 mr-2"/> {t('action_route')}</Button>
+              </div>
+           </div>
+        )}
+      </div>
     </>
   );
 }

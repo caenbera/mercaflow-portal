@@ -1,4 +1,3 @@
-
 import type { Timestamp, User } from 'firebase/firestore';
 
 export type UserRole = 'client' | 'admin' | 'superadmin' | 'picker' | 'purchaser' | 'salesperson';
@@ -26,7 +25,7 @@ export interface UserProfile {
   contactPerson?: string;
   tier?: ClientTier;
   creditLimit?: number;
-  paymentTerms?: string; 
+  paymentTerms?: string;
   priceList?: string;
   rewardPoints?: number;
   creditBalance?: number;
@@ -134,7 +133,7 @@ export interface Supplier {
   contacts: SupplierContact[];
   rating: number;
   deliveryDays: string;
-  paymentTerms: string; 
+  paymentTerms: string;
   status: 'active' | 'inactive';
   verified: boolean;
   notes?: string;
@@ -152,7 +151,7 @@ export interface SupplierProduct {
   sku: string;
   name: string;
   imageUrl: string;
-  purchaseUnit: string; 
+  purchaseUnit: string;
   currentCost: number;
   previousCost: number | null;
   stockStatus: 'available' | 'limited' | 'unavailable';
