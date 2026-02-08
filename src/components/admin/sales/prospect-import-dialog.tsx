@@ -10,6 +10,7 @@ import { useAuth } from '@/context/auth-context';
 import { batchAddProspects } from '@/lib/firestore/prospects';
 import { Download, Upload, FileText, Loader2 } from 'lucide-react';
 import Papa from 'papaparse';
+import { getZoneFromCoordinates } from '@/lib/zoning';
 
 interface ProspectImportDialogProps {
   open: boolean;
@@ -85,19 +86,54 @@ export function ProspectImportDialog({ open, onOpenChange }: ProspectImportDialo
               continue;
             }
 
+            let lat: number | null = null;
+            let lng: number | null = null;
+
+            // 1. Check for coordinates in the CSV
+            if (rowData.lat && rowData.lng && !isNaN(parseFloat(rowData.lat)) && !isNaN(parseFloat(rowData.lng))) {
+              lat = parseFloat(rowData.lat);
+              lng = parseFloat(rowData.lng);
+            } else {
+              // 2. Geocode address if coordinates are missing
+              const fullAddress = `${rowData.address}, ${rowData.city}, ${rowData.state || 'IL'}`;
+              const encodedAddress = encodeURIComponent(fullAddress);
+              const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+              if (apiKey) {
+                const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`);
+                const geoData = await response.json();
+
+                if (geoData.status === 'OK' && geoData.results.length > 0) {
+                  const location = geoData.results[0].geometry.location;
+                  lat = location.lat;
+                  lng = location.lng;
+                } else {
+                  console.warn(`Geocoding failed for: ${fullAddress}. Status: ${geoData.status}`);
+                }
+                // Add a small delay to not hit API rate limits too fast
+                await new Promise(resolve => setTimeout(resolve, 50)); 
+              }
+            }
+            
+            // 3. Determine zone from coordinates if not provided
+            let zone = rowData.zone || '';
+            if (lat && lng && !zone) {
+                zone = getZoneFromCoordinates(lat, lng) || '';
+            }
+
             const prospectData = {
               name: rowData.name,
               address: rowData.address,
               city: rowData.city,
               state: rowData.state || 'Illinois',
               zip: rowData.zip || '',
-              lat: rowData.lat && !isNaN(parseFloat(rowData.lat)) ? parseFloat(rowData.lat) : null,
-              lng: rowData.lng && !isNaN(parseFloat(rowData.lng)) ? parseFloat(rowData.lng) : null,
+              lat: lat,
+              lng: lng,
               phone: rowData.phone || '',
               web: rowData.web || '',
               category: CATEGORY_OPTIONS.includes(rowData.category) ? rowData.category : 'Otro',
               ethnic: ETHNIC_OPTIONS.includes(rowData.ethnic?.toLowerCase()) ? rowData.ethnic.toLowerCase() : 'otro',
-              zone: rowData.zone || '',
+              zone: zone,
               status: STATUS_OPTIONS.includes(rowData.status?.toLowerCase()) ? rowData.status.toLowerCase() : 'pending',
               priority: rowData.priority?.toUpperCase() === 'TRUE' || rowData.priority?.toUpperCase() === 'VERDADERO',
               notes: rowData.notes || '',
