@@ -88,13 +88,11 @@ async function getMessages(locale: string) {
   }
 }
 
-export default getRequestConfig(async ({ requestLocale }) => {
-  let locale = await requestLocale;
-  if (!locale || !locales.includes(locale as any)) {
-    locale = 'es';
-  }
+export default getRequestConfig(async ({locale}) => {
+  // Validate that the incoming `locale` parameter is valid
+  if (!locales.includes(locale as any)) notFound();
+ 
   return {
-    locale, // ← incluir esto
-    messages: await getMessages(locale),
+    messages: await getMessages(locale)
   };
 });
