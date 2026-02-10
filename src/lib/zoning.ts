@@ -1,5 +1,5 @@
-import { point, polygon } from '@turf/turf';
-import { booleanPointInPolygon } from '@turf/turf';
+import { point, polygon } from '@turf/helpers';
+import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { districts, type District } from '@/lib/district-config';
 
 /**

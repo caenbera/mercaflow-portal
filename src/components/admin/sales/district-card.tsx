@@ -7,6 +7,14 @@ import { cn } from '@/lib/utils';
 import { Map, Users, Target, Grid3X3, Check } from 'lucide-react';
 import { districts } from '@/lib/district-config';
 
+interface GridCell {
+  code: string;
+  name: string;
+  status: 'high-density' | 'medium-density' | 'low-density' | 'empty';
+  count: number;
+  prospects: Prospect[];
+}
+
 interface DistrictCardProps {
   districtCode: string;
   districtName: string;
@@ -42,7 +50,7 @@ export function DistrictCard({
     return 'empty';
   };
 
-  const miniMapGridCells = useMemo(() => {
+  const miniMapGridCells = useMemo<GridCell[]>(() => { // ← Tipado explícito aquí
     const districtConfig = districts[districtCode];
     if (!districtConfig) return Array(12).fill(null);
 
@@ -128,7 +136,7 @@ export function DistrictCard({
             
             <div className="mini-map-grid">
                 {miniMapGridCells.map((cell, index) => {
-                    const isSelected = cell ? cell.prospects.length > 0 && cell.prospects.every(p => selectedProspects.includes(p.id)) : false;
+                    const isSelected = cell ? cell.prospects.length > 0 && cell.prospects.every(p => selectedProspects.includes(p.id)) : false; // ← Ahora TypeScript puede inferir el tipo
                     return (
                         <div 
                             key={index}

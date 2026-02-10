@@ -10,8 +10,7 @@ import { addProspect, updateProspect, findProspectByNameAndCity } from '@/lib/fi
 import { Download, Upload, FileText, Loader2 } from 'lucide-react';
 import Papa from 'papaparse';
 import { getZoneFromCoordinates } from '@/lib/zoning';
-import type { ProspectInput } from '@/types';
-
+import type { Prospect } from '@/types';
 interface ProspectImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -100,7 +99,7 @@ export function ProspectImportDialog({ open, onOpenChange }: ProspectImportDialo
               finalZone = `${finalZone}-01`;
             }
 
-            const prospectData: Partial<ProspectInput> = {
+            const prospectData: Partial<Prospect> = {
               name: rowData.name,
               address: rowData.address,
               city: rowData.city,
@@ -125,7 +124,7 @@ export function ProspectImportDialog({ open, onOpenChange }: ProspectImportDialo
               await updateProspect(existingProspect.id, prospectData);
               updatedCount++;
             } else {
-              await addProspect(prospectData as ProspectInput);
+              await addProspect(prospectData as Prospect);
               createdCount++;
             }
 

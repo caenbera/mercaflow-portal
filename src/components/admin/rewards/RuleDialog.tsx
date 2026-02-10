@@ -87,7 +87,7 @@ const createRuleSchema = (t: Function) => z.object({
   }
 );
 
-type RuleFormValues = z.infer<returnType<typeof createRuleSchema>>;
+type RuleFormValues = z.infer<ReturnType<typeof createRuleSchema>>; // ← Corregido aquí
 
 interface RuleDialogProps {
   open: boolean;
@@ -99,47 +99,53 @@ interface RuleDialogProps {
 
 const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+type RuleFieldConfig = {
+  name: keyof RuleFormValues;
+  label: string;
+  type?: 'number' | 'select' | 'category' | 'day';
+};
+
 const useRuleFieldConfig = () => {
     const t = useTranslations('AdminRewardsPage');
     
     return {
       pointsPerDollar: [
-        { name: 'points' as const, label: t('rule_field_points'), type: 'number' },
-        { name: 'perAmount' as const, label: t('rule_field_per_amount'), type: 'number' },
+        { name: 'points' as const, label: t('rule_field_points'), type: 'number' as const },
+        { name: 'perAmount' as const, label: t('rule_field_per_amount'), type: 'number' as const },
       ],
       bonusForAmount: [
-        { name: 'amount' as const, label: t('rule_field_if_over'), type: 'number' },
-        { name: 'points' as const, label: t('rule_field_bonus_points'), type: 'number' },
+        { name: 'amount' as const, label: t('rule_field_if_over'), type: 'number' as const },
+        { name: 'points' as const, label: t('rule_field_bonus_points'), type: 'number' as const },
       ],
-      fixedPointsPerOrder: [{ name: 'points' as const, label: t('rule_field_points_per_order'), type: 'number' }],
+      fixedPointsPerOrder: [{ name: 'points' as const, label: t('rule_field_points_per_order'), type: 'number' as const }],
       bonusForProduct: [
-        { name: 'productId' as const, label: t('rule_field_product'), type: 'select' },
-        { name: 'points' as const, label: t('rule_field_bonus_points'), type: 'number' },
+        { name: 'productId' as const, label: t('rule_field_product'), type: 'select' as const },
+        { name: 'points' as const, label: t('rule_field_bonus_points'), type: 'number' as const },
       ],
       multiplierPerDay: [
-        { name: 'multiplier' as const, label: t('rule_field_multiplier'), type: 'number' },
-        { name: 'dayOfWeek' as const, label: t('rule_field_day_of_week'), type: 'day' },
+        { name: 'multiplier' as const, label: t('rule_field_multiplier'), type: 'number' as const },
+        { name: 'dayOfWeek' as const, label: t('rule_field_day_of_week'), type: 'day' as const },
       ],
-      firstOrderBonus: [{ name: 'points' as const, label: t('rule_field_bonus_points'), type: 'number' }],
-      anniversaryBonus: [{ name: 'points' as const, label: t('rule_field_bonus_points'), type: 'number' }],
+      firstOrderBonus: [{ name: 'points' as const, label: t('rule_field_bonus_points'), type: 'number' as const }],
+      anniversaryBonus: [{ name: 'points' as const, label: t('rule_field_bonus_points'), type: 'number' as const }],
       bonusForVariety: [
-        { name: 'amount' as const, label: t('rule_field_if_more_than_items'), type: 'number' },
-        { name: 'points' as const, label: t('rule_field_bonus_points'), type: 'number' },
+        { name: 'amount' as const, label: t('rule_field_if_more_than_items'), type: 'number' as const },
+        { name: 'points' as const, label: t('rule_field_bonus_points'), type: 'number' as const },
       ],
       bonusForCategory: [
-        { name: 'category' as const, label: t('rule_field_category'), type: 'category' },
-        { name: 'points' as const, label: t('rule_field_bonus_points'), type: 'number' },
+        { name: 'category' as const, label: t('rule_field_category'), type: 'category' as const },
+        { name: 'points' as const, label: t('rule_field_bonus_points'), type: 'number' as const },
       ],
       consecutiveBonus: [
-        { name: 'weeks' as const, label: t('rule_field_consecutive_weeks'), type: 'number' },
-        { name: 'points' as const, label: t('rule_field_bonus_points'), type: 'number' },
+        { name: 'weeks' as const, label: t('rule_field_consecutive_weeks'), type: 'number' as const },
+        { name: 'points' as const, label: t('rule_field_bonus_points'), type: 'number' as const },
       ],
     };
 };
 
 function renderField(
   form: ReturnType<typeof useForm<RuleFormValues>>,
-  fieldDef: { name: keyof RuleFormValues; label: string; type?: string },
+  fieldDef: RuleFieldConfig, // ← Tipado agregado aquí
   props: { products: Product[]; categories: ProductCategory[], t: Function }
 ) {
   const { products, categories, t } = props;
@@ -239,7 +245,7 @@ function renderField(
             <FormItem>
               <FormLabel>{fieldDef.label}</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="0" {...field} value={field.value ?? ''} />
+                <Input type="number" placeholder="0" {...field} value={field.value?.toString() ?? ''} /> {/* ← Corregido aquí */}
               </FormControl>
             </FormItem>
           )}
@@ -364,7 +370,7 @@ export function RuleDialog({
               )}
             />
 
-            {watchedRuleType && ruleFieldConfig[watchedRuleType] && (
+{watchedRuleType && ruleFieldConfig[watchedRuleType] && (
               <div className="space-y-4">
                 {ruleFieldConfig[watchedRuleType].length === 1 ? (
                   renderField(form, ruleFieldConfig[watchedRuleType][0], { products, categories, t })
