@@ -52,12 +52,11 @@ export async function generateMetadata({
 
 export default async function RootLayout({
   children,
-  params,
+  params: { locale },
 }: Readonly<{
   children: ReactNode;
-  params: Promise<{ locale: string }>;
+  params: { locale: string };
 }>) {
-  const { locale } = await params;
   setRequestLocale(locale);
   const messages = await getMessages();
   const iconUrl = "https://i.postimg.cc/sxBVGnMp/icon.png?v=2";
