@@ -10,7 +10,11 @@ import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 
-export default function ProspectDetailPage({ params }: { params: { prospectId: string } }) {
+type Props = {
+  params: { prospectId: string };
+};
+
+export default function ProspectDetailPage({ params }: Props) {
   const router = useRouter();
   const { user } = useAuth();
   const [prospect, setProspect] = useState<Prospect | null>(null);
