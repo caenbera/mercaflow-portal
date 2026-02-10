@@ -1,6 +1,8 @@
 'use client';
 
-import { CheckSquare, Route, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Route, Trash2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface BottomActionsProps {
   count: number;
@@ -9,20 +11,21 @@ interface BottomActionsProps {
 }
 
 export function BottomActions({ count, onClear, onGenerate }: BottomActionsProps) {
+  const t = useTranslations('AdminSalesPage');
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white p-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] flex gap-3 z-[1001] md:left-auto md:w-[400px] md:bottom-5 md:rounded-xl md:right-5">
-      <button 
-        className="flex-1 text-sm bg-gray-100 text-gray-700 font-bold rounded-lg flex items-center justify-center gap-2 py-3"
-        onClick={onClear}
-      >
-        <X size={16} /> Limpiar
-      </button>
-      <button 
-        className="flex-1 bg-primary text-primary-foreground font-bold rounded-lg flex items-center justify-center gap-2 py-3"
-        onClick={onGenerate}
-      >
-        <Route size={16} /> Ruta ({count})
-      </button>
+    <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm p-3 border-t shadow-[0_-4px_20px_rgba(0,0,0,0.08)] flex items-center justify-between gap-3 z-40 md:left-auto md:w-auto md:bottom-5 md:right-5 md:rounded-xl">
+      <div className="text-sm font-semibold">
+        {t('create_route_button', { count: count })}
+      </div>
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onClear}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
+        <Button className="h-9" onClick={onGenerate}>
+          <Route className="h-4 w-4 mr-2" /> {t('action_route')}
+        </Button>
+      </div>
     </div>
   );
 }

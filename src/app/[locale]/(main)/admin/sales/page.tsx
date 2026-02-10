@@ -25,6 +25,7 @@ import { SalesDashboard } from '@/components/admin/sales/SalesDashboard';
 import { SmartCluster } from '@/components/admin/sales/SmartCluster';
 import { useToast } from '@/hooks/use-toast';
 import { RouteOptionsDialog } from '@/components/admin/sales/RouteOptionsDialog';
+import { BottomActions } from '@/components/admin/sales/BottomActions';
 
 
 export default function SalesPage() {
@@ -233,48 +234,18 @@ export default function SalesPage() {
             </div>
           </div>
           
-          {isSelectionMode && selectedProspects.length > 0 && (
-            <Card className="mb-4">
-                <CardHeader className="p-3 border-b">
-                    <CardTitle className="text-base">
-                        Ruta Actual ({selectedProspects.length} Prospectos)
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="p-2 max-h-60 overflow-y-auto">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-                        {selectedProspectsData.map(prospect => (
-                            <div key={prospect.id} className="text-sm p-2 rounded-md hover:bg-muted flex justify-between items-center">
-                                <div>
-                                    <p className="font-semibold truncate">{prospect.name}</p>
-                                    <p className="text-xs text-muted-foreground truncate">{prospect.address}, {prospect.city}</p>
-                                </div>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => handleSelectionChange(prospect.id, false)}>
-                                    <X className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                            </div>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
-          )}
-
           {renderContent()}
         </main>
         
         {isSelectionMode && selectedProspects.length > 0 && (
-           <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm p-3 border-t shadow-[0_-4px_20px_rgba(0,0,0,0.08)] flex items-center justify-between gap-3 z-40 md:left-auto md:w-auto md:bottom-5 md:right-5 md:rounded-xl">
-              <div className="text-sm font-semibold">
-                {t('create_route_button', { count: selectedProspects.length })}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setSelectedProspects([])}><Trash className="h-4 w-4"/></Button>
-                <Button className="h-9" onClick={() => setIsRouteOptionsOpen(true)}><Route className="h-4 w-4 mr-2"/> {t('action_route')}</Button>
-              </div>
-           </div>
+           <BottomActions 
+            count={selectedProspects.length}
+            onClear={() => setSelectedProspects([])}
+            onGenerate={() => setIsRouteOptionsOpen(true)}
+          />
         )}
       </div>
     </>
   );
 }
-
     
