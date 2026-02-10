@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -124,8 +123,8 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     try {
-      const finalData = { ...values, volumeDiscounts: values.volumeDiscounts?.map(({id, ...rest}) => rest) };
-      if (supplier) {
+      const finalData = { ...values, volumeDiscounts: values.volumeDiscounts };
+            if (supplier) {
         await updateSupplier(supplier.id, finalData);
         toast({ title: t('edit_supplier_success_title'), description: values.name });
       } else {
@@ -223,5 +222,3 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
     </Dialog>
   );
 }
-
-    

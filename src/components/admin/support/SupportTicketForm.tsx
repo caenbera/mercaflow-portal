@@ -53,7 +53,6 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
         details: data.details,
         orderId: data.orderId || undefined,
         status: 'new',
-        createdAt: new Date() as any, // This will be replaced by serverTimestamp
       });
       form.reset();
       onSuccess?.();

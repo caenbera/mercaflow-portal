@@ -191,8 +191,12 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
               if(rowData.nombre_interno_en) updatePayload.name = { ...(updatePayload.name || existingProduct.name), en: rowData.nombre_interno_en };
               if(rowData.categoria_es) updatePayload.category = { ...existingProduct.category, es: rowData.categoria_es };
               if(rowData.categoria_en) updatePayload.category = { ...(updatePayload.category || existingProduct.category), en: rowData.categoria_en };
-              if(rowData.subcategoria_es !== undefined) updatePayload.subcategory = { ...existingProduct.subcategory, es: rowData.subcategoria_es };
-              if(rowData.subcategoria_en !== undefined) updatePayload.subcategory = { ...(updatePayload.subcategory || existingProduct.subcategory), en: rowData.subcategoria_en };
+              if(rowData.subcategoria_es !== undefined || rowData.subcategoria_en !== undefined) {
+                updatePayload.subcategory = {
+                  es: rowData.subcategoria_es !== undefined ? rowData.subcategoria_es : (existingProduct.subcategory?.es || ''),
+                  en: rowData.subcategoria_en !== undefined ? rowData.subcategoria_en : (existingProduct.subcategory?.en || '')
+                };
+              }
               if(rowData.unidad_es) updatePayload.unit = { ...existingProduct.unit, es: rowData.unidad_es };
               if(rowData.unidad_en) updatePayload.unit = { ...(updatePayload.unit || existingProduct.unit), en: rowData.unidad_en };
               if(precio_venta !== null) updatePayload.salePrice = precio_venta;
