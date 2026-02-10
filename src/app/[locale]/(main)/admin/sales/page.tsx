@@ -149,7 +149,11 @@ export default function SalesPage() {
           <MapView 
             prospects={filteredProspects}
             selectedProspects={selectedProspects}
-            onToggleSelection={handleSelectionChange}
+            onToggleSelection={(id) => {
+              // Alternar la selección basándose en si ya está seleccionado
+              const isSelected = selectedProspects.includes(id);
+              handleSelectionChange(id, !isSelected);
+            }}
           />
         );
       case 'list':
@@ -250,5 +254,3 @@ export default function SalesPage() {
     </>
   );
 }
-    
-
