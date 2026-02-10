@@ -6,8 +6,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Navigation, PersonStanding } from 'lucide-react';
+import { MapPin, Navigation, PersonStanding, List } from 'lucide-react';
 import type { Prospect } from '@/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface RouteOptionsDialogProps {
   open: boolean;
@@ -20,12 +21,17 @@ export function RouteOptionsDialog({ open, onOpenChange, selectedProspects }: Ro
   const { toast } = useToast();
   const [customAddress, setCustomAddress] = useState('');
 
-  const buildMapsUrl = (origin: string, destinations: string[]) => {
+  const buildMapsUrl = (origin: string, destinations: string[]): string => {
     if (destinations.length === 0) return '';
     
-    const waypoints = destinations.slice(0, -1).join('|');
+    // If there's only one destination from the origin, no waypoints are needed.
+    if (destinations.length === 1) {
+      return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destinations[0]}`;
+    }
+
     const finalDestination = destinations[destinations.length - 1];
-    
+    const waypoints = destinations.slice(0, -1).join('|');
+
     return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${finalDestination}&waypoints=${waypoints}`;
   };
 
@@ -43,15 +49,16 @@ export function RouteOptionsDialog({ open, onOpenChange, selectedProspects }: Ro
       toast({ variant: 'destructive', title: t('geolocation_not_supported') });
       return;
     }
+    const destinations = getProspectAddresses();
+    if (destinations.length === 0) {
+        toast({ variant: "destructive", title: t('toast_no_address_title'), description: t('toast_no_address_desc') });
+        return;
+    }
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const origin = `${position.coords.latitude},${position.coords.longitude}`;
-        const destinations = getProspectAddresses();
-        if (destinations.length === 0) {
-            toast({ variant: "destructive", title: t('toast_no_address_title'), description: t('toast_no_address_desc') });
-            return;
-        }
-        const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destinations.join('|')}`;
+        const url = buildMapsUrl(origin, destinations);
         window.open(url, '_blank');
         onOpenChange(false);
       },
@@ -67,6 +74,7 @@ export function RouteOptionsDialog({ open, onOpenChange, selectedProspects }: Ro
         toast({ variant: "destructive", title: t('toast_no_address_title'), description: t('toast_no_address_desc') });
         return;
     }
+    // If only one, just navigate to it. The origin is user's current implicit location.
     if (destinations.length === 1) {
         const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${destinations[0]}`;
         window.open(mapsUrl, '_blank');
@@ -74,8 +82,8 @@ export function RouteOptionsDialog({ open, onOpenChange, selectedProspects }: Ro
         return;
     }
 
-    const origin = destinations.shift()!;
-    const url = buildMapsUrl(origin, destinations);
+    const origin = destinations.shift()!; // Remove first element and use as origin
+    const url = buildMapsUrl(origin, destinations); // Pass remaining as destinations
     window.open(url, '_blank');
     onOpenChange(false);
   };
@@ -91,7 +99,7 @@ export function RouteOptionsDialog({ open, onOpenChange, selectedProspects }: Ro
         toast({ variant: "destructive", title: t('toast_no_address_title'), description: t('toast_no_address_desc') });
         return;
     }
-    const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destinations.join('|')}`;
+    const url = buildMapsUrl(origin, destinations);
     window.open(url, '_blank');
     onOpenChange(false);
   };
@@ -105,7 +113,25 @@ export function RouteOptionsDialog({ open, onOpenChange, selectedProspects }: Ro
             {t('route_options_desc', { count: selectedProspects.length })}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+
+        <div className="border rounded-lg max-h-48">
+            <div className="p-3 bg-muted/50 border-b font-semibold text-sm flex items-center gap-2">
+                <List className="h-4 w-4"/>
+                Prospectos Seleccionados
+            </div>
+            <ScrollArea className="h-32">
+                <div className="p-3 text-sm">
+                {selectedProspects.map((prospect, index) => (
+                    <div key={prospect.id} className="py-1 border-b last:border-0">
+                        <p className="font-medium">{index + 1}. {prospect.name}</p>
+                        <p className="text-xs text-muted-foreground pl-4">{prospect.address}, {prospect.city}</p>
+                    </div>
+                ))}
+                </div>
+            </ScrollArea>
+        </div>
+
+        <div className="space-y-4 pt-2">
           <Button onClick={handleStartFromCurrentLocation} variant="outline" className="w-full h-auto py-3 justify-start gap-4">
             <MapPin className="h-5 w-5 text-primary" />
             <div className="text-left">
