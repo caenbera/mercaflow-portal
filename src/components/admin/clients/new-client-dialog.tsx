@@ -31,7 +31,7 @@ const clientFormSchema = z.object({
   contactPerson: z.string().min(2, "Contact person is required"),
   phone: z.string().min(10, "A valid phone number is required"),
   address: z.string().min(5, "A valid address is required"),
-  tier: z.string().min(1, "Tier is required"),
+  tier: z.enum(['standard', 'bronze', 'silver', 'gold']), // ← CAMBIO AQUÍ
   creditLimit: z.coerce.number().min(0).optional(),
   paymentTerms: z.string().min(1, "Payment terms are required"),
   priceList: z.string().optional(),
