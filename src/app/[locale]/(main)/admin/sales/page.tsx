@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useProspects } from '@/hooks/use-prospects';
@@ -19,6 +18,7 @@ import { ProspectImportDialog } from '@/components/admin/sales/prospect-import-d
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DistrictCard } from '@/components/admin/sales/district-card';
 import type { Prospect } from '@/types';
 import { SalesDashboard } from '@/components/admin/sales/SalesDashboard';
@@ -233,6 +233,31 @@ export default function SalesPage() {
             </div>
           </div>
           
+          {isSelectionMode && selectedProspects.length > 0 && (
+            <Card className="mb-4">
+                <CardHeader className="p-3 border-b">
+                    <CardTitle className="text-base">
+                        Ruta Actual ({selectedProspects.length} Prospectos)
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="p-2 max-h-60 overflow-y-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                        {selectedProspectsData.map(prospect => (
+                            <div key={prospect.id} className="text-sm p-2 rounded-md hover:bg-muted flex justify-between items-center">
+                                <div>
+                                    <p className="font-semibold truncate">{prospect.name}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{prospect.address}, {prospect.city}</p>
+                                </div>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => handleSelectionChange(prospect.id, false)}>
+                                    <X className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+          )}
+
           {renderContent()}
         </main>
         
@@ -251,3 +276,5 @@ export default function SalesPage() {
     </>
   );
 }
+
+    
