@@ -26,19 +26,6 @@ export function DistrictCard({
 }: DistrictCardProps) {
   const t = useTranslations('AdminSalesPage');
 
-  const subZones = useMemo(() => {
-    return prospects.reduce((acc, prospect) => {
-      const subZoneCode = prospect.zone || 'Uncategorized';
-      if (!acc[subZoneCode]) {
-        const districtConfig = districts[districtCode];
-        const subZoneName = districtConfig?.subZones[subZoneCode]?.name || `Sub-zona ${subZoneCode.split('-').pop()}` || 'General';
-        acc[subZoneCode] = { code: subZoneCode, name: subZoneName, prospects: [] };
-      }
-      acc[subZoneCode].prospects.push(prospect);
-      return acc;
-    }, {} as Record<string, { code: string; name: string; prospects: Prospect[] }>);
-  }, [prospects, districtCode]);
-
   const totalProspects = prospects.length;
   
   const areaKm = useMemo(() => {
@@ -56,24 +43,41 @@ export function DistrictCard({
   };
 
   const miniMapGridCells = useMemo(() => {
-    const cells: ({ code: string; name: string; status: string; count: number; prospects: Prospect[] } | null)[] = Array(12).fill(null);
-    const subZoneEntries = Object.values(subZones).slice(0, 12);
-    
-    subZoneEntries.forEach((sz, index) => {
-      if (index >= 12) return;
-      const totalCount = sz.prospects.length;
+    const districtConfig = districts[districtCode];
+    if (!districtConfig) return Array(12).fill(null);
+
+    // Get all sub-zone codes for this district from the config, and ensure they are sorted numerically.
+    const allSubZoneCodes = Object.keys(districtConfig.subZones).sort((a, b) => {
+        const numA = parseInt(a.split('-').pop() || '0', 10);
+        const numB = parseInt(b.split('-').pop() || '0', 10);
+        return numA - numB;
+    });
+
+    // Create a map of prospects by their sub-zone for quick lookup
+    const prospectsBySubZone = prospects.reduce((acc, prospect) => {
+      const subZoneCode = prospect.zone || 'Uncategorized';
+      if (!acc[subZoneCode]) {
+        acc[subZoneCode] = [];
+      }
+      acc[subZoneCode].push(prospect);
+      return acc;
+    }, {} as Record<string, Prospect[]>);
+
+    return allSubZoneCodes.map(subZoneCode => {
+      const subZoneProspects = prospectsBySubZone[subZoneCode] || [];
+      const totalCount = subZoneProspects.length;
       const subZoneDensity = totalCount / (areaKm / 12);
       
-      cells[index] = {
-        code: sz.code.split('-').pop() || '??',
-        name: sz.name,
-        status: getDensityClass(subZoneDensity),
+      return {
+        code: subZoneCode.split('-').pop() || '??',
+        name: districtConfig.subZones[subZoneCode].name,
+        status: totalCount > 0 ? getDensityClass(subZoneDensity) : 'empty',
         count: totalCount,
-        prospects: sz.prospects
+        prospects: subZoneProspects
       };
     });
-    return cells;
-  }, [subZones, areaKm]);
+  }, [districtCode, prospects, areaKm]);
+
 
   const handleSubZoneClick = (cellProspects: Prospect[]) => {
     const prospectIds = cellProspects.map(p => p.id);
@@ -132,16 +136,15 @@ export function DistrictCard({
                             onClick={() => cell && handleSubZoneClick(cell.prospects)}
                         >
                             {cell && cell.status !== 'empty' && <div className="cell-check"><Check size={10} strokeWidth={3}/></div>}
-                            <div className="cell-code">{cell?.code || ''}</div>
+                            <div className="cell-code">{cell?.code || String(index + 1).padStart(2, '0')}</div>
                             {cell && cell.status !== 'empty' && <div className="cell-count">{cell.count}</div>}
-                            <div className="cell-label">{cell?.name}</div>
+                            <div className="cell-label">{cell?.name || `Sub-zona ${String(index + 1).padStart(2, '0')}`}</div>
                         </div>
                     )
                 })}
             </div>
         </div>
         
-        {/* The list of subzones is now represented visually in the grid above, so we don't render it separately. */}
     </div>
   );
 }

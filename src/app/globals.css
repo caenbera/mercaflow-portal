@@ -534,6 +534,7 @@ body {
     border: 2px solid transparent;
     position: relative;
     overflow: hidden;
+    padding: 4px;
 }
 
 .grid-cell:active {
@@ -541,8 +542,8 @@ body {
 }
 
 .grid-cell.selected {
-    border-color: var(--secondary);
-    box-shadow: 0 0 0 2px rgba(255, 111, 0, 0.2);
+    border-color: hsl(var(--accent));
+    box-shadow: 0 0 0 2px hsla(var(--accent) / 0.2);
 }
 
 .grid-cell.empty {
@@ -567,15 +568,17 @@ body {
 
 .cell-code {
     font-family: 'Courier New', monospace;
-    font-size: 9px;
-    font-weight: 700;
-    opacity: 0.9;
+    font-size: 18px;
+    font-weight: 900;
+    opacity: 0.95;
+    line-height: 1.1;
 }
 
 .cell-count {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 800;
     line-height: 1;
+    margin-top: -2px;
 }
 
 .cell-label {
@@ -587,6 +590,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+    margin-top: 2px;
 }
 
 .cell-check {
@@ -595,7 +599,7 @@ body {
     right: 3px;
     width: 14px;
     height: 14px;
-    background: var(--secondary);
+    background: hsl(var(--accent));
     color: white;
     border-radius: 50%;
     display: flex;
@@ -614,7 +618,7 @@ body {
 
 /* Smart Suggestions */
 .smart-cluster {
-    background: linear-gradient(135deg, #fff8e1 0%, #ffffff 100%);
+    background: linear-gradient(135deg, hsl(var(--secondary) / 0.1) 0%, hsl(var(--card)) 100%);
     border-radius: 16px;
     padding: 16px;
     margin-bottom: 15px;
