@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useLocale, useTranslations } from 'next-intl';
@@ -17,15 +17,14 @@ import { useProducts } from '@/hooks/use-products';
 import { OfferCategoryManagerDialog } from './offer-category-manager-dialog';
 import type { Product, Offer, OfferType, OfferCategory } from '@/types';
 import { Timestamp } from 'firebase/firestore';
-import { Settings, Plus } from 'lucide-react';
-
+import { Settings, Plus, Trash2 } from 'lucide-react';
 
 const offerSchema = z.object({
   type: z.enum(['percentage', 'fixedPrice', 'liquidation', 'combo']),
   value: z.coerce.number().optional(),
   category: z.string().min(1, "Category is required."),
   duration: z.enum(['24h', '3d', '7d']),
-  comboProductIds: z.array(z.string()).optional(),
+  comboProductIds: z.array(z.string()).default([]),
 });
 
 type FormValues = z.infer<typeof offerSchema>;
@@ -48,14 +47,15 @@ export function OfferDialog({ open, onOpenChange, product }: OfferDialogProps) {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(offerSchema),
-    defaultValues: { type: 'percentage', duration: '24h', comboProductIds: [] },
-  });
-  
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "comboProductIds",
+    defaultValues: { 
+      type: 'percentage', 
+      duration: '24h', 
+      comboProductIds: []
+    },
   });
 
+  // No usar useFieldArray - manejar manualmente el array
+  const comboProductIds = form.watch('comboProductIds');
   const offerType = form.watch('type');
   
   const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -72,6 +72,22 @@ export function OfferDialog({ open, onOpenChange, product }: OfferDialogProps) {
         default:
             return product.salePrice;
     }
+  };
+
+  // Funciones para manejar el array manualmente
+  const handleAddComboProduct = () => {
+    form.setValue('comboProductIds', [...comboProductIds, '']);
+  };
+
+  const handleRemoveComboProduct = (index: number) => {
+    const newComboProductIds = comboProductIds.filter((_, i) => i !== index);
+    form.setValue('comboProductIds', newComboProductIds);
+  };
+
+  const handleComboProductChange = (index: number, value: string) => {
+    const newComboProductIds = [...comboProductIds];
+    newComboProductIds[index] = value;
+    form.setValue('comboProductIds', newComboProductIds);
   };
 
   const onSubmit = async (values: FormValues) => {
@@ -107,7 +123,7 @@ export function OfferDialog({ open, onOpenChange, product }: OfferDialogProps) {
       await addOffer(offerData);
       toast({ title: t('toast_offer_success') });
       onOpenChange(false);
-      form.reset();
+      form.reset({ type: 'percentage', duration: '24h', comboProductIds: [] });
     } catch (error) {
       toast({ variant: 'destructive', title: t('toast_offer_error') });
     } finally {
@@ -160,30 +176,42 @@ export function OfferDialog({ open, onOpenChange, product }: OfferDialogProps) {
             { offerType === 'combo' && (
               <div className="space-y-2">
                 <FormLabel>{t('combo_products_label')}</FormLabel>
-                {fields.map((field, index) => (
-                    <div key={field.id} className="flex gap-2">
-                        <FormField
-                            control={form.control}
-                            name={`comboProductIds.${index}`}
-                            render={({ field }) => (
-                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={productsLoading}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a product..."/></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        {allProducts.map(p => (
-                                            <SelectItem key={p.id} value={p.id}>{p.name.es}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-                        />
-                        <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                {comboProductIds.map((_, index) => (
+                    <div key={index} className="flex gap-2">
+                        <Select 
+                            onValueChange={(value) => handleComboProductChange(index, value)} 
+                            value={comboProductIds[index]} 
+                            disabled={productsLoading}
+                        >
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={t('select_product_placeholder')} />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {allProducts.map(p => (
+                                    <SelectItem key={p.id} value={p.id}>{p.name.es}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Button 
+                            type="button" 
+                            variant="destructive" 
+                            size="icon" 
+                            onClick={() => handleRemoveComboProduct(index)}
+                        >
                             <Trash2 className="h-4 w-4" />
                         </Button>
                     </div>
                 ))}
-                 <Button type="button" variant="outline" size="sm" onClick={() => append('')}>
+                 <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleAddComboProduct}
+                >
                     <Plus className="mr-2 h-4 w-4"/>
-                    Add product to combo
+                    {t('add_product_to_combo')}
                  </Button>
               </div>
             )}
@@ -193,7 +221,7 @@ export function OfferDialog({ open, onOpenChange, product }: OfferDialogProps) {
                 <FormLabel>{t('offer_category_label')}</FormLabel>
                 <div className="flex gap-2">
                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={categoriesLoading}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select a category..."/></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder={t('select_category_placeholder')}/></SelectTrigger></FormControl>
                     <SelectContent>
                       {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name.es}</SelectItem>)}
                     </SelectContent>
