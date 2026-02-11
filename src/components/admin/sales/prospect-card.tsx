@@ -179,15 +179,13 @@ export function ProspectCard({
                   <div className="font-mono text-sm font-bold text-green-700 bg-green-100 px-2 py-1 rounded">
                     {prospect.zone || 'SIN-ZONA'}
                   </div>
-                  <div className="flex gap-1">
-                    <Badge variant="secondary" className="text-xs capitalize bg-gray-100 text-gray-700">
-                      {prospect.ethnic}
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs capitalize bg-gray-100 text-gray-700 flex items-center gap-1">
-                      <CategoryIcon category={prospect.category} />
-                      {prospect.category}
-                    </Badge>
-                  </div>
+                  <Badge variant="secondary" className="text-xs capitalize bg-gray-100 text-gray-700">
+                    {prospect.ethnic}
+                  </Badge>
+                  <Badge variant="secondary" className="text-xs capitalize bg-gray-100 text-gray-700 flex items-center gap-1">
+                    <CategoryIcon category={prospect.category} />
+                    {prospect.category}
+                  </Badge>
                 </div>
 
                 {/* Action Buttons - Estilo prototipo */}
