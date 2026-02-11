@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, usePathname, useRouter } from '@/navigation';
 import { useTranslations } from 'next-intl';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -126,11 +126,10 @@ export function BottomNavBar({ navConfig }: { navConfig: NavDefinition }) {
 }
 
 function MoreMenuLink({ item, onClose }: { item: NavItem, onClose: () => void }) {
-  const Icon = item.icon;
   return (
     <Link href={item.href} onClick={onClose} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-muted text-sm font-medium">
       <div className="flex items-center gap-3">
-          <Icon className="w-5 h-5 text-muted-foreground" />
+          {React.createElement(item.icon, { className: "w-5 h-5 text-muted-foreground" })}
           <span>{item.label}</span>
       </div>
       <ChevronRight className="w-4 h-4 text-muted-foreground" />
