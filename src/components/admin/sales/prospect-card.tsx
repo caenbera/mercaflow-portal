@@ -138,24 +138,9 @@ export function ProspectCard({
         )}
         onClick={handleCardClick}
       >
-        <div className="p-4 relative">
-          {!isSelectionMode && (
-            <div className="absolute top-4 right-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(prospect.address)}`, '_blank');
-                }}
-              >
-                <Navigation className="h-5 w-5" />
-              </Button>
-            </div>
-          )}
+        <div className="flex items-start justify-between gap-3 p-4">
 
-          <div className="flex items-start gap-3">
+          <div className="flex flex-1 min-w-0 items-start gap-3">
             {isSelectionMode && (
               <div className="pt-1">
                 <Checkbox
@@ -167,7 +152,7 @@ export function ProspectCard({
               </div>
             )}
             
-            <div className="flex-1 min-w-0 pr-10">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <h3 className="font-bold text-lg text-gray-900 truncate">
                   {prospect.name}
@@ -237,10 +222,27 @@ export function ProspectCard({
               </div>
             </div>
           </div>
+          
+          {!isSelectionMode && (
+            <div className="shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(prospect.address)}`, '_blank');
+                }}
+              >
+                <Navigation className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
         </div>
 
         <CollapsibleContent>
           <div className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50/50">
+            
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 mt-2">
               <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
                 <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
