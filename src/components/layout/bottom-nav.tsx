@@ -10,10 +10,10 @@ import { useAuth } from '@/context/auth-context';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useToast } from '@/hooks/use-toast';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, UserCircle, MoreHorizontal, ChevronRight, Users, LayoutGrid, Tag, Trophy, Headset, FileText, Bell } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { LogOut, UserCircle, MoreHorizontal, ChevronRight, LayoutGrid, Tag, Trophy, Headset, FileText, Bell } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import type { NavDefinition } from './app-sidebar';
+import type { NavDefinition, NavItem } from './app-sidebar'; // Importar NavItem desde app-sidebar
 import { NotificationSheetContent } from './notification-sheet';
 import { useNotifications } from '@/context/notification-context';
 
@@ -25,7 +25,9 @@ export function BottomNavBar({ navConfig }: { navConfig: NavDefinition }) {
   const { role } = useAuth();
   const { unreadCount, markAllAsRead } = useNotifications();
 
-  let baseNavItems;
+  // Usar el tipo NavItem importado de app-sidebar
+  let baseNavItems: NavItem[];
+  
   if (role === 'client') {
     baseNavItems = navConfig.mobile.client;
   } else if (role === 'admin' || role === 'superadmin') {
@@ -38,7 +40,7 @@ export function BottomNavBar({ navConfig }: { navConfig: NavDefinition }) {
 
   const navItems = baseNavItems.slice(0, 3);
 
-  const bottomBarItems = [
+  const bottomBarItems: NavItem[] = [
     ...navItems,
     { href: '#notifications', label: t('notifications'), icon: Bell },
     { href: '#more', label: t('more'), icon: MoreHorizontal },
@@ -124,7 +126,6 @@ export function BottomNavBar({ navConfig }: { navConfig: NavDefinition }) {
   );
 }
 
-
 function MoreMenuSheetContent({ onClose, navConfig }: { onClose: () => void, navConfig: NavDefinition }) {
     const { userProfile, role } = useAuth();
     const router = useRouter();
@@ -141,15 +142,15 @@ function MoreMenuSheetContent({ onClose, navConfig }: { onClose: () => void, nav
         }
     };
 
-    const getInitials = (name: string) => {
-        if (!name) return '';
+    const getInitials = (name: string | undefined | null) => {
+        if (!name) return 'U';
         return name.split(' ').map(n => n[0]).join('').toUpperCase();
     };
 
     const clientNavForSuperAdmin = [
         { href: '/client/dashboard', label: t('dashboard'), icon: LayoutGrid },
         ...navConfig.desktop.client.slice(1)
-    ]
+    ];
 
     return (
         <div className="flex flex-col p-4 max-h-[80vh] overflow-y-auto">
@@ -157,12 +158,12 @@ function MoreMenuSheetContent({ onClose, navConfig }: { onClose: () => void, nav
               <SheetTitle>
                 <div className="flex items-center gap-3">
                     <Avatar>
-                        
-                        <AvatarFallback>{userProfile ? getInitials(userProfile.businessName) : 'U'}</AvatarFallback>
+                        {/* Eliminado AvatarImage porque photoUrl no existe en UserProfile */}
+                        <AvatarFallback>{getInitials(userProfile?.businessName)}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
-                        <span className="font-semibold text-sm">{userProfile?.businessName}</span>
-                        <span className="text-xs text-muted-foreground capitalize">{role}</span>
+                        <span className="font-semibold text-sm">{userProfile?.businessName || 'User'}</span>
+                        <span className="text-xs text-muted-foreground capitalize">{role || 'user'}</span>
                     </div>
                 </div>
               </SheetTitle>
