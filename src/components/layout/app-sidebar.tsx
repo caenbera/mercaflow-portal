@@ -15,7 +15,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { useAuth } from '@/context/auth-context';
-import { LayoutGrid, ShoppingCart, Package, Users, History, Home, ClipboardList, Leaf, Truck, ShoppingBag, Boxes, UserCircle, Trophy, Headset, ChevronRight } from 'lucide-react';
+import { LayoutGrid, ShoppingCart, Package, Users, History, Home, ClipboardList, Leaf, Truck, ShoppingBag, Boxes, UserCircle, Trophy, Headset, ChevronRight, Tag, FileText } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/navigation';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -30,7 +30,7 @@ export interface NavItem {
 
 export interface NavDefinition {
   desktop: {
-    client: NavItem[];
+    client: Record<string, NavItem[]>;
     admin: NavItem[];
     superadmin: NavItem[];
     picker: NavItem[];
@@ -98,12 +98,22 @@ export function AppSidebar() {
   const t = useTranslations('NavigationBar');
 
   const navItems = {
-    client: [
-      { href: '/client/dashboard', label: t('dashboard'), icon: LayoutGrid },
-      { href: '/client/new-order', label: t('newOrder'), icon: ShoppingCart },
-      { href: '/client/history', label: t('orderHistory'), icon: History },
-      { href: '/client/account', label: t('my_account'), icon: UserCircle },
-    ],
+    client: {
+      store: [
+        { href: '/client/new-order', label: t('newOrder'), icon: ShoppingCart },
+        { href: '/client/offers', label: t('offers'), icon: Tag },
+        { href: '/client/rewards', label: t('my_rewards'), icon: Trophy },
+      ],
+      activity: [
+        { href: '/client/dashboard', label: t('dashboard'), icon: LayoutGrid },
+        { href: '/client/history', label: t('orderHistory'), icon: History },
+        { href: '/client/invoices', label: t('invoices'), icon: FileText },
+      ],
+      account: [
+        { href: '/client/account', label: t('my_account'), icon: UserCircle },
+        { href: '/client/support', label: t('support'), icon: Headset },
+      ],
+    },
     management: [
         { href: '/admin/dashboard', label: t('dashboard'), icon: LayoutGrid },
         { href: '/admin/orders', label: t('manageOrders'), icon: ShoppingCart },
@@ -221,7 +231,17 @@ export function AppSidebar() {
             <CollapsibleSidebarGroup title={t('group_warehouse')} items={navItems.warehouse} />
             <CollapsibleSidebarGroup title={t('group_administration')} items={navItems.administration} />
             <SidebarSeparator className="my-2" />
-            <CollapsibleSidebarGroup title={t('clientPortal')} items={navItems.client} />
+            <Collapsible defaultOpen={pathname.startsWith('/client')} className="w-full">
+                <CollapsibleTrigger className="group flex w-full items-center justify-between rounded-md px-2 h-8 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+                    <span>{t('clientPortal')}</span>
+                    <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pl-3 py-1">
+                    <CollapsibleSidebarGroup title={t('group_store')} items={navItems.client.store} />
+                    <CollapsibleSidebarGroup title={t('group_activity')} items={navItems.client.activity} />
+                    <CollapsibleSidebarGroup title={t('group_account')} items={navItems.client.account} />
+                </CollapsibleContent>
+            </Collapsible>
           </>
         )}
 
@@ -249,24 +269,13 @@ export function AppSidebar() {
           <CollapsibleSidebarGroup title={t('group_warehouse')} items={navItems.warehouse} defaultOpen />
         )}
         
-        {role === 'client' &&
-            <SidebarMenu className="p-0">
-                {navItems.client.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton
-                            asChild
-                            isActive={pathname.startsWith(item.href)}
-                            tooltip={item.label}
-                        >
-                        <Link href={item.href}>
-                            <item.icon />
-                            <span>{item.label}</span>
-                        </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                ))}
-            </SidebarMenu>
-        }
+        {role === 'client' && (
+            <>
+                <CollapsibleSidebarGroup title={t('group_store')} items={navItems.client.store} defaultOpen/>
+                <CollapsibleSidebarGroup title={t('group_activity')} items={navItems.client.activity} />
+                <CollapsibleSidebarGroup title={t('group_account')} items={navItems.client.account} />
+            </>
+        )}
       </SidebarContent>
     </Sidebar>
   );

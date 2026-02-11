@@ -11,7 +11,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, UserCircle, MoreHorizontal, ChevronRight, LayoutGrid, Tag, Trophy, Headset, FileText, Bell, ShoppingCart, Package, Users, Truck, ShoppingBag, Boxes, ClipboardList } from 'lucide-react';
+import { LogOut, UserCircle, MoreHorizontal, ChevronRight, LayoutGrid, Tag, Trophy, Headset, FileText, Bell, ShoppingCart, Package, Users, Truck, ShoppingBag, Boxes, ClipboardList, History } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { NavDefinition, NavItem } from './app-sidebar'; 
 import { NotificationSheetContent } from './notification-sheet';
@@ -125,12 +125,17 @@ export function BottomNavBar({ navConfig }: { navConfig: NavDefinition }) {
   );
 }
 
-function MoreMenuLink({ item, onClose }: { item: NavItem, onClose: () => void }) {
+function MoreMenuLink({ item, onClose }: { item: NavItem; onClose: () => void }) {
+  const Icon = item.icon;
   return (
-    <Link href={item.href} onClick={onClose} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-muted text-sm font-medium">
+    <Link
+      href={item.href}
+      onClick={onClose}
+      className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-muted text-sm font-medium"
+    >
       <div className="flex items-center gap-3">
-          {React.createElement(item.icon, { className: "w-5 h-5 text-muted-foreground" })}
-          <span>{item.label}</span>
+        {React.createElement(item.icon, { className: "w-5 h-5 text-muted-foreground" })}
+        <span>{item.label}</span>
       </div>
       <ChevronRight className="w-4 h-4 text-muted-foreground" />
     </Link>
@@ -197,21 +202,36 @@ function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
       },
       client: {
         label: t('clientPortal'),
-        items: [
-          { href: '/client/dashboard', label: t('dashboard'), icon: LayoutGrid },
-          { href: '/client/new-order', label: t('newOrder'), icon: ShoppingCart },
-          { href: '/client/history', label: t('orderHistory'), icon: History },
-          { href: '/client/offers', label: t('offers'), icon: Tag },
-          { href: '/client/rewards', label: t('my_rewards'), icon: Trophy },
-          { href: '/client/invoices', label: t('invoices'), icon: FileText },
-          { href: '/client/support', label: t('support'), icon: Headset },
-          { href: '/client/account', label: t('my_account'), icon: UserCircle },
+        groups: [
+          {
+            label: t('group_store'),
+            items: [
+              { href: '/client/new-order', label: t('newOrder'), icon: ShoppingCart },
+              { href: '/client/offers', label: t('offers'), icon: Tag },
+              { href: '/client/rewards', label: t('my_rewards'), icon: Trophy },
+            ]
+          },
+          {
+            label: t('group_activity'),
+            items: [
+              { href: '/client/dashboard', label: t('dashboard'), icon: LayoutGrid },
+              { href: '/client/history', label: t('orderHistory'), icon: History },
+              { href: '/client/invoices', label: t('invoices'), icon: FileText },
+            ]
+          },
+          {
+            label: t('group_account'),
+            items: [
+              { href: '/client/account', label: t('my_account'), icon: UserCircle },
+              { href: '/client/support', label: t('support'), icon: Headset },
+            ]
+          }
         ]
       }
     };
     
     const adminVisibleGroups = ['management', 'sales', 'catalog', 'procurement'];
-    const superAdminVisibleGroups = Object.keys(navGroups);
+    const superAdminVisibleGroups = Object.keys(navGroups).filter(k => k !== 'client'); // All except client
 
     const getVisibleGroups = () => {
       if (role === 'superadmin') return superAdminVisibleGroups;
@@ -240,11 +260,26 @@ function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
 
             <Separator className="my-2" />
             
-            {(role === 'admin' || role === 'superadmin') ? (
+            {role === 'client' ? (
+              <Accordion type="multiple" className="w-full">
+                {navGroups.client.groups.map(group => (
+                    <AccordionItem value={group.label} key={group.label}>
+                      <AccordionTrigger className="px-2 py-3 text-xs font-semibold text-muted-foreground uppercase hover:no-underline">
+                        {group.label}
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-0">
+                        <div className="flex flex-col gap-1 pl-4 pb-2 border-l ml-2">
+                           {group.items.map(item => <MoreMenuLink key={item.href} item={item} onClose={onClose} />)}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+              </Accordion>
+            ) : (
               <Accordion type="multiple" className="w-full">
                 {getVisibleGroups().map(key => {
                   const group = navGroups[key as keyof typeof navGroups];
-                  if (!group) return null;
+                  if (!group || !('items' in group)) return null;
                   return (
                     <AccordionItem value={group.label} key={group.label}>
                       <AccordionTrigger className="px-2 py-3 text-xs font-semibold text-muted-foreground uppercase hover:no-underline">
@@ -259,10 +294,6 @@ function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
                   )
                 })}
               </Accordion>
-            ) : (
-               Object.values(navGroups.client.items).map(item => (
-                <MoreMenuLink key={item.href} item={item} onClose={onClose} />
-              ))
             )}
 
             <Separator className="my-2" />

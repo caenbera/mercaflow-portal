@@ -34,5 +34,8 @@
   "group_warehouse": "Bodega",
   "group_administration": "Administración",
   "group_sales": "Ventas",
-  "prospects": "Prospectos"
+  "prospects": "Prospectos",
+  "group_store": "Tienda",
+  "group_activity": "Mi Actividad",
+  "group_account": "Mi Cuenta"
 }
