@@ -208,14 +208,14 @@ export default function SalesPage() {
             selectedZone={selectedZone}
             onSelectZone={setSelectedZone}
           />
-          <div className="flex justify-between items-center bg-white border-b px-2 md:px-4">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center bg-white border-b p-2 md:px-4 gap-2">
             <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
-            <div className="flex items-center gap-2 pr-2">
-              <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)} className="flex-1 md:flex-initial">
                 <Upload className="h-4 w-4 mr-2"/>
                 {t('import_button')}
               </Button>
-              <Button size="sm" onClick={() => handleEditProspect(null)}>
+              <Button size="sm" onClick={() => handleEditProspect(null)} className="flex-1 md:flex-initial">
                 <Plus className="h-4 w-4 mr-2"/>
                 {t('new_prospect_button')}
               </Button>

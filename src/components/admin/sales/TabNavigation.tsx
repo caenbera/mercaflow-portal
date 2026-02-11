@@ -15,7 +15,7 @@ export function TabNavigation({ activeTab, setActiveTab }: TabNavigationProps) {
   ];
 
   return (
-    <div className="tab-nav">
+    <div className="flex">
       {tabs.map(tab => (
         <div 
           key={tab.id}

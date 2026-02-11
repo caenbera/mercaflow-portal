@@ -318,16 +318,6 @@ body {
     background: rgba(255,255,255,0.3);
 }
 
-/* Tab Navigation */
-.tab-nav {
-    display: flex;
-    background: white;
-    border-bottom: 1px solid hsl(var(--border));
-    position: sticky;
-    top: 115px;
-    z-index: 38;
-}
-
 .tab-item {
     flex: 1;
     padding: 12px 8px;
