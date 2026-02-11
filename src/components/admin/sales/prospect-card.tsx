@@ -138,9 +138,24 @@ export function ProspectCard({
         )}
         onClick={handleCardClick}
       >
-        <div className="flex items-start justify-between gap-3 p-4">
+        <div className="relative p-4">
+          {!isSelectionMode && (
+            <div className="absolute top-4 right-4 z-10">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(prospect.address)}`, '_blank');
+                }}
+              >
+                <Navigation className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
 
-          <div className="flex flex-1 min-w-0 items-start gap-3">
+          <div className="flex items-start gap-3 pr-10">
             {isSelectionMode && (
               <div className="pt-1">
                 <Checkbox
@@ -222,22 +237,6 @@ export function ProspectCard({
               </div>
             </div>
           </div>
-          
-          {!isSelectionMode && (
-            <div className="shrink-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(prospect.address)}`, '_blank');
-                }}
-              >
-                <Navigation className="h-5 w-5" />
-              </Button>
-            </div>
-          )}
         </div>
 
         <CollapsibleContent>
