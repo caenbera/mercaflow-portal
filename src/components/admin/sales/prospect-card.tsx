@@ -1,4 +1,3 @@
-
 // src/components/admin/sales/prospect-card.tsx
 'use client';
 
@@ -176,7 +175,7 @@ export function ProspectCard({
                 </div>
 
                 {/* Zone Code - Destacado como en el prototipo */}
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <div className="font-mono text-sm font-bold text-green-700 bg-green-100 px-2 py-1 rounded">
                     {prospect.zone || 'SIN-ZONA'}
                   </div>
