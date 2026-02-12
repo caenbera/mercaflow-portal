@@ -7,18 +7,19 @@ import type { Prospect } from '@/types';
 import type { District } from '@/lib/district-config';
 
 interface DistrictsViewProps {
+  prospects: Prospect[];
   groupedProspects: Record<string, Prospect[]>;
   districtConfigs: Record<string, District>;
   selectedSubZones: string[];
   onToggleSubZone: (subZoneCode: string) => void;
-  onAcceptCluster: (subZoneCodes: string[]) => void;
+  onAcceptCluster: (prospectIds: string[]) => void;
 }
 
-export function DistrictsView({ groupedProspects, districtConfigs, selectedSubZones, onToggleSubZone, onAcceptCluster }: DistrictsViewProps) {
+export function DistrictsView({ prospects, groupedProspects, districtConfigs, selectedSubZones, onToggleSubZone, onAcceptCluster }: DistrictsViewProps) {
   return (
     <div>
       <SalesDashboard />
-      <SmartCluster onAcceptCluster={onAcceptCluster} />
+      <SmartCluster prospects={prospects} onAcceptCluster={onAcceptCluster} />
 
       {Object.keys(districtConfigs).map(districtCode => {
         const prospectsInDistrict = groupedProspects[districtCode] || [];
