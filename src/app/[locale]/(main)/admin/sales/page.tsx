@@ -2,10 +2,9 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useProspects } from '@/hooks/use-prospects';
 import { useAuth } from '@/context/auth-context';
-import { districts } from '@/lib/district-config';
 import { useTranslations } from 'next-intl';
 
-import { ZoneSelector } from '@/components/admin/sales/ZoneSelector';
+import { DrilldownFilters } from '@/components/admin/sales/DrilldownFilters'; // NEW
 import { TabNavigation } from '@/components/admin/sales/TabNavigation';
 import { MapView } from '@/components/admin/sales/map-view';
 import { ProspectCard } from '@/components/admin/sales/prospect-card';
@@ -25,8 +24,13 @@ import { SmartCluster } from '@/components/admin/sales/SmartCluster';
 import { useToast } from '@/hooks/use-toast';
 import { RouteOptionsDialog } from '@/components/admin/sales/RouteOptionsDialog';
 import { BottomActions } from '@/components/admin/sales/BottomActions';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
+type Selections = {
+  state?: string;
+  city?: string;
+  category?: string;
+  ethnic?: string;
+};
 
 export default function SalesPage() {
   const { prospects, loading } = useProspects();
@@ -35,8 +39,8 @@ export default function SalesPage() {
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState('list');
-  const [selectedZone, setSelectedZone] = useState('all');
-  
+  const [filters, setFilters] = useState<Selections>({}); // NEW STATE FOR FILTERS
+
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedProspects, setSelectedProspects] = useState<string[]>([]);
   
@@ -80,9 +84,14 @@ export default function SalesPage() {
 
   const filteredProspects = useMemo(() => {
     if (loading) return [];
-    if (selectedZone === 'all') return prospects;
-    return prospects.filter(p => p.zone?.split('-')[0] === selectedZone);
-  }, [prospects, selectedZone, loading]);
+    return prospects.filter(p => {
+        if (filters.state && p.state !== filters.state) return false;
+        if (filters.city && p.city !== filters.city) return false;
+        if (filters.category && p.category !== filters.category) return false;
+        if (filters.ethnic && p.ethnic !== filters.ethnic) return false;
+        return true;
+    });
+  }, [prospects, filters, loading]);
 
   const groupedByDistrict = useMemo(() => {
     return filteredProspects.reduce((acc, prospect) => {
@@ -107,17 +116,6 @@ export default function SalesPage() {
     );
   }
 
-  const zoneConfigs = [
-      { code: 'CHI', label: 'Chicago', icon: 'fas fa-city' },
-      { code: 'WI', label: 'Wisconsin', icon: 'fas fa-cheese' },
-      { code: 'IN', label: 'Indiana', icon: 'fas fa-flag-usa' },
-  ];
-
-  const zoneCounts = zoneConfigs.map(zone => ({
-      ...zone,
-      count: prospects.filter(p => p.zone?.split('-')[0] === zone.code).length
-  }));
-
   const renderContent = () => {
     switch (activeTab) {
       case 'districts':
@@ -135,7 +133,7 @@ export default function SalesPage() {
                 <DistrictCard
                   key={districtCode}
                   districtCode={districtCode}
-                  districtName={districts[districtCode]?.name || districtCode}
+                  districtName={groupedByDistrict[districtCode][0]?.city || districtCode} // Approximation
                   prospects={groupedByDistrict[districtCode]}
                   selectedProspects={selectedProspects}
                   onBulkSelect={handleBulkSelect}
@@ -149,7 +147,6 @@ export default function SalesPage() {
             prospects={filteredProspects}
             selectedProspects={selectedProspects}
             onToggleSelection={(id) => {
-              // Alternar la selección basándose en si ya está seleccionado
               const isSelected = selectedProspects.includes(id);
               handleSelectionChange(id, !isSelected);
             }}
@@ -202,14 +199,9 @@ export default function SalesPage() {
       
       <div className="min-h-screen">
         
-        <div className="sticky z-30 bg-background/95 backdrop-blur-sm top-0">
-          <ZoneSelector 
-            zones={zoneCounts} 
-            selectedZone={selectedZone}
-            onSelectZone={setSelectedZone}
-          />
+        <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm">
+          <DrilldownFilters prospects={prospects} onFilterChange={setFilters} />
           <div className="bg-white border-b">
-            {/* Mobile Layout for Tabs and Buttons */}
             <div className="md:hidden">
               <div className="p-1">
                 <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -226,7 +218,6 @@ export default function SalesPage() {
               </div>
             </div>
 
-            {/* Desktop Layout for Tabs and Buttons */}
             <div className="hidden md:flex md:justify-between md:items-center md:px-4 md:py-1">
               <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
               <div className="flex items-center gap-2">
@@ -241,7 +232,7 @@ export default function SalesPage() {
               </div>
             </div>
           </div>
-        </div>
+        </header>
 
         <main className="p-4 pb-48">
           <div className="flex items-center justify-between mb-4">
