@@ -14,9 +14,10 @@ interface RouteOptionsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedProspects: Prospect[];
+  onClear: () => void;
 }
 
-export function RouteOptionsDialog({ open, onOpenChange, selectedProspects }: RouteOptionsDialogProps) {
+export function RouteOptionsDialog({ open, onOpenChange, selectedProspects, onClear }: RouteOptionsDialogProps) {
   const t = useTranslations('AdminSalesPage');
   const { toast } = useToast();
   const [customAddress, setCustomAddress] = useState('');
@@ -24,7 +25,6 @@ export function RouteOptionsDialog({ open, onOpenChange, selectedProspects }: Ro
   const buildMapsUrl = (origin: string, destinations: string[]): string => {
     if (destinations.length === 0) return '';
     
-    // If there's only one destination from the origin, no waypoints are needed.
     if (destinations.length === 1) {
       return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destinations[0]}`;
     }
@@ -61,6 +61,7 @@ export function RouteOptionsDialog({ open, onOpenChange, selectedProspects }: Ro
         const url = buildMapsUrl(origin, destinations);
         window.open(url, '_blank');
         onOpenChange(false);
+        onClear();
       },
       () => {
         toast({ variant: 'destructive', title: t('location_denied_title'), description: t('location_denied_desc') });
@@ -74,18 +75,20 @@ export function RouteOptionsDialog({ open, onOpenChange, selectedProspects }: Ro
         toast({ variant: "destructive", title: t('toast_no_address_title'), description: t('toast_no_address_desc') });
         return;
     }
-    // If only one, just navigate to it. The origin is user's current implicit location.
+
     if (destinations.length === 1) {
         const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${destinations[0]}`;
         window.open(mapsUrl, '_blank');
         onOpenChange(false);
+        onClear();
         return;
     }
 
-    const origin = destinations.shift()!; // Remove first element and use as origin
-    const url = buildMapsUrl(origin, destinations); // Pass remaining as destinations
+    const origin = destinations.shift()!;
+    const url = buildMapsUrl(origin, destinations);
     window.open(url, '_blank');
     onOpenChange(false);
+    onClear();
   };
 
   const handleStartFromCustomAddress = () => {
@@ -102,6 +105,7 @@ export function RouteOptionsDialog({ open, onOpenChange, selectedProspects }: Ro
     const url = buildMapsUrl(origin, destinations);
     window.open(url, '_blank');
     onOpenChange(false);
+    onClear();
   };
 
   return (

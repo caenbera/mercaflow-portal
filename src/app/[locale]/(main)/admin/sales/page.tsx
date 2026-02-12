@@ -121,6 +121,11 @@ export default function SalesPage() {
   const selectedProspectsData = useMemo(() => {
     return prospects.filter(p => selectedProspects.includes(p.id));
   }, [prospects, selectedProspects]);
+  
+  const clearSelection = useCallback(() => {
+    setSelectedProspects([]);
+    setIsSelectionMode(false);
+  }, []);
 
   if (loading) {
     return (
@@ -163,16 +168,7 @@ export default function SalesPage() {
           </div>
         );
       case 'map':
-        return (
-          <MapView 
-            prospects={filteredProspects}
-            selectedProspects={selectedProspects}
-            onToggleSelection={(id) => {
-              const isSelected = selectedProspects.includes(id);
-              handleSelectionChange(id, !isSelected);
-            }}
-          />
-        );
+        return <p>Map view coming soon!</p>
       case 'list': {
         const prospectList = (isSelectionMode && selectedProspects.length > 0)
           ? prospects.filter(p => selectedProspects.includes(p.id))
@@ -185,10 +181,7 @@ export default function SalesPage() {
                 <p className="text-sm font-semibold">
                   Mostrando {selectedProspects.length} prospectos de tu ruta actual.
                 </p>
-                <Button variant="ghost" size="sm" onClick={() => {
-                  setSelectedProspects([]);
-                  setIsSelectionMode(false);
-                }}>
+                <Button variant="ghost" size="sm" onClick={clearSelection}>
                   Limpiar selección
                 </Button>
               </div>
@@ -252,6 +245,7 @@ export default function SalesPage() {
         open={isRouteOptionsOpen}
         onOpenChange={setIsRouteOptionsOpen}
         selectedProspects={selectedProspectsData}
+        onClear={clearSelection}
       />
       
       <div className="min-h-screen w-full overflow-x-hidden">
@@ -320,7 +314,7 @@ export default function SalesPage() {
         {isSelectionMode && selectedProspects.length > 0 && (
            <BottomActions 
             prospects={selectedProspectsData}
-            onClear={() => setSelectedProspects([])}
+            onClear={clearSelection}
             onGenerate={() => setIsRouteOptionsOpen(true)}
             onRemove={(id) => handleSelectionChange(id, false)}
           />
