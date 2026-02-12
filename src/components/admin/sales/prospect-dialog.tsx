@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -105,7 +106,7 @@ export function ProspectDialog({ open, onOpenChange, prospect }: ProspectDialogP
         await updateProspect(prospect.id, dataToSave);
         toast({ title: t('toast_update_success_title'), description: values.name });
       } else {
-        await addProspect(dataToSave);
+        await addProspect(dataToSave as Prospect);
         toast({ title: t('toast_create_success_title'), description: values.name });
       }
       onOpenChange(false);
@@ -237,3 +238,5 @@ export function ProspectDialog({ open, onOpenChange, prospect }: ProspectDialogP
     </Dialog>
   );
 }
+
+    
