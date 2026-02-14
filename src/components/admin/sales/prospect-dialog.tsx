@@ -173,6 +173,7 @@ export function ProspectDialog({ open, onOpenChange, prospect }: ProspectDialogP
                         <SelectItem value="venezolano">Venezolano</SelectItem>
                         <SelectItem value="salvadoreno">Salvadoreño</SelectItem>
                         <SelectItem value="guatemalteco">Guatemalteco</SelectItem>
+                        <SelectItem value="hondureño">Hondureño</SelectItem>
                         <SelectItem value="otro">Otro</SelectItem>
                         </SelectContent>
                     </Select>
