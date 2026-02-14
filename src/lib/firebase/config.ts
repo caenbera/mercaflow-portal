@@ -5,6 +5,12 @@ import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
 
+/**
+ * Configuración de Firebase.
+ * Se utilizan variables de entorno para permitir que la aplicación
+ * se conecte a diferentes bases de datos (Producción o Desarrollo)
+ * sin cambiar el código fuente.
+ */
 const firebaseConfig = {
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
@@ -14,6 +20,7 @@ const firebaseConfig = {
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
 };
 
+// Inicializa Firebase solo si no hay aplicaciones inicializadas previamente
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 const auth = getAuth(app);
