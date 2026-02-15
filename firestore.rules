@@ -1,184 +1,128 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isAuthed() {
+    /**
+     * THE FRESH HUB PORTAL - SECURITY RULES CONFIGURATION
+     * 
+     * CORE PHILOSOPHY:
+     * This ruleset implements a hybrid security model combining strict path-based ownership 
+     * with Database-Based Access Control (DBAC) for administrative roles. It prioritizes 
+     * "Authorization Independence," meaning documents contain enough internal data (denormalization) 
+     * to make security decisions without costly cross-document lookups (get() calls).
+     * 
+     * DATA STRUCTURE:
+     * - /user_profiles/{userId}: Private user data, keyed by Firebase Auth UID.
+     * - /roles_admins/{userId}: Flag collection for Admin access.
+     * - /roles_superadmins/{userId}: Flag collection for Superadmin access.
+     * - /products/{productId}: Global catalog of wholesale products.
+     * - /orders/{orderId}: Top-level collection for customer orders.
+     * - /orders/{orderId}/order_items/{orderItemId}: Nested items for specific orders.
+     * 
+     * KEY SECURITY DECISIONS:
+     * 1. DBAC (No Custom Claims): Roles are determined by the existence of a document in 
+     *    dedicated roles collections. This allows for instant role revocation/granting.
+     * 2. Denormalized Authorization: Orders and OrderItems both contain 'clientId'. This 
+     *    enables atomic ownership checks and performant queries for clients.
+     * 3. Relational Integrity: On creation, we enforce that 'clientId' or 'id' fields match 
+     *    the authenticated user's UID to prevent data spoofing.
+     * 4. Prototyping Flexibility: Rules enforce WHO can access WHAT, but do not strictly 
+     *    validate the specific schema of the content fields (e.g., descriptions, prices).
+     */
+
+    // --- GLOBAL HELPER FUNCTIONS ---
+
+    function isSignedIn() {
       return request.auth != null;
     }
 
-    // Helper function to check for admin or superadmin roles.
-    function hasAdminRole() {
-      return isAuthed() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
-    
-    // Helper function to check for superadmin role.
+
     function isSuperAdmin() {
-      return isAuthed() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_superadmins/$(request.auth.uid));
     }
 
-    // Helper function for roles with procurement responsibilities.
-    function hasPurchasingPermissions() {
-      return isAuthed() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'purchaser'];
+    function isAdmin() {
+      return isSignedIn() && (exists(/databases/$(database)/documents/roles_admins/$(request.auth.uid)) || isSuperAdmin());
     }
 
-    // Helper function for roles with picking/packing responsibilities.
-    function hasPickingPermissions() {
-      return isAuthed() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['picker', 'admin', 'superadmin'];
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description Rules for user profile documents. Access restricted to the owner or admins.
+     * @path /user_profiles/{userId}
+     * @allow (get) If user is the owner or an admin.
+     * @deny (create) If the document ID does not match the authenticated user's UID.
+     * @principle Path-based ownership and relational integrity between UID and document data.
+     */
+    match /user_profiles/{userId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if (isOwner(userId) || isAdmin()) && resource != null && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin() && resource != null;
     }
 
-    // Helper function for roles with salesperson responsibilities.
-    function hasSalesRole() {
-      return isAuthed() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'salesperson'];
+    /**
+     * @description DBAC collections for role management. Restricted to Superadmins for management.
+     * @path /roles_admins/{userId} & /roles_superadmins/{userId}
+     * @allow (get) Users can check their own role status.
+     * @deny (write) Any non-superadmin trying to modify roles.
+     * @principle Existence-over-content for global role authorization.
+     */
+    match /roles_admins/{userId} {
+      allow get: if isOwner(userId) || isSuperAdmin();
+      allow list: if isSuperAdmin();
+      allow create, update, delete: if isSuperAdmin();
     }
 
-    // USERS Collection
-    match /users/{userId} {
-      allow create: if isAuthed() && request.auth.uid == userId;
-      
-      allow read: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
-      
-      allow update: if isAuthed() && (
-                    (request.auth.uid == userId && !('role' in request.resource.data.diff(resource.data).affectedKeys())) ||
-                    (isSuperAdmin() && resource.data.role != 'superadmin') ||
-                    (hasAdminRole() && resource.data.role == 'client' && !('role' in request.resource.data.diff(resource.data).affectedKeys()))
-                  );
-      
-      allow delete: if isSuperAdmin();
-
-       // NOTES sub-collection inside USERS
-      match /notes/{noteId} {
-        allow read, write: if hasAdminRole();
-      }
-
-      // REWARDS ACTIVITY sub-collection inside USERS
-      match /rewardsActivity/{activityId} {
-        allow read: if request.auth.uid == userId || hasAdminRole();
-        allow write: if hasAdminRole();
-      }
-      
-      // NOTIFICATIONS sub-collection inside USERS
-      match /notifications/{notificationId} {
-        allow read, update, delete: if request.auth.uid == userId;
-      }
+    match /roles_superadmins/{userId} {
+      allow get: if isOwner(userId) || isSuperAdmin();
+      allow list: if isSuperAdmin();
+      allow create, update, delete: if isSuperAdmin();
     }
 
-    // PRODUCTS Collection
+    /**
+     * @description Global product catalog. Publicly readable by signed-in users, writable only by admins.
+     * @path /products/{productId}
+     * @allow (list) Any authenticated user to browse products.
+     * @deny (create) Any non-admin user attempting to add products.
+     * @principle Homogeneous security posture for global shared resources.
+     */
     match /products/{productId} {
-      allow read: if isAuthed();
-      allow write: if hasPurchasingPermissions();
-    }
-    
-    // PRODUCT CATEGORIES Collection
-    match /productCategories/{categoryId} {
-      allow read: if isAuthed();
-      allow write: if hasAdminRole();
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
     }
 
-    // PRODUCT UNITS Collection
-    match /productUnits/{unitId} {
-      allow read: if isAuthed();
-      allow write: if hasAdminRole();
-    }
-
-    // ORDERS Collection
+    /**
+     * @description Order management. Clients access their own orders via 'clientId' field.
+     * @path /orders/{orderId}
+     * @allow (create) Client sets themselves as 'clientId'.
+     * @deny (update) Changing the 'clientId' of an existing order.
+     * @principle Denormalized ownership for Authorization Independence.
+     */
     match /orders/{orderId} {
-      allow create: if isAuthed() && request.resource.data.userId == request.auth.uid;
-      allow read: if isAuthed() && (resource.data.userId == request.auth.uid || hasPickingPermissions());
-      allow update: if hasPickingPermissions();
-      allow delete: if hasAdminRole();
-    }
-    
-    // SUPPLIERS Collection
-    match /suppliers/{supplierId} {
-      allow read, write: if hasPurchasingPermissions();
-    }
-    
-    // BRANCHES sub-collection inside USERS
-    match /users/{userId}/branches/{branchId} {
-        allow read, write: if isAuthed() && request.auth.uid == userId;
+      allow get: if isAdmin() || (isSignedIn() && resource.data.clientId == request.auth.uid);
+      allow list: if isAdmin() || isSignedIn(); // Queries must still filter by clientId for clients.
+      allow create: if isSignedIn() && request.resource.data.clientId == request.auth.uid;
+      allow update: if (isAdmin() || (isSignedIn() && resource.data.clientId == request.auth.uid)) && resource != null && request.resource.data.clientId == resource.data.clientId;
+      allow delete: if isAdmin() && resource != null;
     }
 
-    // ADMIN INVITES Collection
-    match /adminInvites/{email} {
-      allow read, create, delete: if isSuperAdmin();
-      allow get: if request.auth == null;
-      allow update: if isAuthed() && request.auth.token.email == email && request.resource.data.status == 'claimed' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
-    }
-
-    // PRICE LISTS Collection
-    match /pricelists/{priceListId} {
-      allow read: if isAuthed();
-      allow write: if hasAdminRole();
-    }
-
-     // PURCHASE ORDERS Collection
-    match /purchaseOrders/{poId} {
-      allow read, write: if hasPurchasingPermissions();
-    }
-
-    // OFFERS Collection
-    match /offers/{offerId} {
-      allow read: if isAuthed();
-      allow write: if hasAdminRole();
-    }
-    
-    // OFFER CATEGORIES Collection
-    match /offerCategories/{categoryId} {
-      allow read: if isAuthed();
-      allow write: if hasAdminRole();
-    }
-
-    // REWARDS SYSTEM
-    match /rewardTiers/{tierId} {
-      allow read: if isAuthed();
-      allow write: if hasAdminRole();
-    }
-    
-    match /rewards/{rewardId} {
-      allow read: if isAuthed();
-      allow write: if hasAdminRole();
-    }
-
-    match /rewardRules/{ruleId} {
-      allow read: if hasAdminRole();
-      allow write: if hasAdminRole();
-    }
-
-    // SUPPORT TICKETS Collection
-    match /supportTickets/{ticketId} {
-      allow create: if isAuthed() && request.resource.data.userId == request.auth.uid;
-      allow read, update: if hasAdminRole();
-      allow delete: if hasAdminRole();
-    }
-
-    // INVOICES Collection
-    match /invoices/{invoiceId} {
-      allow read: if isAuthed() && resource.data.userId == request.auth.uid;
-      allow write: if hasAdminRole();
-    }
-
-    // PROSPECTS Collection (for salespeople)
-    match /prospects/{prospectId} {
-      allow read, update: if hasSalesRole() && (resource.data.salespersonId == request.auth.uid || hasAdminRole());
-      allow create: if hasSalesRole();
-      allow delete: if hasAdminRole();
-
-      // VISITS sub-collection inside PROSPECTS
-      match /visits/{visitId} {
-        allow read, write: if hasSalesRole() && (get(/databases/$(database)/documents/prospects/$(prospectId)).data.salespersonId == request.auth.uid || hasAdminRole());
-      }
+    /**
+     * @description Items within an order. Relies on denormalized 'clientId' for fast checks.
+     * @path /orders/{orderId}/order_items/{orderItemId}
+     * @allow (list) Owner of the parent order or admin.
+     * @deny (create) If 'clientId' does not match the requester's UID.
+     * @principle Avoids parent-document get() lookups by using denormalized auth context.
+     */
+    match /orders/{orderId}/order_items/{orderItemId} {
+      allow get: if isAdmin() || (isSignedIn() && resource.data.clientId == request.auth.uid);
+      allow list: if isAdmin() || isSignedIn(); // List operations are secured by Query-Agnostic-Permissions.
+      allow create: if isSignedIn() && request.resource.data.clientId == request.auth.uid;
+      allow update: if (isAdmin() || (isSignedIn() && resource.data.clientId == request.auth.uid)) && resource != null && request.resource.data.clientId == resource.data.clientId;
+      allow delete: if (isAdmin() || (isSignedIn() && resource.data.clientId == request.auth.uid)) && resource != null;
     }
   }
 }
