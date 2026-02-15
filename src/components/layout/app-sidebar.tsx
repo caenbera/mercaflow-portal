@@ -72,33 +72,42 @@ const CollapsibleSidebarGroup = ({ title, items, defaultOpen = false, icon: Icon
 
 export function AppSidebar() {
   const { user, role, loading: authLoading } = useAuth();
-  const { activeOrgId, setActiveOrgId } = useOrganization();
+  const { activeOrgId, setActiveOrgId, activeOrg } = useOrganization();
   const { organizations, loading: orgsLoading } = useOrganizations();
   const t = useTranslations('NavigationBar');
 
   const loading = authLoading || orgsLoading;
 
-  const getModuleItems = (orgId: string) => ({
-    management: [
-        { href: `/admin/dashboard`, label: t('dashboard'), icon: LayoutGrid },
-        { href: `/admin/orders`, label: t('manageOrders'), icon: ShoppingCart },
-        { href: `/admin/clients`, label: t('manageClients'), icon: Users },
-        { href: `/admin/network`, label: "Red de Suministro", icon: Share2 },
-        { href: `/admin/support`, label: t('support'), icon: Headset },
-    ],
-    catalog: [
-        { href: `/admin/products`, label: t('manageProducts'), icon: Package },
-        { href: `/admin/suppliers`, label: t('suppliers'), icon: Truck },
-        { href: `/admin/rewards`, label: t('rewards'), icon: Trophy },
-    ],
-    procurement: [
-        { href: `/admin/purchasing`, label: t('purchasing'), icon: ShoppingBag },
-        { href: `/admin/purchase-orders`, label: t('purchaseOrders'), icon: ClipboardList },
-    ],
-    warehouse: [
-        { href: `/admin/picking`, label: t('picking'), icon: Boxes },
-    ]
-  });
+  const getModuleItems = (orgId: string, orgType: OrganizationType) => {
+    const modules: any = {
+      management: [
+          { href: `/admin/dashboard`, label: t('dashboard'), icon: LayoutGrid },
+          { href: `/admin/orders`, label: t('manageOrders'), icon: ShoppingCart },
+          { href: `/admin/clients`, label: t('manageClients'), icon: Users },
+          { href: `/admin/network`, label: "Red de Suministro", icon: Share2 },
+          { href: `/admin/support`, label: t('support'), icon: Headset },
+      ],
+      catalog: [
+          { href: `/admin/products`, label: t('manageProducts'), icon: Package },
+          { href: `/admin/suppliers`, label: t('suppliers'), icon: Truck },
+          { href: `/admin/rewards`, label: t('rewards'), icon: Trophy },
+      ],
+      procurement: [
+          { href: `/admin/purchasing`, label: t('purchasing'), icon: ShoppingBag },
+          { href: `/admin/purchase-orders`, label: t('purchaseOrders'), icon: ClipboardList },
+      ],
+      warehouse: [
+          { href: `/admin/picking`, label: t('picking'), icon: Boxes },
+      ]
+    };
+
+    // Módulo especial para Minoristas
+    if (orgType === 'retailer') {
+      modules.management.push({ href: `/admin/store`, label: "Gestión Tienda B2C", icon: Globe });
+    }
+
+    return modules;
+  };
 
   const getOrgTypeIcon = (type: OrganizationType) => {
     switch(type) {
@@ -115,7 +124,6 @@ export function AppSidebar() {
 
     return (
       <div className="space-y-4">
-        {/* Gestión Global (Alcaldía) */}
         <div className="px-2 mb-2">
           <div className="text-[10px] font-bold text-muted-foreground uppercase px-2 mb-1 tracking-widest">Alcaldía (Platform)</div>
           <SidebarMenu>
@@ -130,7 +138,6 @@ export function AppSidebar() {
           </SidebarMenu>
         </div>
 
-        {/* Ecosistema Jerárquico */}
         {(['importer', 'distributor', 'wholesaler', 'retailer'] as OrganizationType[]).map((type) => {
           const typeOrgs = orgsByType(type);
           if (typeOrgs.length === 0) return null;
@@ -163,7 +170,7 @@ export function AppSidebar() {
                     );
                   }
 
-                  const modules = getModuleItems(org.id);
+                  const modules = getModuleItems(org.id, org.type);
                   return (
                     <SidebarMenuItem key={org.id}>
                       <Collapsible 

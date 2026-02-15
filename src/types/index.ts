@@ -10,6 +10,15 @@ export type ClientTier = 'standard' | 'bronze' | 'silver' | 'gold';
 export type OrganizationType = 'importer' | 'distributor' | 'wholesaler' | 'retailer';
 export type OrganizationStatus = 'active' | 'suspended' | 'pending';
 
+export interface StoreConfig {
+  enabled: boolean;
+  themeColor?: string;
+  welcomeMessage?: { es: string; en: string };
+  logoUrl?: string;
+  allowDelivery?: boolean;
+  minOrderAmount?: number;
+}
+
 export interface Organization {
   id: string;
   name: string;
@@ -22,6 +31,7 @@ export interface Organization {
   contactEmail?: string;
   phone?: string;
   address?: string;
+  storeConfig?: StoreConfig;
 }
 
 export interface OrganizationConnection {
@@ -42,7 +52,7 @@ export interface UserProfile {
   role: UserRole;
   createdAt: Timestamp;
   status?: UserStatus;
-  organizationId?: string; // Enlace al "Edificio"
+  organizationId?: string;
   contactPerson?: string;
   tier?: ClientTier;
   creditLimit?: number;
@@ -66,7 +76,7 @@ export interface ProductSupplier {
 
 export interface Product {
   id: string;
-  organizationId: string; // Dueño del producto
+  organizationId: string;
   name: { es: string; en: string; };
   sku: string;
   description?: string;
@@ -97,8 +107,8 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
-  organizationId: string; // Organización que recibe el pedido
-  userId: string; // Cliente que hace el pedido
+  organizationId: string;
+  userId: string;
   businessName: string;
   items: OrderItem[];
   total: number;

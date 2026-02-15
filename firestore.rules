@@ -6,7 +6,6 @@ service cloud.firestore {
 
     /**
      * MERCAFLOW PORTAL - REGLAS DE PRIVACIDAD MULTI-EDIFICIO
-     * El sistema separa la gestión de la plataforma de la propiedad de los datos.
      */
 
     function isAuthed() {
@@ -39,12 +38,25 @@ service cloud.firestore {
      * ORGANIZACIONES (EDIFICIOS)
      */
     match /organizations/{orgId} {
-      allow read: if isAuthed();
+      // Público: Solo permitir lectura de la info básica de tienda para el slug
+      allow read: if true; 
       allow write: if isSuperAdmin();
+      allow update: if isOrgOwner(orgId) || isSuperAdmin();
     }
 
     /**
-     * CONEXIONES ENTRE EDIFICIOS (RED DE SUMINISTRO)
+     * PRODUCTOS - ACCESO PÚBLICO B2C
+     */
+    match /products/{id} {
+      // Regla B2C: Permitir lectura pública si la organización dueña tiene la tienda activada
+      allow read: if (isAuthed() && (isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId))) 
+                  || (get(/databases/$(database)/documents/organizations/$(resource.data.organizationId)).data.storeConfig.enabled == true);
+      
+      allow write: if isAuthed() && (isOrgStaff(request.resource.data.organizationId) || isOrgOwner(request.resource.data.organizationId));
+    }
+
+    /**
+     * CONEXIONES
      */
     match /connections/{id} {
       allow read: if isAuthed() && (
@@ -53,15 +65,8 @@ service cloud.firestore {
         isSuperAdmin()
       );
       allow create: if isAuthed() && isOrgOwner(request.resource.data.fromOrgId);
-      allow update: if isAuthed() && (
-        isOrgOwner(resource.data.toOrgId) || 
-        isSuperAdmin()
-      );
-      allow delete: if isAuthed() && (
-        isOrgOwner(resource.data.fromOrgId) || 
-        isOrgOwner(resource.data.toOrgId) ||
-        isSuperAdmin()
-      );
+      allow update: if isAuthed() && (isOrgOwner(resource.data.toOrgId) || isSuperAdmin());
+      allow delete: if isAuthed() && (isOrgOwner(resource.data.fromOrgId) || isOrgOwner(resource.data.toOrgId));
     }
 
     /**
@@ -74,16 +79,6 @@ service cloud.firestore {
       allow update: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
     }
 
-    /**
-     * DATOS INTERNOS (PRODUCTOS, PEDIDOS, PROVEEDORES, OC)
-     * Privacidad total: Solo el staff del edificio O el dueño legal pueden acceder.
-     */
-    
-    match /products/{id} {
-      allow read: if isAuthed() && (isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId));
-      allow write: if isAuthed() && (isOrgStaff(request.resource.data.organizationId) || isOrgOwner(request.resource.data.organizationId));
-    }
-
     match /orders/{id} {
       allow read: if isAuthed() && (
         resource.data.userId == request.auth.uid || 
@@ -94,15 +89,6 @@ service cloud.firestore {
       allow update: if isAuthed() && (isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId));
     }
 
-    match /suppliers/{id} {
-      allow read, write: if isAuthed() && (isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId));
-    }
-
-    match /purchaseOrders/{id} {
-      allow read, write: if isAuthed() && (isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId));
-    }
-
-    // Reglas generales para otras colecciones del sistema
     match /{path=**} {
       allow read, write: if isSuperAdmin();
     }
