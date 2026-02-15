@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import '../globals.css';
 import { AuthProvider } from '@/context/auth-context';
+import { OrganizationProvider } from '@/context/organization-context';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { NotificationProvider } from '@/context/notification-context';
@@ -87,11 +88,13 @@ export default async function RootLayout({
       <body className="font-body antialiased" suppressHydrationWarning>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <AuthProvider>
-            <NotificationProvider>
-              <FirebaseErrorListener />
-              {children}
-              <Toaster />
-            </NotificationProvider>
+            <OrganizationProvider>
+              <NotificationProvider>
+                <FirebaseErrorListener />
+                {children}
+                <Toaster />
+              </NotificationProvider>
+            </OrganizationProvider>
           </AuthProvider>
         </NextIntlClientProvider>
       </body>

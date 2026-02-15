@@ -40,5 +40,9 @@
   "group_activity": "My Activity",
   "group_account": "My Account",
   "group_ecosystem": "Ecosystem",
-  "manageOrganizations": "Building Management"
+  "manageOrganizations": "Building Management",
+  "group_level_importer": "Level 1: Importers",
+  "group_level_distributor": "Level 2: Distributors",
+  "group_level_wholesaler": "Level 3: Wholesalers",
+  "group_level_retailer": "Level 4: Retailers"
 }
