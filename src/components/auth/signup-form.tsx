@@ -19,6 +19,8 @@ import { Link, useRouter } from '@/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import type { UserProfile, AdminInvite, UserRole } from '@/types';
 import { debounce } from 'lodash';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const SUPER_ADMIN_EMAIL = 'caenbera@gmail.com';
 
@@ -129,7 +131,16 @@ export function SignupForm() {
         userData.role = inviteData.role;
         userData.businessName = `${values.contactPerson} (${inviteData.role})`; // e.g., "John Doe (admin)"
         // Claim the invite
-        await updateDoc(doc(db, 'adminInvites', inviteData.email), { status: 'claimed' });
+        const inviteDocRef = doc(db, 'adminInvites', inviteData.email);
+        const updateInviteData = { status: 'claimed' };
+        updateDoc(inviteDocRef, updateInviteData).catch(async (serverError) => {
+          const permissionError = new FirestorePermissionError({
+            path: inviteDocRef.path,
+            operation: 'update',
+            requestResourceData: updateInviteData,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+        });
       } else if (isSuperAdmin) {
         // Super Admin
         userData.role = 'superadmin';
@@ -147,7 +158,15 @@ export function SignupForm() {
         userData.priceList = 'Standard';
       }
       
-      await setDoc(doc(db, "users", user.uid), userData);
+      const userDocRef = doc(db, "users", user.uid);
+      setDoc(userDocRef, userData).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: 'create',
+          requestResourceData: userData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
       
       auth.languageCode = locale;
       await sendEmailVerification(user);
@@ -173,7 +192,7 @@ export function SignupForm() {
       <CardHeader className="text-center">
          <div className="flex justify-center items-center gap-2 mb-4">
           <Sprout className="h-8 w-8 text-primary" />
-          <h1 className="text-2xl font-headline font-bold">Fresh Hub Portal</h1>
+          <h1 className="text-2xl font-headline font-bold">MercaFlow Portal</h1>
         </div>
         <CardTitle className="text-2xl font-headline">{t('signup_title')}</CardTitle>
         <CardDescription>{t('signup_desc')}</CardDescription>

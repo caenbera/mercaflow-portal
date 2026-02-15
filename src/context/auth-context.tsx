@@ -1,3 +1,4 @@
+
 "use client";
 
 import { createContext, useState, useEffect, useContext } from 'react';
@@ -7,6 +8,8 @@ import type { User } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
 import type { UserProfile, UserRole } from '@/types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface AuthContextType {
   user: User | null;
@@ -48,8 +51,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setRole('client');
           }
           setLoading(false);
-        }, (error) => {
-           console.error("Error getting user profile:", error);
+        }, async (serverError) => {
+           const permissionError = new FirestorePermissionError({
+             path: userDocRef.path,
+             operation: 'get',
+           });
+           errorEmitter.emit('permission-error', permissionError);
            setLoading(false);
         });
 
