@@ -11,56 +11,51 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Obtener datos del usuario actual
+    // Obtener datos del usuario actual de forma segura
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    // Verificar si es superadmin (basado en el campo 'role' del documento de usuario)
+    // Verificar existencia del documento de usuario
+    function userExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    // Verificar si es superadmin
     function isSuperAdmin() {
-      return isAuthed() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             getUserData().role == 'superadmin';
+      return isAuthed() && userExists() && getUserData().role == 'superadmin';
     }
 
     // Verificar si es admin o superadmin
     function isAdmin() {
-      return isAuthed() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             getUserData().role in ['admin', 'superadmin'];
+      return isAuthed() && userExists() && getUserData().role in ['admin', 'superadmin'];
     }
 
     // Permisos de compras
     function hasPurchasingRole() {
-      return isAuthed() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             getUserData().role in ['admin', 'superadmin', 'purchaser'];
+      return isAuthed() && userExists() && getUserData().role in ['admin', 'superadmin', 'purchaser'];
     }
 
     // Permisos de almacén/picking
     function hasPickingRole() {
-      return isAuthed() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             getUserData().role in ['admin', 'superadmin', 'picker'];
+      return isAuthed() && userExists() && getUserData().role in ['admin', 'superadmin', 'picker'];
     }
 
     // Permisos de ventas
     function hasSalesRole() {
-      return isAuthed() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             getUserData().role in ['admin', 'superadmin', 'salesperson'];
+      return isAuthed() && userExists() && getUserData().role in ['admin', 'superadmin', 'salesperson'];
     }
 
     /**
      * USUARIOS
      */
     match /users/{userId} {
-      allow get: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
-      allow list: if isSuperAdmin();
+      allow get: if isAuthed() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
       allow create: if isAuthed() && request.auth.uid == userId;
       allow update: if isAuthed() && (
         (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) ||
-        isSuperAdmin()
+        isAdmin()
       );
       allow delete: if isSuperAdmin();
 
@@ -84,10 +79,12 @@ service cloud.firestore {
      * PEDIDOS
      */
     match /orders/{id} {
-      allow get: if isAuthed() && (resource.data.userId == request.auth.uid || hasPickingRole());
-      allow list: if isAuthed() && (isAdmin() || hasPickingRole() || hasSalesRole());
+      // El 'get' permite ver un pedido individual
+      allow get: if isAuthed() && (resource.data.userId == request.auth.uid || isAdmin() || hasPickingRole() || hasSalesRole());
+      // El 'list' debe permitir explícitamente al dueño de los datos o a los gestores
+      allow list: if isAuthed() && (resource.data.userId == request.auth.uid || isAdmin() || hasPickingRole() || hasSalesRole());
       allow create: if isAuthed() && request.resource.data.userId == request.auth.uid;
-      allow update: if hasPickingRole();
+      allow update: if hasPickingRole() || isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -119,7 +116,7 @@ service cloud.firestore {
       allow read, update: if isAdmin() || (isAuthed() && resource.data.userId == request.auth.uid);
     }
     match /invoices/{id} {
-      allow read: if isAuthed() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthed() && (resource.data.userId == request.auth.uid || isAdmin());
       allow write: if isAdmin();
     }
 

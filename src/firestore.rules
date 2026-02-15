@@ -3,201 +3,130 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    /**
+     * MERCAFLOW PORTAL - REGLAS DE SEGURIDAD
+     */
+
     function isAuthed() {
       return request.auth != null;
     }
 
-    // Helper function to check for admin or superadmin roles.
-    // This safely checks if the user document exists before accessing its data.
-    function hasAdminRole() {
-      return isAuthed() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+    // Obtener datos del usuario actual de forma segura
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
-    
-    // Helper function to check for superadmin role.
+
+    // Verificar existencia del documento de usuario
+    function userExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    // Verificar si es superadmin
     function isSuperAdmin() {
-      return isAuthed() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+      return isAuthed() && userExists() && getUserData().role == 'superadmin';
     }
 
-    // Helper function for roles with procurement responsibilities.
-    function hasPurchasingPermissions() {
-      return isAuthed() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'purchaser'];
+    // Verificar si es admin o superadmin
+    function isAdmin() {
+      return isAuthed() && userExists() && getUserData().role in ['admin', 'superadmin'];
     }
 
-    // Helper function for roles with picking/packing responsibilities.
-    function hasPickingPermissions() {
-      return isAuthed() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['picker', 'admin', 'superadmin'];
+    // Permisos de compras
+    function hasPurchasingRole() {
+      return isAuthed() && userExists() && getUserData().role in ['admin', 'superadmin', 'purchaser'];
     }
 
-    // Helper function for roles with salesperson responsibilities.
+    // Permisos de almacén/picking
+    function hasPickingRole() {
+      return isAuthed() && userExists() && getUserData().role in ['admin', 'superadmin', 'picker'];
+    }
+
+    // Permisos de ventas
     function hasSalesRole() {
-      return isAuthed() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'salesperson'];
+      return isAuthed() && userExists() && getUserData().role in ['admin', 'superadmin', 'salesperson'];
     }
 
-    // USERS Collection
+    /**
+     * USUARIOS
+     */
     match /users/{userId} {
+      allow get: if isAuthed() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
       allow create: if isAuthed() && request.auth.uid == userId;
-      
-      allow read: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
-      
-      // A user can update their own data (but not their role).
-      // An admin can update a client's data (but not their role).
-      // A superadmin can update any data on another user, as long as that user is not also a superadmin.
       allow update: if isAuthed() && (
-                    (request.auth.uid == userId && !('role' in request.resource.data.diff(resource.data).affectedKeys())) ||
-                    (isSuperAdmin() && resource.data.role != 'superadmin') ||
-                    (hasAdminRole() && resource.data.role == 'client' && !('role' in request.resource.data.diff(resource.data).affectedKeys()))
-                  );
-      
+        (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) ||
+        isAdmin()
+      );
       allow delete: if isSuperAdmin();
 
-       // NOTES sub-collection inside USERS
-      match /notes/{noteId} {
-        // Admins and superadmins can manage notes for any user.
-        allow read, write: if hasAdminRole();
-      }
-
-      // REWARDS ACTIVITY sub-collection inside USERS
-      match /rewardsActivity/{activityId} {
-        allow read: if request.auth.uid == userId || hasAdminRole();
-        allow write: if hasAdminRole(); // Only admins (via triggered logic) can grant points
-      }
-      
-      // NOTIFICATIONS sub-collection inside USERS
-      match /notifications/{notificationId} {
-        allow read, update, delete: if request.auth.uid == userId;
-        // Writes are only from backend functions
-      }
+      match /notifications/{id} { allow read, write: if request.auth.uid == userId; }
+      match /branches/{id} { allow read, write: if request.auth.uid == userId; }
+      match /notes/{id} { allow read, write: if isAdmin(); }
+      match /rewardsActivity/{id} { allow read: if request.auth.uid == userId || isAdmin(); }
     }
 
-    // PRODUCTS Collection
-    match /products/{productId} {
+    /**
+     * PRODUCTOS Y CATÁLOGO
+     */
+    match /products/{id} {
       allow read: if isAuthed();
-      allow write: if hasPurchasingPermissions();
+      allow write: if hasPurchasingRole();
     }
-    
-    // PRODUCT CATEGORIES Collection
-    match /productCategories/{categoryId} {
-      allow read: if isAuthed();
-      allow write: if hasAdminRole();
-    }
+    match /productCategories/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
+    match /productUnits/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
 
-    // PRODUCT UNITS Collection
-    match /productUnits/{unitId} {
-      allow read: if isAuthed();
-      allow write: if hasAdminRole();
-    }
-
-    // ORDERS Collection
-    match /orders/{orderId} {
+    /**
+     * PEDIDOS
+     */
+    match /orders/{id} {
+      allow get: if isAuthed() && (resource.data.userId == request.auth.uid || isAdmin() || hasPickingRole() || hasSalesRole());
+      allow list: if isAuthed() && (resource.data.userId == request.auth.uid || isAdmin() || hasPickingRole() || hasSalesRole());
       allow create: if isAuthed() && request.resource.data.userId == request.auth.uid;
-      // This rule has a potential issue for list queries by admins. We will address it if it becomes a problem.\n      allow read: if isAuthed() && (resource.data.userId == request.auth.uid || hasPickingPermissions());
-      allow update: if hasPickingPermissions();
-      allow delete: if hasAdminRole();
-    }
-    
-    // SUPPLIERS Collection
-    match /suppliers/{supplierId} {
-      // Admins, superadmins, and purchasers need to be able to read and write.
-      allow read, write: if hasPurchasingPermissions();
-    }
-    
-    // BRANCHES sub-collection inside USERS
-    match /users/{userId}/branches/{branchId} {
-        // A user can manage their own branches.
-        allow read, write: if isAuthed() && request.auth.uid == userId;
+      allow update: if hasPickingRole() || isAdmin();
+      allow delete: if isAdmin();
     }
 
-    // ADMIN INVITES Collection
-    match /adminInvites/{email} {
-      // Superadmins can manage invites.
-      allow read, create, delete: if isSuperAdmin();
-      
-      // Unauthenticated users can check for their own invite during signup by email.
-      allow get: if request.auth == null;
-      
-      // An authenticated user can \"claim\" their invite by updating its status.\n      // This is safe because they must be authenticated with the email that matches the document ID.\n      // It only allows the status field to be changed to 'claimed'.
-      allow update: if isAuthed() && request.auth.token.email == email\n                      && request.resource.data.status == 'claimed'\n                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+    /**
+     * PROVEEDORES
+     */
+    match /suppliers/{id} {
+      allow read, write: if hasPurchasingRole();
+    }
+    match /purchaseOrders/{id} {
+      allow read, write: if hasPurchasingRole();
     }
 
-    // PRICE LISTS Collection
-    match /pricelists/{priceListId} {
-      allow read: if isAuthed();
-      allow write: if hasAdminRole();
+    /**
+     * VENTAS Y PROSPECTOS
+     */
+    match /prospects/{id} {
+      allow read, update: if hasSalesRole() && (resource.data.salespersonId == request.auth.uid || isAdmin());
+      allow create: if hasSalesRole();
+      allow delete: if isAdmin();
+      match /visits/{vId} { allow read, write: if hasSalesRole(); }
     }
 
-     // PURCHASE ORDERS Collection
-    match /purchaseOrders/{poId} {
-      // Only admins/purchasers can manage POs
-      allow read, write: if hasPurchasingPermissions();
+    /**
+     * SOPORTE Y FACTURACIÓN
+     */
+    match /supportTickets/{id} {
+      allow create: if isAuthed();
+      allow read, update: if isAdmin() || (isAuthed() && resource.data.userId == request.auth.uid);
+    }
+    match /invoices/{id} {
+      allow read: if isAuthed() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
     }
 
-    // OFFERS Collection
-    match /offers/{offerId} {
-      allow read: if isAuthed();
-      // Only admins/superadmins can create, update, or delete offers\n      allow write: if hasAdminRole();
-    }
-    
-    // OFFER CATEGORIES Collection
-    match /offerCategories/{categoryId} {
-      allow read: if isAuthed();
-      allow write: if hasAdminRole();
-    }
-
-    // REWARDS SYSTEM
-    match /rewardTiers/{tierId} {
-      allow read: if isAuthed();
-      allow write: if hasAdminRole();
-    }
-    
-    match /rewards/{rewardId} {
-      allow read: if isAuthed();
-      allow write: if hasAdminRole();
-    }
-
-    match /rewardRules/{ruleId} {
-      allow read: if hasAdminRole();
-      allow write: if hasAdminRole();
-    }
-
-    // SUPPORT TICKETS Collection
-    match /supportTickets/{ticketId} {
-      // Users can create their own tickets.
-      allow create: if isAuthed() && request.resource.data.userId == request.auth.uid;
-      
-      // Admins can read and update all tickets.
-      allow read, update: if hasAdminRole();
-
-      // Only admins can delete tickets.
-      allow delete: if hasAdminRole();
-    }
-
-    // INVOICES Collection
-    match /invoices/{invoiceId} {
-      // A user can read their own invoices. Admins can also read them via the get() helper.\n      // This rule is simplified to avoid query issues for non-admins.
-      allow read: if isAuthed() && resource.data.userId == request.auth.uid;
-      allow write: if hasAdminRole(); // Only admins can create/update invoices (e.g. mark as paid)
-    }
-
-    // PROSPECTS Collection (for salespeople)
-    match /prospects/{prospectId} {
-      allow read, update: if hasSalesRole() && (resource.data.salespersonId == request.auth.uid || hasAdminRole());
-      allow create: if hasSalesRole(); // Salesperson can be assigned on creation
-      allow delete: if hasAdminRole();
-
-      // VISITS sub-collection inside PROSPECTS
-      match /visits/{visitId} {
-        allow read, write: if hasSalesRole() && (get(/databases/$(database)/documents/prospects/$(prospectId)).data.salespersonId == request.auth.uid || hasAdminRole());
-      }
-    }
+    /**
+     * RECOMPENSAS Y SISTEMA
+     */
+    match /rewardTiers/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
+    match /rewards/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
+    match /rewardRules/{id} { allow read, write: if isAdmin(); }
+    match /pricelists/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
+    match /offers/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
+    match /offerCategories/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
+    match /adminInvites/{email} { allow read, write: if isSuperAdmin(); allow get: if !isAuthed(); }
   }
 }
