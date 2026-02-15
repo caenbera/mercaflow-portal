@@ -1,134 +1,72 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * MERCAFLOW PORTAL - REGLAS DE SEGURIDAD
+     * MERCAFLOW PORTAL - REGLAS MULTI-ORGANIZACIÓN
      */
 
     function isAuthed() {
       return request.auth != null;
     }
 
-    // Obtener datos del usuario actual de forma segura
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    // Verificar existencia del documento de usuario
-    function userExists() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
-    // Verificar si es superadmin
     function isSuperAdmin() {
-      return isAuthed() && userExists() && getUserData().role == 'superadmin';
+      return isAuthed() && getUserData().role == 'superadmin';
     }
 
-    // Verificar si es admin o superadmin
-    function isAdmin() {
-      return isAuthed() && userExists() && getUserData().role in ['admin', 'superadmin'];
+    // Verifica si el usuario pertenece a una organización específica
+    function belongsToOrg(orgId) {
+      return isAuthed() && getUserData().organizationId == orgId;
     }
 
-    // Permisos de compras
-    function hasPurchasingRole() {
-      return isAuthed() && userExists() && getUserData().role in ['admin', 'superadmin', 'purchaser'];
-    }
-
-    // Permisos de almacén/picking
-    function hasPickingRole() {
-      return isAuthed() && userExists() && getUserData().role in ['admin', 'superadmin', 'picker'];
-    }
-
-    // Permisos de ventas
-    function hasSalesRole() {
-      return isAuthed() && userExists() && getUserData().role in ['admin', 'superadmin', 'salesperson'];
+    /**
+     * ORGANIZACIONES (EDIFICIOS)
+     */
+    match /organizations/{orgId} {
+      allow read: if isAuthed();
+      allow write: if isSuperAdmin();
     }
 
     /**
      * USUARIOS
      */
     match /users/{userId} {
-      allow get: if isAuthed() && (request.auth.uid == userId || isAdmin());
-      allow list: if isAdmin();
-      allow create: if isAuthed() && request.auth.uid == userId;
-      allow update: if isAuthed() && (
-        (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) ||
-        isAdmin()
-      );
-      allow delete: if isSuperAdmin();
-
-      match /notifications/{id} { allow read, write: if request.auth.uid == userId; }
-      match /branches/{id} { allow read, write: if request.auth.uid == userId; }
-      match /notes/{id} { allow read, write: if isAdmin(); }
-      match /rewardsActivity/{id} { allow read: if request.auth.uid == userId || isAdmin(); }
+      allow get: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
+      allow list: if isSuperAdmin();
+      allow create: if isAuthed();
+      allow update: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
     }
 
     /**
-     * PRODUCTOS Y CATÁLOGO
+     * PRODUCTOS
      */
     match /products/{id} {
       allow read: if isAuthed();
-      allow write: if hasPurchasingRole();
+      allow write: if isAuthed() && (isSuperAdmin() || belongsToOrg(resource.data.organizationId));
     }
-    match /productCategories/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
-    match /productUnits/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
 
     /**
      * PEDIDOS
      */
     match /orders/{id} {
-      // El 'get' permite ver un pedido individual
-      allow get: if isAuthed() && (resource.data.userId == request.auth.uid || isAdmin() || hasPickingRole() || hasSalesRole());
-      // El 'list' debe permitir explícitamente al dueño de los datos o a los gestores
-      allow list: if isAuthed() && (resource.data.userId == request.auth.uid || isAdmin() || hasPickingRole() || hasSalesRole());
-      allow create: if isAuthed() && request.resource.data.userId == request.auth.uid;
-      allow update: if hasPickingRole() || isAdmin();
-      allow delete: if isAdmin();
-    }
-
-    /**
-     * PROVEEDORES
-     */
-    match /suppliers/{id} {
-      allow read, write: if hasPurchasingRole();
-    }
-    match /purchaseOrders/{id} {
-      allow read, write: if hasPurchasingRole();
-    }
-
-    /**
-     * VENTAS Y PROSPECTOS
-     */
-    match /prospects/{id} {
-      allow read, update: if hasSalesRole() && (resource.data.salespersonId == request.auth.uid || isAdmin());
-      allow create: if hasSalesRole();
-      allow delete: if isAdmin();
-      match /visits/{vId} { allow read, write: if hasSalesRole(); }
-    }
-
-    /**
-     * SOPORTE Y FACTURACIÓN
-     */
-    match /supportTickets/{id} {
+      allow read: if isAuthed() && (
+        resource.data.userId == request.auth.uid || 
+        belongsToOrg(resource.data.organizationId) ||
+        isSuperAdmin()
+      );
       allow create: if isAuthed();
-      allow read, update: if isAdmin() || (isAuthed() && resource.data.userId == request.auth.uid);
-    }
-    match /invoices/{id} {
-      allow read: if isAuthed() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow write: if isAdmin();
+      allow update: if isAuthed() && (belongsToOrg(resource.data.organizationId) || isSuperAdmin());
     }
 
-    /**
-     * RECOMPENSAS Y SISTEMA
-     */
-    match /rewardTiers/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
-    match /rewards/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
-    match /rewardRules/{id} { allow read, write: if isAdmin(); }
-    match /pricelists/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
-    match /offers/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
-    match /offerCategories/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
-    match /adminInvites/{email} { allow read, write: if isSuperAdmin(); allow get: if !isAuthed(); }
+    // Reglas generales para otras colecciones
+    match /{path=**} {
+      allow read, write: if isSuperAdmin();
+    }
   }
 }

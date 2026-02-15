@@ -16,7 +16,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { useAuth } from '@/context/auth-context';
-import { LayoutGrid, ShoppingCart, Package, Users, History, Home, ClipboardList, Leaf, Truck, ShoppingBag, Boxes, UserCircle, Trophy, Headset, ChevronRight, Tag, FileText } from 'lucide-react';
+import { LayoutGrid, ShoppingCart, Package, Users, History, Home, ClipboardList, Leaf, Truck, ShoppingBag, Boxes, UserCircle, Trophy, Headset, ChevronRight, Tag, FileText, Building2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/navigation';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -99,6 +99,9 @@ export function AppSidebar() {
   const t = useTranslations('NavigationBar');
 
   const navItems = {
+    ecosystem: [
+        { href: '/admin/organizations', label: t('manageOrganizations'), icon: Building2 },
+    ],
     client: {
       store: [
         { href: '/client/new-order', label: t('newOrder'), icon: ShoppingCart },
@@ -225,7 +228,8 @@ export function AppSidebar() {
       <SidebarContent className="p-2">
         {role === 'superadmin' && (
           <>
-            <CollapsibleSidebarGroup title={t('group_management')} items={navItems.management} defaultOpen />
+            <CollapsibleSidebarGroup title={t('group_ecosystem')} items={navItems.ecosystem} defaultOpen />
+            <CollapsibleSidebarGroup title={t('group_management')} items={navItems.management} />
             <CollapsibleSidebarGroup title={t('group_sales')} items={navItems.sales} />
             <CollapsibleSidebarGroup title={t('group_catalog')} items={navItems.catalog} />
             <CollapsibleSidebarGroup title={t('group_procurement')} items={navItems.procurement} />

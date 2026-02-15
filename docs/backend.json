@@ -1,8 +1,25 @@
+
 {
   "entities": {
+    "Organization": {
+      "title": "Organization",
+      "description": "Representa una empresa o entidad independiente dentro del ecosistema (Edificio).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["importer", "distributor", "wholesaler", "retailer"] },
+        "status": { "type": "string", "enum": ["active", "suspended", "pending"] },
+        "slug": { "type": "string", "description": "Identificador único para URLs." },
+        "ownerId": { "type": "string", "description": "UID del usuario administrador principal." },
+        "parentOrgId": { "type": "string", "description": "ID de la organización superior en la jerarquía (opcional)." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "type", "status", "ownerId", "createdAt"]
+    },
     "UserProfile": {
       "title": "UserProfile",
-      "description": "Perfil de usuario que almacena datos comerciales y el rol asignado (client, admin, superadmin, picker, purchaser, salesperson).",
+      "description": "Perfil de usuario que almacena datos comerciales y el rol asignado.",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
@@ -10,10 +27,10 @@
         "email": { "type": "string", "format": "email" },
         "role": { "type": "string", "enum": ["client", "admin", "superadmin", "picker", "purchaser", "salesperson"] },
         "status": { "type": "string", "enum": ["active", "pending_approval", "blocked"] },
-        "rewardPoints": { "type": "number" },
+        "organizationId": { "type": "string", "description": "ID de la organización a la que pertenece." },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "businessName", "email", "role", "status", "createdAt"]
+      "required": ["uid", "email", "role", "status", "createdAt"]
     },
     "Product": {
       "title": "Product",
@@ -24,25 +41,20 @@
         "name": { "type": "object" },
         "salePrice": { "type": "number" },
         "stock": { "type": "number" },
-        "active": { "type": "boolean" }
+        "active": { "type": "boolean" },
+        "organizationId": { "type": "string", "description": "ID de la organización dueña del inventario." }
       },
       "required": ["sku", "name", "salePrice", "stock", "active"]
-    },
-    "Order": {
-      "title": "Order",
-      "description": "Pedido realizado por un cliente minorista.",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "total": { "type": "number" },
-        "status": { "type": "string", "enum": ["pending", "processing", "shipped", "delivered", "cancelled"] }
-      }
     }
   },
   "auth": {
     "providers": ["password"]
   },
   "firestore": {
+    "/organizations/{orgId}": {
+      "schema": { "$ref": "#/entities/Organization" },
+      "description": "Registro central de empresas en el ecosistema."
+    },
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },
       "description": "Colección principal de usuarios y perfiles."
@@ -50,22 +62,6 @@
     "/products/{productId}": {
       "schema": { "$ref": "#/entities/Product" },
       "description": "Catálogo global de productos."
-    },
-    "/orders/{orderId}": {
-      "schema": { "$ref": "#/entities/Order" },
-      "description": "Pedidos de clientes."
-    },
-    "/suppliers/{supplierId}": {
-      "description": "Gestión de proveedores.",
-      "schema": "object"
-    },
-    "/prospects/{prospectId}": {
-      "description": "Prospectos de ventas para vendedores.",
-      "schema": "object"
-    },
-    "/supportTickets/{ticketId}": {
-      "description": "Tickets de soporte técnico.",
-      "schema": "object"
     }
   }
 }

@@ -1,3 +1,4 @@
+
 {
   "dashboard": "Dashboard",
   "newOrder": "New Order",
@@ -37,5 +38,7 @@
   "prospects": "Prospects",
   "group_store": "Store",
   "group_activity": "My Activity",
-  "group_account": "My Account"
+  "group_account": "My Account",
+  "group_ecosystem": "Ecosystem",
+  "manageOrganizations": "Building Management"
 }

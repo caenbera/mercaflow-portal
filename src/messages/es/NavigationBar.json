@@ -1,3 +1,4 @@
+
 {
   "dashboard": "Panel de Control",
   "newOrder": "Nuevo Pedido",
@@ -37,5 +38,7 @@
   "prospects": "Prospectos",
   "group_store": "Tienda",
   "group_activity": "Mi Actividad",
-  "group_account": "Mi Cuenta"
+  "group_account": "Mi Cuenta",
+  "group_ecosystem": "Ecosistema",
+  "manageOrganizations": "Gestión de Edificios"
 }
