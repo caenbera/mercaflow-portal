@@ -1,11 +1,10 @@
-
 {
   "entities": {
     "UserProfile": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserProfile",
       "type": "object",
-      "description": "Represents additional data for a user, linked to Firebase Authentication. Stores business information and user role.",
+      "description": "Represents additional data for a user in MercaFlow Portal, linked to Firebase Authentication. Stores business information and user role.",
       "properties": {
         "id": {
           "type": "string",
@@ -78,7 +77,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Product",
       "type": "object",
-      "description": "Represents a product available for wholesale ordering.",
+      "description": "Represents a product available for wholesale ordering in MercaFlow Portal.",
       "properties": {
         "id": {
           "type": "string",
@@ -144,7 +143,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Order",
       "type": "object",
-      "description": "Represents a customer's order for products.",
+      "description": "Represents a customer's order for products in MercaFlow Portal.",
       "properties": {
         "id": {
           "type": "string",
@@ -221,7 +220,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "OrderItem",
       "type": "object",
-      "description": "Represents a single item within an order, detailing the product and quantity ordered. This entity serves as a junction for the N:N relationship between Order and Product.",
+      "description": "Represents a single item within an order in MercaFlow Portal, detailing the product and quantity ordered.",
       "properties": {
         "id": {
           "type": "string",
@@ -285,43 +284,11 @@
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores detailed business and contact information for each user. The document ID (`userId`) directly corresponds to the Firebase Authentication UID. Ownership is path-based. Note: For authorization, roles will be determined by existence in `/roles_admins` or `/roles_superadmins` collections, not by the 'role' field within this document.",
+          "description": "Stores detailed business and contact information for each user in MercaFlow Portal.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier of the user, matching their Firebase Authentication UID."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/roles_superadmins/{userId}",
-        "definition": {
-          "entityName": "roles_superadmins",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "A collection used for database-based access control (DBAC). The existence of a document with a 'userId' as its ID indicates that the user is a superadmin. This is used for global role authorization, adhering to 'Existence over Content' principle. Documents can be empty or contain minimal metadata like 'createdAt'.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user (Firebase Auth UID) who has the superadmin role."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/roles_admins/{userId}",
-        "definition": {
-          "entityName": "roles_admins",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "A collection used for database-based access control (DBAC). The existence of a document with a 'userId' as its ID indicates that the user is an admin. This is used for global role authorization, adhering to 'Existence over Content' principle. Documents can be empty or contain minimal metadata like 'createdAt'.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user (Firebase Auth UID) who has the admin role."
             }
           ]
         }
@@ -333,7 +300,7 @@
           "schema": {
             "$ref": "#/backend/entities/Product"
           },
-          "description": "The global catalog of products available for wholesale. Clients can read all products, while admins and superadmins have read/write access. This collection has a homogeneous security posture to support QAPs.",
+          "description": "The global catalog of products available for wholesale in MercaFlow Portal.",
           "params": [
             {
               "name": "productId",
@@ -349,7 +316,7 @@
           "schema": {
             "$ref": "#/backend/entities/Order"
           },
-          "description": "Represents individual customer orders. This collection is top-level to facilitate QAPs for both clients (who can query their own orders using the denormalized 'clientId' field) and admins (who can query all orders). Includes denormalized 'clientId' for authorization independence.",
+          "description": "Represents individual customer orders in MercaFlow Portal.",
           "params": [
             {
               "name": "orderId",
@@ -357,28 +324,8 @@
             }
           ]
         }
-      },
-      {
-        "path": "/orders/{orderId}/order_items/{orderItemId}",
-        "definition": {
-          "entityName": "OrderItem",
-          "schema": {
-            "$ref": "#/backend/entities/OrderItem"
-          },
-          "description": "Represents a specific item within an order. Each document includes the 'clientId' denormalized from its parent order, ensuring authorization independence and enabling security rules to verify ownership without requiring a 'get()' call to the parent Order document.",
-          "params": [
-            {
-              "name": "orderId",
-              "description": "The unique identifier of the parent order."
-            },
-            {
-              "name": "orderItemId",
-              "description": "The unique identifier for an item within the order."
-            }
-          ]
-        }
       }
     ],
-    "reasoning": "The Firestore structure for 'MercaFlow Portal' prioritizes Authorization Independence, debuggability, and adherence to QAPs (Query-Agnostic Permissions) through strategic denormalization and structural segregation."
+    "reasoning": "The Firestore structure for 'MercaFlow Portal' is now isolated in a dedicated project for development and testing, ensuring zero impact on the production environment."
   }
 }

@@ -71,7 +71,7 @@ export function SmartCluster({ prospects, onAcceptCluster }: SmartClusterProps) 
       <div className="cluster-header">
         <div className="cluster-title">
           <Wand size={16} className="text-accent" />
-          Ruta Inteligente Sugerida
+          Ruta Inteligente Sugerida (MercaFlow AI)
         </div>
         {suggestion && !isLoading && (
             <div className="cluster-badge">Top Sugerencia</div>

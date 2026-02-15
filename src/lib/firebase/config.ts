@@ -1,23 +1,21 @@
-
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
+import { firebaseConfig as baseConfig } from '@/firebase/config';
 
 /**
- * Configuración de Firebase.
- * Se utilizan variables de entorno para permitir que la aplicación
- * se conecte a diferentes bases de datos (Producción o Desarrollo)
- * sin cambiar el código fuente.
+ * MercaFlow Portal - Configuración de Firebase Independiente
+ * Esta copia utiliza una base de datos aislada para pruebas.
  */
 const firebaseConfig = {
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  projectId: baseConfig.projectId,
+  appId: baseConfig.appId,
+  storageBucket: `${baseConfig.projectId}.firebasestorage.app`,
+  apiKey: baseConfig.apiKey,
+  authDomain: baseConfig.authDomain,
+  messagingSenderId: baseConfig.messagingSenderId,
 };
 
 // Inicializa Firebase solo si no hay aplicaciones inicializadas previamente
