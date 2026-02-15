@@ -41,7 +41,8 @@ service cloud.firestore {
 
     /**
      * ORGANIZACIONES (EDIFICIOS)
-     * Los edificios son públicos para que el staff pueda encontrarlos y el superadmin gestionarlos.
+     * Los edificios son legibles por cualquier usuario autenticado para que el sistema
+     * sepa a cuál pertenece o cuáles puede gestionar el Super Admin.
      */
     match /organizations/{orgId} {
       allow read: if isAuthed(); 
@@ -53,7 +54,7 @@ service cloud.firestore {
     /**
      * DATOS INTERNOS (Catálogo, Pedidos, Proveedores, etc.)
      * REGLA DE ORO: Solo el dueño del edificio o su staff pueden ver estos datos.
-     * El Super Admin NO puede ver esto a menos que sea el dueño del edificio (su laboratorio).
+     * Tú como Super Admin solo verás estos datos SI el edificio es de tu propiedad (ownerId == tu uid).
      */
     
     // Productos
@@ -69,6 +70,13 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid || 
         isOrgStaff(resource.data.organizationId) || 
         isOrgOwner(resource.data.organizationId)
+      );
+      allow list: if isAuthed() && (
+        request.query.limit <= 100 && (
+          request.auth.uid == resource.data.userId ||
+          isOrgStaff(resource.data.organizationId) ||
+          isOrgOwner(resource.data.organizationId)
+        )
       );
       allow create: if isAuthed();
       allow update: if isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId);
@@ -97,7 +105,7 @@ service cloud.firestore {
 
     // Invitaciones de Admin
     match /adminInvites/{email} {
-      allow read: if true; // Necesario para verificar invitación durante el registro
+      allow read: if true; 
       allow write: if isSuperAdmin();
     }
 

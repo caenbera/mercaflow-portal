@@ -9,6 +9,9 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
 } from '@/components/ui/sidebar';
 import {
   Collapsible,
@@ -21,7 +24,7 @@ import { useOrganizations } from '@/hooks/use-organizations';
 import { 
   LayoutGrid, ShoppingCart, Package, Users,
   ClipboardList, Leaf, Truck, ShoppingBag, Boxes, Headset, 
-  ChevronRight, Trophy, Building2, Globe, Store, Share2
+  ChevronRight, Trophy, Building2, Globe, Store, Share2, Plus
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/navigation';
@@ -102,7 +105,7 @@ export function AppSidebar() {
     };
 
     if (orgType === 'retailer') {
-      modules.management.push({ href: `/admin/store`, label: "Gestión Tienda B2C", icon: Globe });
+      modules.management.push({ href: `/admin/store`, label: "Tienda B2C", icon: Globe });
     }
 
     return modules;
@@ -119,94 +122,101 @@ export function AppSidebar() {
   };
 
   const renderSuperAdminMenu = () => {
-    const orgsByType = (type: OrganizationType) => organizations.filter(o => o.type === type);
+    const orgTypes: OrganizationType[] = ['importer', 'distributor', 'wholesaler', 'retailer'];
 
     return (
-      <div className="space-y-4">
-        <div className="px-2 mb-2">
-          <div className="text-[10px] font-bold text-muted-foreground uppercase px-2 mb-1 tracking-widest">Alcaldía (Platform)</div>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip={t('manageOrganizations')}>
-                <Link href="/admin/organizations">
-                  <Building2 />
-                  <span>{t('manageOrganizations')}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </div>
+      <div className="space-y-6">
+        {/* Gestión Global (Alcaldía) */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Plataforma</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip={t('manageOrganizations')}>
+                  <Link href="/admin/organizations">
+                    <Building2 />
+                    <span>Gestión de Clientes</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
-        {(['importer', 'distributor', 'wholesaler', 'retailer'] as OrganizationType[]).map((type) => {
-          const typeOrgs = orgsByType(type);
+        {/* Listado Jerárquico */}
+        {orgTypes.map((type) => {
+          const typeOrgs = organizations.filter(o => o.type === type);
           if (typeOrgs.length === 0) return null;
 
           return (
-            <div key={type} className="px-2">
-              <div className="text-[10px] font-bold text-muted-foreground uppercase px-2 mb-1 tracking-widest">
+            <SidebarGroup key={type}>
+              <SidebarGroupLabel className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                 {t(`group_level_${type}` as any)}
-              </div>
-              <SidebarMenu className="space-y-1">
-                {typeOrgs.map((org) => {
-                  const isOwner = org.ownerId === user?.uid;
-                  const isActive = activeOrgId === org.id;
-                  
-                  if (!isOwner) {
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-1">
+                  {typeOrgs.map((org) => {
+                    const isMyTestOrg = org.ownerId === user?.uid;
+                    const isActive = activeOrgId === org.id;
+                    const OrgIcon = getOrgTypeIcon(org.type);
+
+                    // Si NO es mi edificio de prueba, solo mostramos el acceso a su ficha de cliente
+                    if (!isMyTestOrg) {
+                      return (
+                        <SidebarMenuItem key={org.id}>
+                          <SidebarMenuButton 
+                            asChild 
+                            isActive={isActive} 
+                            onClick={() => setActiveOrgId(org.id)}
+                            className="opacity-80"
+                          >
+                            <Link href="/admin/organizations">
+                              <OrgIcon className="h-4 w-4" />
+                              <span className="truncate">{org.name}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    }
+
+                    // Si ES mi edificio de prueba, mostramos toda la estructura interna
+                    const modules = getModuleItems(org.id, org.type);
                     return (
                       <SidebarMenuItem key={org.id}>
-                        <SidebarMenuButton 
-                          asChild 
-                          isActive={isActive} 
-                          onClick={() => setActiveOrgId(org.id)}
-                          className="opacity-80"
+                        <Collapsible 
+                          defaultOpen={isActive}
+                          onOpenChange={(open) => open && setActiveOrgId(org.id)}
+                          className="w-full group/collapsible"
                         >
-                          <Link href="/admin/organizations">
-                            {React.createElement(getOrgTypeIcon(org.type))}
-                            <span className="truncate">{org.name}</span>
-                          </Link>
-                        </SidebarMenuButton>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuButton 
+                              isActive={isActive}
+                              className={cn(
+                                "transition-colors",
+                                isActive ? "bg-primary/10 text-primary border border-primary/20" : ""
+                              )}
+                            >
+                              <OrgIcon className="h-4 w-4 shrink-0" />
+                              <span className="truncate">{org.name}</span>
+                              <Badge variant="outline" className="text-[8px] h-3 px-1 ml-auto bg-yellow-400/10 text-yellow-600 border-yellow-400/20">TEST</Badge>
+                              <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 shrink-0" />
+                            </SidebarMenuButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="pl-4 py-1 space-y-1">
+                              <CollapsibleSidebarGroup title={t('group_management')} items={modules.management} icon={LayoutGrid} />
+                              <CollapsibleSidebarGroup title={t('group_catalog')} items={modules.catalog} icon={Package} />
+                              <CollapsibleSidebarGroup title={t('group_procurement')} items={modules.procurement} icon={ShoppingBag} />
+                              <CollapsibleSidebarGroup title={t('group_warehouse')} items={modules.warehouse} icon={Boxes} />
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
                       </SidebarMenuItem>
                     );
-                  }
-
-                  const modules = getModuleItems(org.id, org.type);
-                  return (
-                    <SidebarMenuItem key={org.id}>
-                      <Collapsible 
-                        defaultOpen={isActive}
-                        onOpenChange={(open) => open && setActiveOrgId(org.id)}
-                        className="w-full group/collapsible"
-                      >
-                        <CollapsibleTrigger asChild>
-                          <SidebarMenuButton 
-                            isActive={isActive}
-                            className={cn(
-                              "transition-colors",
-                              isActive ? "bg-primary/10 text-primary border border-primary/20" : "text-sidebar-foreground/80 hover:bg-sidebar-accent"
-                            )}
-                          >
-                            <div className="flex items-center gap-2 truncate">
-                              {React.createElement(getOrgTypeIcon(org.type), { className: "h-4 w-4 shrink-0" })}
-                              <span className="truncate">{org.name}</span>
-                              <Badge variant="outline" className="text-[8px] h-3 px-1 bg-yellow-400/10 text-yellow-600 border-yellow-400/20">TEST</Badge>
-                            </div>
-                            <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 shrink-0" />
-                          </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div className="pl-4 py-1 space-y-1">
-                            <CollapsibleSidebarGroup title={t('group_management')} items={modules.management} icon={LayoutGrid} />
-                            <CollapsibleSidebarGroup title={t('group_catalog')} items={modules.catalog} icon={Package} />
-                            <CollapsibleSidebarGroup title={t('group_procurement')} items={modules.procurement} icon={ShoppingBag} />
-                            <CollapsibleSidebarGroup title={t('group_warehouse')} items={modules.warehouse} icon={Boxes} />
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </div>
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
           );
         })}
       </div>
