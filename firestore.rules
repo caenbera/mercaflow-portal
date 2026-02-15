@@ -1,11 +1,11 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * MERCAFLOW PORTAL - REGLAS MULTI-ORGANIZACIÓN
+     * MERCAFLOW PORTAL - REGLAS DE PRIVACIDAD MULTI-EDIFICIO
+     * El sistema separa la gestión de la plataforma de la propiedad de los datos.
      */
 
     function isAuthed() {
@@ -16,17 +16,27 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    function isSuperAdmin() {
-      return isAuthed() && getUserData().role == 'superadmin';
+    function userExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
-    // Verifica si el usuario pertenece a una organización específica
-    function belongsToOrg(orgId) {
-      return isAuthed() && getUserData().organizationId == orgId;
+    function isSuperAdmin() {
+      return isAuthed() && userExists() && getUserData().role == 'superadmin';
+    }
+
+    // Verifica si el usuario es el dueño legal del edificio (organización)
+    function isOrgOwner(orgId) {
+      return get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid;
+    }
+
+    // Verifica si el usuario pertenece al staff de esa organización
+    function isOrgStaff(orgId) {
+      return isAuthed() && userExists() && getUserData().organizationId == orgId;
     }
 
     /**
      * ORGANIZACIONES (EDIFICIOS)
+     * El Super Admin gestiona el registro central de edificios.
      */
     match /organizations/{orgId} {
       allow read: if isAuthed();
@@ -39,32 +49,39 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
       allow list: if isSuperAdmin();
-      allow create: if isAuthed();
+      allow create: if isAuthed() && request.auth.uid == userId;
       allow update: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
     }
 
     /**
-     * PRODUCTOS
+     * DATOS INTERNOS (PRODUCTOS, PEDIDOS, PROVEEDORES, OC)
+     * Solo el personal de la organización O el dueño del edificio (tú en tus tests) pueden acceder.
      */
+    
     match /products/{id} {
-      allow read: if isAuthed();
-      allow write: if isAuthed() && (isSuperAdmin() || belongsToOrg(resource.data.organizationId));
+      allow read: if isAuthed() && (isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId));
+      allow write: if isAuthed() && (isOrgStaff(request.resource.data.organizationId) || isOrgOwner(request.resource.data.organizationId));
     }
 
-    /**
-     * PEDIDOS
-     */
     match /orders/{id} {
       allow read: if isAuthed() && (
         resource.data.userId == request.auth.uid || 
-        belongsToOrg(resource.data.organizationId) ||
-        isSuperAdmin()
+        isOrgStaff(resource.data.organizationId) || 
+        isOrgOwner(resource.data.organizationId)
       );
       allow create: if isAuthed();
-      allow update: if isAuthed() && (belongsToOrg(resource.data.organizationId) || isSuperAdmin());
+      allow update: if isAuthed() && (isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId));
     }
 
-    // Reglas generales para otras colecciones
+    match /suppliers/{id} {
+      allow read, write: if isAuthed() && (isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId));
+    }
+
+    match /purchaseOrders/{id} {
+      allow read, write: if isAuthed() && (isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId));
+    }
+
+    // Reglas generales para otras colecciones del sistema
     match /{path=**} {
       allow read, write: if isSuperAdmin();
     }
