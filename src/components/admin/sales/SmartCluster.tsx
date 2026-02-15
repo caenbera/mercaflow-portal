@@ -22,7 +22,7 @@ export function SmartCluster({ prospects, onAcceptCluster }: SmartClusterProps) 
     setError(null);
     setSuggestion(null);
 
-    // We only need specific fields for the AI, to keep the payload smaller.
+    // Filter down the data to keep the payload small for Genkit
     const prospectsForAI = prospects.map(p => ({
       id: p.id,
       address: p.address,
@@ -35,11 +35,11 @@ export function SmartCluster({ prospects, onAcceptCluster }: SmartClusterProps) 
       setSuggestion(result);
     } catch (e: any) {
       console.error("Failed to generate route suggestion:", e);
-      setError("Could not generate a suggestion at this time. Please try again later.");
+      setError("No se pudo generar la sugerencia en este momento. Inténtalo más tarde.");
       toast({
         variant: "destructive",
-        title: "AI Error",
-        description: "Failed to get a route suggestion from the AI model.",
+        title: "Error de IA",
+        description: "No se pudo obtener una respuesta del modelo de optimización.",
       });
     } finally {
       setIsLoading(false);
@@ -49,7 +49,6 @@ export function SmartCluster({ prospects, onAcceptCluster }: SmartClusterProps) 
   const handleAccept = () => {
     if (suggestion) {
       onAcceptCluster(suggestion.prospectIds);
-      // We can clear the suggestion after accepting it
       setSuggestion(null);
     }
   };
@@ -71,7 +70,7 @@ export function SmartCluster({ prospects, onAcceptCluster }: SmartClusterProps) 
     <div className="smart-cluster">
       <div className="cluster-header">
         <div className="cluster-title">
-          <Wand size={16} />
+          <Wand size={16} className="text-accent" />
           Ruta Inteligente Sugerida
         </div>
         {suggestion && !isLoading && (
@@ -82,10 +81,10 @@ export function SmartCluster({ prospects, onAcceptCluster }: SmartClusterProps) 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center p-8 space-y-2">
             <Loader2 className="h-8 w-8 animate-spin text-accent" />
-            <p className="text-sm font-medium text-center">Analizando rutas...</p>
+            <p className="text-sm font-medium text-center text-muted-foreground">Analizando tus prospectos...</p>
         </div>
       ) : suggestion ? (
-        <div>
+        <div className="animate-in fade-in zoom-in-95 duration-300">
             <div className="cluster-stats">
                 <div className="cluster-stat">
                 <div className="cluster-stat-value">{suggestion.prospectCount}</div>
@@ -101,24 +100,24 @@ export function SmartCluster({ prospects, onAcceptCluster }: SmartClusterProps) 
                 </div>
             </div>
             <div className="flex gap-2 mt-3">
-                <Button variant="outline" className="w-full" onClick={handleClear}>
+                <Button variant="ghost" size="sm" className="w-1/3 h-10" onClick={handleClear}>
                     <X size={16} className="mr-2"/> Limpiar
                 </Button>
-                <Button className="w-full" onClick={handleAccept}>
+                <Button size="sm" className="w-2/3 h-10 bg-accent hover:bg-accent/90" onClick={handleAccept}>
                     <Check size={16} className="mr-2"/> Aceptar Ruta
                 </Button>
             </div>
         </div>
       ) : (
         <div className="text-center p-4">
-            <p className="text-sm text-muted-foreground mb-3">
-                Analiza tus prospectos para encontrar la ruta más densa y valiosa.
+            <p className="text-sm text-muted-foreground mb-4">
+                Encuentra el grupo de prospectos más denso y valioso para tu próxima salida.
             </p>
-            <Button className="w-full" onClick={handleGenerateSuggestion}>
-                <Wand size={16} className="mr-2" />
+            <Button className="w-full h-11 bg-accent hover:bg-accent/90 font-bold" onClick={handleGenerateSuggestion}>
+                <Wand size={18} className="mr-2" />
                 Generar Sugerencia
             </Button>
-            {error && <p className="text-xs text-destructive mt-2">{error}</p>}
+            {error && <p className="text-xs text-destructive mt-3 bg-destructive/10 p-2 rounded">{error}</p>}
         </div>
       )}
     </div>

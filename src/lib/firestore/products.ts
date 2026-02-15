@@ -45,8 +45,8 @@ export const addProduct = (productData: ProductInput) => {
 export const updateProduct = (id: string, productData: ProductUpdateInput) => {
   const productDoc = doc(db, 'products', id);
   const dataToUpdate = { ...productData };
+  
   // Firestore cannot store `undefined`, so we remove keys that might be undefined
-  // This can happen if a non-required field is cleared in the form
   Object.keys(dataToUpdate).forEach(key => {
     if ((dataToUpdate as any)[key] === undefined) {
       delete (dataToUpdate as any)[key];
@@ -108,8 +108,6 @@ export const getProductBySku = async (sku: string): Promise<Product | null> => {
     const docSnap = querySnapshot.docs[0];
     return { id: docSnap.id, ...docSnap.data() } as Product;
   } catch (e) {
-    // Don't emit permission error here, as it's a lookup.
-    // Let form handle null return.
     console.error("Error fetching product by SKU: ", e);
     return null;
   }
