@@ -21,23 +21,41 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const [activeOrgId, setActiveOrgId] = useState<string | null>(null);
   const [activeOrg, setActiveOrg] = useState<Organization | null>(null);
 
-  // Inicialización del contexto
+  // Inicialización inteligente del contexto
   useEffect(() => {
-    if (!orgsLoading && userProfile) {
-      // Por defecto, si el usuario tiene una organización, esa es la activa
-      if (userProfile.organizationId && !activeOrgId) {
-        setActiveOrgId(userProfile.organizationId);
+    if (!orgsLoading && organizations.length > 0) {
+      // 1. Si el usuario ya tiene un ID activo en estado, buscarlo
+      if (activeOrgId) {
+        const found = organizations.find(o => o.id === activeOrgId);
+        if (found) {
+          setActiveOrg(found);
+          return;
+        }
+      }
+
+      // 2. Si no, intentar con la organización del perfil del usuario
+      if (userProfile?.organizationId) {
+        const found = organizations.find(o => o.id === userProfile.organizationId);
+        if (found) {
+          setActiveOrgId(found.id);
+          setActiveOrg(found);
+          return;
+        }
+      }
+
+      // 3. Como último recurso para el Super Admin, activar la primera de la lista
+      if (role === 'superadmin' && !activeOrgId) {
+        setActiveOrgId(organizations[0].id);
+        setActiveOrg(organizations[0]);
       }
     }
-  }, [userProfile, orgsLoading, activeOrgId]);
+  }, [userProfile, orgsLoading, organizations, activeOrgId, role]);
 
-  // Actualizar el objeto de organización activa cuando cambia el ID
+  // Sincronizar el objeto cuando cambia el ID
   useEffect(() => {
     if (activeOrgId && organizations.length > 0) {
       const org = organizations.find(o => o.id === activeOrgId) || null;
       setActiveOrg(org);
-    } else {
-      setActiveOrg(null);
     }
   }, [activeOrgId, organizations]);
 

@@ -72,7 +72,7 @@ const CollapsibleSidebarGroup = ({ title, items, defaultOpen = false, icon: Icon
 
 export function AppSidebar() {
   const { user, role, loading: authLoading } = useAuth();
-  const { activeOrgId, setActiveOrgId, activeOrg } = useOrganization();
+  const { activeOrgId, setActiveOrgId } = useOrganization();
   const { organizations, loading: orgsLoading } = useOrganizations();
   const t = useTranslations('NavigationBar');
 
@@ -101,7 +101,6 @@ export function AppSidebar() {
       ]
     };
 
-    // Módulo especial para Minoristas
     if (orgType === 'retailer') {
       modules.management.push({ href: `/admin/store`, label: "Gestión Tienda B2C", icon: Globe });
     }
@@ -124,6 +123,7 @@ export function AppSidebar() {
 
     return (
       <div className="space-y-4">
+        {/* Gestión Global (Alcaldía) */}
         <div className="px-2 mb-2">
           <div className="text-[10px] font-bold text-muted-foreground uppercase px-2 mb-1 tracking-widest">Alcaldía (Platform)</div>
           <SidebarMenu>
@@ -138,6 +138,7 @@ export function AppSidebar() {
           </SidebarMenu>
         </div>
 
+        {/* Niveles del Ecosistema */}
         {(['importer', 'distributor', 'wholesaler', 'retailer'] as OrganizationType[]).map((type) => {
           const typeOrgs = orgsByType(type);
           if (typeOrgs.length === 0) return null;
@@ -152,6 +153,7 @@ export function AppSidebar() {
                   const isOwner = org.ownerId === user?.uid;
                   const isActive = activeOrgId === org.id;
                   
+                  // Si no es dueño, solo ve la tarjeta de cliente (privacidad)
                   if (!isOwner) {
                     return (
                       <SidebarMenuItem key={org.id}>
@@ -170,6 +172,7 @@ export function AppSidebar() {
                     );
                   }
 
+                  // Si es su propio edificio de prueba, despliega todo
                   const modules = getModuleItems(org.id, org.type);
                   return (
                     <SidebarMenuItem key={org.id}>
@@ -196,10 +199,10 @@ export function AppSidebar() {
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                           <div className="pl-4 py-1 space-y-1">
-                            <CollapsibleSidebarGroup title={t('group_management')} items={modules.management} />
-                            <CollapsibleSidebarGroup title={t('group_catalog')} items={modules.catalog} />
-                            <CollapsibleSidebarGroup title={t('group_procurement')} items={modules.procurement} />
-                            <CollapsibleSidebarGroup title={t('group_warehouse')} items={modules.warehouse} />
+                            <CollapsibleSidebarGroup title={t('group_management')} items={modules.management} icon={LayoutGrid} />
+                            <CollapsibleSidebarGroup title={t('group_catalog')} items={modules.catalog} icon={Package} />
+                            <CollapsibleSidebarGroup title={t('group_procurement')} items={modules.procurement} icon={ShoppingBag} />
+                            <CollapsibleSidebarGroup title={t('group_warehouse')} items={modules.warehouse} icon={Boxes} />
                           </div>
                         </CollapsibleContent>
                       </Collapsible>
@@ -226,7 +229,9 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="p-2 custom-scrollbar overflow-x-hidden">
         {role === 'superadmin' ? renderSuperAdminMenu() : (
-          <p className="text-xs text-muted-foreground p-4">Cargando menú de organización...</p>
+          <div className="p-4 text-center">
+            <p className="text-xs text-muted-foreground">{t('loading')}...</p>
+          </div>
         )}
       </SidebarContent>
     </Sidebar>

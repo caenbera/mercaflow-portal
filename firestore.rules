@@ -5,9 +5,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * MERCAFLOW PORTAL - REGLAS DE PRIVACIDAD MULTI-EDIFICIO
+     * FUNCIONES GLOBALES DE SEGURIDAD
      */
-
     function isAuthed() {
       return request.auth != null;
     }
@@ -20,13 +19,19 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
+    // El Super Admin es el dueño del software (caenbera@gmail.com)
     function isSuperAdmin() {
-      return isAuthed() && userExists() && getUserData().role == 'superadmin';
+      return isAuthed() && (
+        request.auth.token.email == 'caenbera@gmail.com' || 
+        (userExists() && getUserData().role == 'superadmin')
+      );
     }
 
-    // Verifica si el usuario es el dueño legal del edificio (organización)
+    // Verifica si el usuario es el dueño legal de una organización específica
     function isOrgOwner(orgId) {
-      return isAuthed() && get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid;
+      return isAuthed() && (
+        get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid
+      );
     }
 
     // Verifica si el usuario pertenece al staff de esa organización
@@ -36,49 +41,29 @@ service cloud.firestore {
 
     /**
      * ORGANIZACIONES (EDIFICIOS)
+     * Los edificios son públicos para que el staff pueda encontrarlos y el superadmin gestionarlos.
      */
     match /organizations/{orgId} {
-      // Público: Solo permitir lectura de la info básica de tienda para el slug
-      allow read: if true; 
-      allow write: if isSuperAdmin();
-      allow update: if isOrgOwner(orgId) || isSuperAdmin();
+      allow read: if isAuthed(); 
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin() || isOrgOwner(orgId);
+      allow delete: if isSuperAdmin();
     }
 
     /**
-     * PRODUCTOS - ACCESO PÚBLICO B2C
+     * DATOS INTERNOS (Catálogo, Pedidos, Proveedores, etc.)
+     * REGLA DE ORO: Solo el dueño del edificio o su staff pueden ver estos datos.
+     * El Super Admin NO puede ver esto a menos que sea el dueño del edificio (su laboratorio).
      */
+    
+    // Productos
     match /products/{id} {
-      // Regla B2C: Permitir lectura pública si la organización dueña tiene la tienda activada
-      allow read: if (isAuthed() && (isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId))) 
+      allow read: if isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId) 
                   || (get(/databases/$(database)/documents/organizations/$(resource.data.organizationId)).data.storeConfig.enabled == true);
-      
-      allow write: if isAuthed() && (isOrgStaff(request.resource.data.organizationId) || isOrgOwner(request.resource.data.organizationId));
+      allow write: if isOrgStaff(request.resource.data.organizationId) || isOrgOwner(request.resource.data.organizationId);
     }
 
-    /**
-     * CONEXIONES
-     */
-    match /connections/{id} {
-      allow read: if isAuthed() && (
-        isOrgOwner(resource.data.fromOrgId) || 
-        isOrgOwner(resource.data.toOrgId) ||
-        isSuperAdmin()
-      );
-      allow create: if isAuthed() && isOrgOwner(request.resource.data.fromOrgId);
-      allow update: if isAuthed() && (isOrgOwner(resource.data.toOrgId) || isSuperAdmin());
-      allow delete: if isAuthed() && (isOrgOwner(resource.data.fromOrgId) || isOrgOwner(resource.data.toOrgId));
-    }
-
-    /**
-     * USUARIOS
-     */
-    match /users/{userId} {
-      allow get: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
-      allow list: if isSuperAdmin();
-      allow create: if isAuthed() && request.auth.uid == userId;
-      allow update: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
-    }
-
+    // Pedidos
     match /orders/{id} {
       allow read: if isAuthed() && (
         resource.data.userId == request.auth.uid || 
@@ -86,9 +71,37 @@ service cloud.firestore {
         isOrgOwner(resource.data.organizationId)
       );
       allow create: if isAuthed();
-      allow update: if isAuthed() && (isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId));
+      allow update: if isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId);
     }
 
+    // Conexiones entre edificios
+    match /connections/{id} {
+      allow read: if isAuthed() && (isOrgOwner(resource.data.fromOrgId) || isOrgOwner(resource.data.toOrgId));
+      allow write: if isAuthed() && (isOrgOwner(request.resource.data.fromOrgId) || isOrgOwner(request.resource.data.toOrgId));
+    }
+
+    /**
+     * USUARIOS Y PERFILES
+     */
+    match /users/{userId} {
+      allow get: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
+      allow list: if isSuperAdmin();
+      allow create: if isAuthed() && request.auth.uid == userId;
+      allow update: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
+      
+      // Notificaciones y actividad (Subcolecciones)
+      match /{allSubcollections=**} {
+        allow read, write: if isAuthed() && request.auth.uid == userId;
+      }
+    }
+
+    // Invitaciones de Admin
+    match /adminInvites/{email} {
+      allow read: if true; // Necesario para verificar invitación durante el registro
+      allow write: if isSuperAdmin();
+    }
+
+    // Regla de respaldo para el Super Admin en colecciones globales de sistema
     match /{path=**} {
       allow read, write: if isSuperAdmin();
     }
