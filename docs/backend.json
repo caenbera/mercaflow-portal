@@ -1,331 +1,71 @@
 {
   "entities": {
     "UserProfile": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserProfile",
+      "description": "Perfil de usuario que almacena datos comerciales y el rol asignado (client, admin, superadmin, picker, purchaser, salesperson).",
       "type": "object",
-      "description": "Represents additional data for a user in MercaFlow Portal, linked to Firebase Authentication. Stores business information and user role.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the UserProfile entity, corresponding to the Firebase Authentication UID."
-        },
-        "businessName": {
-          "type": "string",
-          "description": "The name of the client's business or organization."
-        },
-        "contactName": {
-          "type": "string",
-          "description": "The name of the primary contact person for the business."
-        },
-        "email": {
-          "type": "string",
-          "description": "The email address associated with the user's account.",
-          "format": "email"
-        },
-        "phoneNumber": {
-          "type": "string",
-          "description": "The contact phone number for the business."
-        },
-        "streetAddress": {
-          "type": "string",
-          "description": "The street address of the business."
-        },
-        "city": {
-          "type": "string",
-          "description": "The city of the business address."
-        },
-        "state": {
-          "type": "string",
-          "description": "The state or province of the business address."
-        },
-        "zipCode": {
-          "type": "string",
-          "description": "The postal code of the business address."
-        },
-        "role": {
-          "type": "string",
-          "description": "The role of the user within the application (client, admin, or superadmin)."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the user profile was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp when the user profile was last updated.",
-          "format": "date-time"
-        }
+        "uid": { "type": "string" },
+        "businessName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["client", "admin", "superadmin", "picker", "purchaser", "salesperson"] },
+        "status": { "type": "string", "enum": ["active", "pending_approval", "blocked"] },
+        "rewardPoints": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "businessName",
-        "contactName",
-        "email",
-        "phoneNumber",
-        "streetAddress",
-        "city",
-        "state",
-        "zipCode",
-        "role",
-        "createdAt",
-        "updatedAt"
-      ]
+      "required": ["uid", "businessName", "email", "role", "status", "createdAt"]
     },
     "Product": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Product",
+      "description": "Producto del catálogo mayorista.",
       "type": "object",
-      "description": "Represents a product available for wholesale ordering in MercaFlow Portal.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Product entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the product."
-        },
-        "description": {
-          "type": "string",
-          "description": "A detailed description of the product."
-        },
-        "imageUrl": {
-          "type": "string",
-          "description": "URL to an image of the product.",
-          "format": "uri"
-        },
-        "stockQuantity": {
-          "type": "number",
-          "description": "The current quantity of the product available in stock."
-        },
-        "price": {
-          "type": "number",
-          "description": "The wholesale price of one unit of the product."
-        },
-        "category": {
-          "type": "string",
-          "description": "The category the product belongs to (e.g., 'Frutas', 'Verduras')."
-        },
-        "unitOfMeasure": {
-          "type": "string",
-          "description": "The unit in which the product is measured and sold (e.g., 'kg', 'lb', 'caja')."
-        },
-        "active": {
-          "type": "boolean",
-          "description": "Indicates whether the product is currently active and available for purchase."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the product was added to the catalog.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp when the product details were last updated.",
-          "format": "date-time"
-        }
+        "sku": { "type": "string" },
+        "name": { "type": "object" },
+        "salePrice": { "type": "number" },
+        "stock": { "type": "number" },
+        "active": { "type": "boolean" }
       },
-      "required": [
-        "id",
-        "name",
-        "stockQuantity",
-        "price",
-        "category",
-        "unitOfMeasure",
-        "active",
-        "createdAt",
-        "updatedAt"
-      ]
+      "required": ["sku", "name", "salePrice", "stock", "active"]
     },
     "Order": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Order",
+      "description": "Pedido realizado por un cliente minorista.",
       "type": "object",
-      "description": "Represents a customer's order for products in MercaFlow Portal.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Order entity."
-        },
-        "clientId": {
-          "type": "string",
-          "description": "Reference to the UserProfile of the client who placed the order. (Relationship: UserProfile 1:N Order)"
-        },
-        "orderDate": {
-          "type": "string",
-          "description": "The date and time when the order was placed.",
-          "format": "date-time"
-        },
-        "status": {
-          "type": "string",
-          "description": "The current status of the order (e.g., 'pending', 'processing', 'shipped', 'delivered', 'cancelled')."
-        },
-        "totalAmount": {
-          "type": "number",
-          "description": "The total monetary amount of the order, including all items."
-        },
-        "shippingStreetAddress": {
-          "type": "string",
-          "description": "The street address for shipping the order (snapshot at order time)."
-        },
-        "shippingCity": {
-          "type": "string",
-          "description": "The city for shipping the order (snapshot at order time)."
-        },
-        "shippingState": {
-          "type": "string",
-          "description": "The state or province for shipping the order (snapshot at order time)."
-        },
-        "shippingZipCode": {
-          "type": "string",
-          "description": "The postal code for shipping the order (snapshot at order time)."
-        },
-        "deliveryDate": {
-          "type": "string",
-          "description": "The estimated or actual date and time of delivery.",
-          "format": "date-time"
-        },
-        "notes": {
-          "type": "string",
-          "description": "Any additional notes or instructions for the order."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the order was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp when the order details were last updated.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "clientId",
-        "orderDate",
-        "status",
-        "totalAmount",
-        "shippingStreetAddress",
-        "shippingCity",
-        "shippingState",
-        "shippingZipCode",
-        "createdAt",
-        "updatedAt"
-      ]
-    },
-    "OrderItem": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "OrderItem",
-      "type": "object",
-      "description": "Represents a single item within an order in MercaFlow Portal, detailing the product and quantity ordered.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the OrderItem entity."
-        },
-        "orderId": {
-          "type": "string",
-          "description": "Reference to the Order this item belongs to. (Relationship: Order 1:N OrderItem)"
-        },
-        "productId": {
-          "type": "string",
-          "description": "Reference to the Product being ordered. (Relationship: Product 1:N OrderItem)"
-        },
-        "productName": {
-          "type": "string",
-          "description": "The name of the product at the time of order (denormalized for convenience)."
-        },
-        "quantity": {
-          "type": "number",
-          "description": "The quantity of the product ordered."
-        },
-        "unitPrice": {
-          "type": "number",
-          "description": "The price per unit of the product at the time the order was placed (for historical accuracy)."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the order item was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp when the order item details were last updated.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "orderId",
-        "productId",
-        "productName",
-        "quantity",
-        "unitPrice",
-        "createdAt",
-        "updatedAt"
-      ]
+        "userId": { "type": "string" },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "processing", "shipped", "delivered", "cancelled"] }
+      }
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password"]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/user_profiles/{userId}",
-        "definition": {
-          "entityName": "UserProfile",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "Stores detailed business and contact information for each user in MercaFlow Portal.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user, matching their Firebase Authentication UID."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/products/{productId}",
-        "definition": {
-          "entityName": "Product",
-          "schema": {
-            "$ref": "#/backend/entities/Product"
-          },
-          "description": "The global catalog of products available for wholesale in MercaFlow Portal.",
-          "params": [
-            {
-              "name": "productId",
-              "description": "The unique identifier for a product in the catalog."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/orders/{orderId}",
-        "definition": {
-          "entityName": "Order",
-          "schema": {
-            "$ref": "#/backend/entities/Order"
-          },
-          "description": "Represents individual customer orders in MercaFlow Portal.",
-          "params": [
-            {
-              "name": "orderId",
-              "description": "The unique identifier for an order."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore structure for 'MercaFlow Portal' is now isolated in a dedicated project for development and testing, ensuring zero impact on the production environment."
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Colección principal de usuarios y perfiles."
+    },
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Catálogo global de productos."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Pedidos de clientes."
+    },
+    "/suppliers/{supplierId}": {
+      "description": "Gestión de proveedores.",
+      "schema": "object"
+    },
+    "/prospects/{prospectId}": {
+      "description": "Prospectos de ventas para vendedores.",
+      "schema": "object"
+    },
+    "/supportTickets/{ticketId}": {
+      "description": "Tickets de soporte técnico.",
+      "schema": "object"
+    }
   }
 }

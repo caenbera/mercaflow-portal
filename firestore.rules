@@ -1,168 +1,137 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * MERCAFLOW PORTAL - SECURITY RULES
-     * 
-     * Centralized role-based access control.
-     * Roles: client, admin, superadmin, picker, purchaser, salesperson.
+     * MERCAFLOW PORTAL - REGLAS DE SEGURIDAD
      */
 
-    // --- GLOBAL HELPER FUNCTIONS ---
-
-    function isSignedIn() {
+    function isAuthed() {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    // Helper to get the requester's user document
-    function getRequesterData() {
+    // Obtener datos del usuario actual
+    function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    // Checks if the requester has a specific role
-    function hasRole(role) {
-      return isSignedIn() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             getRequesterData().role == role;
-    }
-
+    // Verificar si es superadmin (basado en el campo 'role' del documento de usuario)
     function isSuperAdmin() {
-      return hasRole('superadmin');
+      return isAuthed() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getUserData().role == 'superadmin';
     }
 
+    // Verificar si es admin o superadmin
     function isAdmin() {
-      return isSuperAdmin() || hasRole('admin');
+      return isAuthed() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getUserData().role in ['admin', 'superadmin'];
     }
 
-    function hasSalesRole() {
-      return isAdmin() || hasRole('salesperson');
-    }
-
+    // Permisos de compras
     function hasPurchasingRole() {
-      return isAdmin() || hasRole('purchaser');
+      return isAuthed() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getUserData().role in ['admin', 'superadmin', 'purchaser'];
     }
 
+    // Permisos de almacén/picking
     function hasPickingRole() {
-      return isAdmin() || hasRole('picker');
+      return isAuthed() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getUserData().role in ['admin', 'superadmin', 'picker'];
     }
 
-    // --- COLLECTION RULES ---
+    // Permisos de ventas
+    function hasSalesRole() {
+      return isAuthed() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getUserData().role in ['admin', 'superadmin', 'salesperson'];
+    }
 
     /**
-     * USERS & PROFILES
+     * USUARIOS
      */
     match /users/{userId} {
-      // Users can read their own profile. SuperAdmins can see all.
-      allow get: if isOwner(userId) || isSuperAdmin();
+      allow get: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
       allow list: if isSuperAdmin();
-      
-      // Allow profile creation during signup
-      allow create: if isOwner(userId);
-      
-      // Allow update if owner (but not role) or superadmin
-      allow update: if (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) 
-                    || isSuperAdmin();
-      
+      allow create: if isAuthed() && request.auth.uid == userId;
+      allow update: if isAuthed() && (
+        (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) ||
+        isSuperAdmin()
+      );
       allow delete: if isSuperAdmin();
 
-      // Sub-collections inside users
-      match /notifications/{id} { allow read, update, delete: if isOwner(userId); }
-      match /branches/{id} { allow read, write: if isOwner(userId); }
+      match /notifications/{id} { allow read, write: if request.auth.uid == userId; }
+      match /branches/{id} { allow read, write: if request.auth.uid == userId; }
       match /notes/{id} { allow read, write: if isAdmin(); }
-      match /rewardsActivity/{id} { 
-        allow read: if isOwner(userId) || isAdmin();
-        allow write: if isAdmin();
-      }
+      match /rewardsActivity/{id} { allow read: if request.auth.uid == userId || isAdmin(); }
     }
 
     /**
-     * PRODUCT CATALOG
+     * PRODUCTOS Y CATÁLOGO
      */
-    match /products/{productId} {
-      allow read: if isSignedIn();
+    match /products/{id} {
+      allow read: if isAuthed();
       allow write: if hasPurchasingRole();
     }
-    
-    match /productCategories/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-    match /productUnits/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-    match /offerCategories/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-    match /offers/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /productCategories/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
+    match /productUnits/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
 
     /**
-     * SUPPLIERS & PROCUREMENT
+     * PEDIDOS
      */
-    match /suppliers/{supplierId} {
-      allow read, write: if hasPurchasingRole();
-    }
-    
-    match /purchaseOrders/{poId} {
-      allow read, write: if hasPurchasingRole();
-    }
-
-    /**
-     * ORDERS
-     */
-    match /orders/{orderId} {
-      // Clients see their own. Pickers and Admins see all.
-      allow get: if isOwner(resource.data.userId) || hasPickingRole();
-      allow list: if isSignedIn(); // Filtering must be done in the query
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+    match /orders/{id} {
+      allow get: if isAuthed() && (resource.data.userId == request.auth.uid || hasPickingRole());
+      allow list: if isAuthed() && (isAdmin() || hasPickingRole() || hasSalesRole());
+      allow create: if isAuthed() && request.resource.data.userId == request.auth.uid;
       allow update: if hasPickingRole();
       allow delete: if isAdmin();
     }
 
     /**
-     * SALES & PROSPECTS
+     * PROVEEDORES
      */
-    match /prospects/{prospectId} {
-      // Owners (salespeople) or admins can access
+    match /suppliers/{id} {
+      allow read, write: if hasPurchasingRole();
+    }
+    match /purchaseOrders/{id} {
+      allow read, write: if hasPurchasingRole();
+    }
+
+    /**
+     * VENTAS Y PROSPECTOS
+     */
+    match /prospects/{id} {
       allow read, update: if hasSalesRole() && (resource.data.salespersonId == request.auth.uid || isAdmin());
       allow create: if hasSalesRole();
       allow delete: if isAdmin();
-
-      match /visits/{visitId} {
-        allow read, write: if hasSalesRole() && (get(/databases/$(database)/documents/prospects/$(prospectId)).data.salespersonId == request.auth.uid || isAdmin());
-      }
+      match /visits/{vId} { allow read, write: if hasSalesRole(); }
     }
 
     /**
-     * SUPPORT & BILLING
+     * SOPORTE Y FACTURACIÓN
      */
     match /supportTickets/{id} {
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, update: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      allow delete: if isAdmin();
+      allow create: if isAuthed();
+      allow read, update: if isAdmin() || (isAuthed() && resource.data.userId == request.auth.uid);
     }
-
     match /invoices/{id} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthed() && resource.data.userId == request.auth.uid;
       allow write: if isAdmin();
     }
 
     /**
-     * REWARDS & LOYALTY
+     * RECOMPENSAS Y SISTEMA
      */
-    match /rewardTiers/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-    match /rewards/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /rewardTiers/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
+    match /rewards/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
     match /rewardRules/{id} { allow read, write: if isAdmin(); }
-
-    /**
-     * ADMINISTRATION
-     */
-    match /adminInvites/{email} {
-      allow read, create, delete: if isSuperAdmin();
-      allow get: if !isSignedIn(); // For signup check
-      allow update: if isSignedIn() && request.auth.token.email == email;
-    }
-    
-    match /pricelists/{id} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
+    match /pricelists/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
+    match /offers/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
+    match /offerCategories/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
+    match /adminInvites/{email} { allow read, write: if isSuperAdmin(); allow get: if !isAuthed(); }
   }
 }
