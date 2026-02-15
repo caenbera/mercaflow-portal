@@ -9,7 +9,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import {
   Collapsible,
@@ -20,39 +19,20 @@ import { useAuth } from '@/context/auth-context';
 import { useOrganization } from '@/context/organization-context';
 import { useOrganizations } from '@/hooks/use-organizations';
 import { 
-  LayoutGrid, ShoppingCart, Package, Users, History, Home, 
-  ClipboardList, Leaf, Truck, ShoppingBag, Boxes, UserCircle, 
-  Trophy, Headset, ChevronRight, Tag, FileText, Building2,
-  Globe, Store, HardHat, ShieldCheck
+  LayoutGrid, ShoppingCart, Package, Users,
+  ClipboardList, Leaf, Truck, ShoppingBag, Boxes, Headset, 
+  ChevronRight, Trophy, Building2, Globe, Store
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/navigation';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Skeleton } from '../ui/skeleton';
-import { BottomNavBar } from './bottom-nav';
+import { cn } from '@/lib/utils';
 import type { OrganizationType } from '@/types';
+import { Badge } from '@/components/ui/badge';
 
 export interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
-}
-
-export interface NavDefinition {
-  desktop: {
-    client: Record<string, NavItem[]>;
-    admin: NavItem[];
-    superadmin: NavItem[];
-    picker: NavItem[];
-    purchaser: NavItem[];
-  };
-  mobile: {
-    client: NavItem[];
-    admin: NavItem[];
-    picker: NavItem[];
-    purchaser: NavItem[];
-    salesperson: NavItem[];
-  }
 }
 
 const CollapsibleSidebarGroup = ({ title, items, defaultOpen = false, icon: Icon }: { title: string; items: NavItem[]; defaultOpen?: boolean; icon?: React.ElementType }) => {
@@ -91,10 +71,9 @@ const CollapsibleSidebarGroup = ({ title, items, defaultOpen = false, icon: Icon
 };
 
 export function AppSidebar() {
-  const { role, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
   const { activeOrgId, setActiveOrgId } = useOrganization();
   const { organizations, loading: orgsLoading } = useOrganizations();
-  const isMobile = useIsMobile();
   const t = useTranslations('NavigationBar');
 
   const loading = authLoading || orgsLoading;
@@ -120,12 +99,6 @@ export function AppSidebar() {
     ],
     warehouse: [
         { href: `/admin/picking`, label: t('picking'), icon: Boxes },
-    ],
-    administration: [
-        { href: `/admin/users`, label: t('manageUsers'), icon: Users },
-    ],
-    clientPortal: [
-        { href: `/client/dashboard`, label: t('clientPortal'), icon: Home },
     ]
   });
 
@@ -144,9 +117,9 @@ export function AppSidebar() {
 
     return (
       <div className="space-y-4">
-        {/* Gestión Global */}
+        {/* Gestión Global (Alcaldía) */}
         <div className="px-2 mb-2">
-          <div className="text-[10px] font-bold text-muted-foreground uppercase px-2 mb-1 tracking-widest">Global</div>
+          <div className="text-[10px] font-bold text-muted-foreground uppercase px-2 mb-1 tracking-widest">Alcaldía (Platform)</div>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={t('manageOrganizations')}>
@@ -159,7 +132,7 @@ export function AppSidebar() {
           </SidebarMenu>
         </div>
 
-        {/* Grupos por Nivel */}
+        {/* Ecosistema Jerárquico */}
         {(['importer', 'distributor', 'wholesaler', 'retailer'] as OrganizationType[]).map((type) => {
           const typeOrgs = orgsByType(type);
           if (typeOrgs.length === 0) return null;
@@ -169,51 +142,68 @@ export function AppSidebar() {
               <div className="text-[10px] font-bold text-muted-foreground uppercase px-2 mb-1 tracking-widest">
                 {t(`group_level_${type}` as any)}
               </div>
-              <div className="space-y-1">
+              <SidebarMenu className="space-y-1">
                 {typeOrgs.map((org) => {
-                  const modules = getModuleItems(org.id);
+                  const isOwner = org.ownerId === user?.uid;
                   const isActive = activeOrgId === org.id;
                   
+                  if (!isOwner) {
+                    // Muestra edificios de terceros como elementos de lista simples (solo lectura macro)
+                    return (
+                      <SidebarMenuItem key={org.id}>
+                        <SidebarMenuButton 
+                          asChild 
+                          isActive={isActive} 
+                          onClick={() => setActiveOrgId(org.id)}
+                          className="opacity-80"
+                        >
+                          <Link href="/admin/organizations">
+                            {React.createElement(getOrgTypeIcon(org.type))}
+                            <span className="truncate">{org.name}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  }
+
+                  // Muestra edificios de prueba con todos sus módulos (Desplegables)
+                  const modules = getModuleItems(org.id);
                   return (
-                    <Collapsible 
-                      key={org.id} 
-                      defaultOpen={isActive}
-                      onOpenChange={(open) => open && setActiveOrgId(org.id)}
-                      className="w-full"
-                    >
-                      <CollapsibleTrigger className={cn(
-                        "group flex w-full items-center justify-between rounded-md px-2 h-9 text-sm font-semibold transition-colors",
-                        isActive ? "bg-primary/10 text-primary border border-primary/20" : "text-sidebar-foreground/80 hover:bg-sidebar-accent"
-                      )}>
-                        <div className="flex items-center gap-2 truncate">
-                          {React.createElement(getOrgTypeIcon(org.type), { className: "h-4 w-4 shrink-0" })}
-                          <span className="truncate">{org.name}</span>
-                        </div>
-                        <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-90 shrink-0" />
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="pl-4 py-1 space-y-1">
-                          <CollapsibleSidebarGroup title={t('group_management')} items={modules.management} />
-                          <CollapsibleSidebarGroup title={t('group_sales')} items={modules.sales} />
-                          <CollapsibleSidebarGroup title={t('group_catalog')} items={modules.catalog} />
-                          <CollapsibleSidebarGroup title={t('group_procurement')} items={modules.procurement} />
-                          <CollapsibleSidebarGroup title={t('group_warehouse')} items={modules.warehouse} />
-                          {type === 'retailer' && (
-                             <SidebarMenu className="pl-2">
-                                <SidebarMenuItem>
-                                  <SidebarMenuButton className="text-orange-600 font-bold">
-                                    <Store className="h-4 w-4" />
-                                    <span>Gestionar Tienda Online</span>
-                                  </SidebarMenuButton>
-                                </SidebarMenuItem>
-                             </SidebarMenu>
-                          )}
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
+                    <SidebarMenuItem key={org.id}>
+                      <Collapsible 
+                        defaultOpen={isActive}
+                        onOpenChange={(open) => open && setActiveOrgId(org.id)}
+                        className="w-full group/collapsible"
+                      >
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton 
+                            isActive={isActive}
+                            className={cn(
+                              "transition-colors",
+                              isActive ? "bg-primary/10 text-primary border border-primary/20" : "text-sidebar-foreground/80 hover:bg-sidebar-accent"
+                            )}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              {React.createElement(getOrgTypeIcon(org.type), { className: "h-4 w-4 shrink-0" })}
+                              <span className="truncate">{org.name}</span>
+                              <Badge variant="outline" className="text-[8px] h-3 px-1 bg-yellow-400/10 text-yellow-600 border-yellow-400/20">TEST</Badge>
+                            </div>
+                            <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 shrink-0" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="pl-4 py-1 space-y-1">
+                            <CollapsibleSidebarGroup title={t('group_management')} items={modules.management} />
+                            <CollapsibleSidebarGroup title={t('group_catalog')} items={modules.catalog} />
+                            <CollapsibleSidebarGroup title={t('group_procurement')} items={modules.procurement} />
+                            <CollapsibleSidebarGroup title={t('group_warehouse')} items={modules.warehouse} />
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </SidebarMenuItem>
                   );
                 })}
-              </div>
+              </SidebarMenu>
             </div>
           );
         })}
@@ -233,7 +223,6 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="p-2 custom-scrollbar overflow-x-hidden">
         {role === 'superadmin' ? renderSuperAdminMenu() : (
-          // Menú simplificado para otros roles (se mantiene como antes pero con rutas relativas)
           <p className="text-xs text-muted-foreground p-4">Cargando menú de organización...</p>
         )}
       </SidebarContent>
