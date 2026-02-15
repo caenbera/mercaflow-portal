@@ -3,31 +3,10 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * THE FRESH HUB PORTAL - SECURITY RULES CONFIGURATION
+     * MERCAFLOW PORTAL - SECURITY RULES
      * 
-     * CORE PHILOSOPHY:
-     * This ruleset implements a hybrid security model combining strict path-based ownership 
-     * with Database-Based Access Control (DBAC) for administrative roles. It prioritizes 
-     * "Authorization Independence," meaning documents contain enough internal data (denormalization) 
-     * to make security decisions without costly cross-document lookups (get() calls).
-     * 
-     * DATA STRUCTURE:
-     * - /user_profiles/{userId}: Private user data, keyed by Firebase Auth UID.
-     * - /roles_admins/{userId}: Flag collection for Admin access.
-     * - /roles_superadmins/{userId}: Flag collection for Superadmin access.
-     * - /products/{productId}: Global catalog of wholesale products.
-     * - /orders/{orderId}: Top-level collection for customer orders.
-     * - /orders/{orderId}/order_items/{orderItemId}: Nested items for specific orders.
-     * 
-     * KEY SECURITY DECISIONS:
-     * 1. DBAC (No Custom Claims): Roles are determined by the existence of a document in 
-     *    dedicated roles collections. This allows for instant role revocation/granting.
-     * 2. Denormalized Authorization: Orders and OrderItems both contain 'clientId'. This 
-     *    enables atomic ownership checks and performant queries for clients.
-     * 3. Relational Integrity: On creation, we enforce that 'clientId' or 'id' fields match 
-     *    the authenticated user's UID to prevent data spoofing.
-     * 4. Prototyping Flexibility: Rules enforce WHO can access WHAT, but do not strictly 
-     *    validate the specific schema of the content fields (e.g., descriptions, prices).
+     * Centralized role-based access control.
+     * Roles: client, admin, superadmin, picker, purchaser, salesperson.
      */
 
     // --- GLOBAL HELPER FUNCTIONS ---
@@ -40,89 +19,150 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Helper to get the requester's user document
+    function getRequesterData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Checks if the requester has a specific role
+    function hasRole(role) {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getRequesterData().role == role;
+    }
+
     function isSuperAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_superadmins/$(request.auth.uid));
+      return hasRole('superadmin');
     }
 
     function isAdmin() {
-      return isSignedIn() && (exists(/databases/$(database)/documents/roles_admins/$(request.auth.uid)) || isSuperAdmin());
+      return isSuperAdmin() || hasRole('admin');
+    }
+
+    function hasSalesRole() {
+      return isAdmin() || hasRole('salesperson');
+    }
+
+    function hasPurchasingRole() {
+      return isAdmin() || hasRole('purchaser');
+    }
+
+    function hasPickingRole() {
+      return isAdmin() || hasRole('picker');
     }
 
     // --- COLLECTION RULES ---
 
     /**
-     * @description Rules for user profile documents. Access restricted to the owner or admins.
-     * @path /user_profiles/{userId}
-     * @allow (get) If user is the owner or an admin.
-     * @deny (create) If the document ID does not match the authenticated user's UID.
-     * @principle Path-based ownership and relational integrity between UID and document data.
+     * USERS & PROFILES
      */
-    match /user_profiles/{userId} {
-      allow get, list: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if (isOwner(userId) || isAdmin()) && resource != null && request.resource.data.id == resource.data.id;
-      allow delete: if isAdmin() && resource != null;
+    match /users/{userId} {
+      // Users can read their own profile. SuperAdmins can see all.
+      allow get: if isOwner(userId) || isSuperAdmin();
+      allow list: if isSuperAdmin();
+      
+      // Allow profile creation during signup
+      allow create: if isOwner(userId);
+      
+      // Allow update if owner (but not role) or superadmin
+      allow update: if (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) 
+                    || isSuperAdmin();
+      
+      allow delete: if isSuperAdmin();
+
+      // Sub-collections inside users
+      match /notifications/{id} { allow read, update, delete: if isOwner(userId); }
+      match /branches/{id} { allow read, write: if isOwner(userId); }
+      match /notes/{id} { allow read, write: if isAdmin(); }
+      match /rewardsActivity/{id} { 
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isAdmin();
+      }
     }
 
     /**
-     * @description DBAC collections for role management. Restricted to Superadmins for management.
-     * @path /roles_admins/{userId} & /roles_superadmins/{userId}
-     * @allow (get) Users can check their own role status.
-     * @deny (write) Any non-superadmin trying to modify roles.
-     * @principle Existence-over-content for global role authorization.
-     */
-    match /roles_admins/{userId} {
-      allow get: if isOwner(userId) || isSuperAdmin();
-      allow list: if isSuperAdmin();
-      allow create, update, delete: if isSuperAdmin();
-    }
-
-    match /roles_superadmins/{userId} {
-      allow get: if isOwner(userId) || isSuperAdmin();
-      allow list: if isSuperAdmin();
-      allow create, update, delete: if isSuperAdmin();
-    }
-
-    /**
-     * @description Global product catalog. Publicly readable by signed-in users, writable only by admins.
-     * @path /products/{productId}
-     * @allow (list) Any authenticated user to browse products.
-     * @deny (create) Any non-admin user attempting to add products.
-     * @principle Homogeneous security posture for global shared resources.
+     * PRODUCT CATALOG
      */
     match /products/{productId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+      allow read: if isSignedIn();
+      allow write: if hasPurchasingRole();
+    }
+    
+    match /productCategories/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /productUnits/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /offerCategories/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /offers/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+
+    /**
+     * SUPPLIERS & PROCUREMENT
+     */
+    match /suppliers/{supplierId} {
+      allow read, write: if hasPurchasingRole();
+    }
+    
+    match /purchaseOrders/{poId} {
+      allow read, write: if hasPurchasingRole();
     }
 
     /**
-     * @description Order management. Clients access their own orders via 'clientId' field.
-     * @path /orders/{orderId}
-     * @allow (create) Client sets themselves as 'clientId'.
-     * @deny (update) Changing the 'clientId' of an existing order.
-     * @principle Denormalized ownership for Authorization Independence.
+     * ORDERS
      */
     match /orders/{orderId} {
-      allow get: if isAdmin() || (isSignedIn() && resource.data.clientId == request.auth.uid);
-      allow list: if isAdmin() || isSignedIn(); // Queries must still filter by clientId for clients.
-      allow create: if isSignedIn() && request.resource.data.clientId == request.auth.uid;
-      allow update: if (isAdmin() || (isSignedIn() && resource.data.clientId == request.auth.uid)) && resource != null && request.resource.data.clientId == resource.data.clientId;
-      allow delete: if isAdmin() && resource != null;
+      // Clients see their own. Pickers and Admins see all.
+      allow get: if isOwner(resource.data.userId) || hasPickingRole();
+      allow list: if isSignedIn(); // Filtering must be done in the query
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if hasPickingRole();
+      allow delete: if isAdmin();
     }
 
     /**
-     * @description Items within an order. Relies on denormalized 'clientId' for fast checks.
-     * @path /orders/{orderId}/order_items/{orderItemId}
-     * @allow (list) Owner of the parent order or admin.
-     * @deny (create) If 'clientId' does not match the requester's UID.
-     * @principle Avoids parent-document get() lookups by using denormalized auth context.
+     * SALES & PROSPECTS
      */
-    match /orders/{orderId}/order_items/{orderItemId} {
-      allow get: if isAdmin() || (isSignedIn() && resource.data.clientId == request.auth.uid);
-      allow list: if isAdmin() || isSignedIn(); // List operations are secured by Query-Agnostic-Permissions.
-      allow create: if isSignedIn() && request.resource.data.clientId == request.auth.uid;
-      allow update: if (isAdmin() || (isSignedIn() && resource.data.clientId == request.auth.uid)) && resource != null && request.resource.data.clientId == resource.data.clientId;
-      allow delete: if (isAdmin() || (isSignedIn() && resource.data.clientId == request.auth.uid)) && resource != null;
+    match /prospects/{prospectId} {
+      // Owners (salespeople) or admins can access
+      allow read, update: if hasSalesRole() && (resource.data.salespersonId == request.auth.uid || isAdmin());
+      allow create: if hasSalesRole();
+      allow delete: if isAdmin();
+
+      match /visits/{visitId} {
+        allow read, write: if hasSalesRole() && (get(/databases/$(database)/documents/prospects/$(prospectId)).data.salespersonId == request.auth.uid || isAdmin());
+      }
+    }
+
+    /**
+     * SUPPORT & BILLING
+     */
+    match /supportTickets/{id} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    match /invoices/{id} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * REWARDS & LOYALTY
+     */
+    match /rewardTiers/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /rewards/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /rewardRules/{id} { allow read, write: if isAdmin(); }
+
+    /**
+     * ADMINISTRATION
+     */
+    match /adminInvites/{email} {
+      allow read, create, delete: if isSuperAdmin();
+      allow get: if !isSignedIn(); // For signup check
+      allow update: if isSignedIn() && request.auth.token.email == email;
+    }
+    
+    match /pricelists/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
   }
 }
