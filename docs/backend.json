@@ -13,9 +13,26 @@
         "slug": { "type": "string", "description": "Identificador único para URLs." },
         "ownerId": { "type": "string", "description": "UID del usuario administrador principal." },
         "parentOrgId": { "type": "string", "description": "ID de la organización superior en la jerarquía (opcional)." },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "contactEmail": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" }
       },
       "required": ["id", "name", "type", "status", "ownerId", "createdAt"]
+    },
+    "OrganizationConnection": {
+      "title": "OrganizationConnection",
+      "description": "Vinculo comercial entre dos organizaciones dentro de la plataforma.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fromOrgId": { "type": "string", "description": "ID de la organización que solicita la conexión." },
+        "toOrgId": { "type": "string", "description": "ID de la organización que recibe la solicitud." },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "type": { "type": "string", "enum": ["supplier-client"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fromOrgId", "toOrgId", "status", "type", "createdAt"]
     },
     "UserProfile": {
       "title": "UserProfile",
@@ -31,20 +48,6 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "role", "status", "createdAt"]
-    },
-    "Product": {
-      "title": "Product",
-      "description": "Producto del catálogo mayorista.",
-      "type": "object",
-      "properties": {
-        "sku": { "type": "string" },
-        "name": { "type": "object" },
-        "salePrice": { "type": "number" },
-        "stock": { "type": "number" },
-        "active": { "type": "boolean" },
-        "organizationId": { "type": "string", "description": "ID de la organización dueña del inventario." }
-      },
-      "required": ["sku", "name", "salePrice", "stock", "active"]
     }
   },
   "auth": {
@@ -55,13 +58,13 @@
       "schema": { "$ref": "#/entities/Organization" },
       "description": "Registro central de empresas en el ecosistema."
     },
+    "/connections/{connId}": {
+      "schema": { "$ref": "#/entities/OrganizationConnection" },
+      "description": "Vínculos comerciales entre edificios."
+    },
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },
       "description": "Colección principal de usuarios y perfiles."
-    },
-    "/products/{productId}": {
-      "schema": { "$ref": "#/entities/Product" },
-      "description": "Catálogo global de productos."
     }
   }
 }

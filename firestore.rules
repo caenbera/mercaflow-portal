@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -26,7 +27,7 @@ service cloud.firestore {
 
     // Verifica si el usuario es el dueño legal del edificio (organización)
     function isOrgOwner(orgId) {
-      return get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid;
+      return isAuthed() && get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid;
     }
 
     // Verifica si el usuario pertenece al staff de esa organización
@@ -36,11 +37,31 @@ service cloud.firestore {
 
     /**
      * ORGANIZACIONES (EDIFICIOS)
-     * El Super Admin gestiona el registro central de edificios.
      */
     match /organizations/{orgId} {
       allow read: if isAuthed();
       allow write: if isSuperAdmin();
+    }
+
+    /**
+     * CONEXIONES ENTRE EDIFICIOS (RED DE SUMINISTRO)
+     */
+    match /connections/{id} {
+      allow read: if isAuthed() && (
+        isOrgOwner(resource.data.fromOrgId) || 
+        isOrgOwner(resource.data.toOrgId) ||
+        isSuperAdmin()
+      );
+      allow create: if isAuthed() && isOrgOwner(request.resource.data.fromOrgId);
+      allow update: if isAuthed() && (
+        isOrgOwner(resource.data.toOrgId) || 
+        isSuperAdmin()
+      );
+      allow delete: if isAuthed() && (
+        isOrgOwner(resource.data.fromOrgId) || 
+        isOrgOwner(resource.data.toOrgId) ||
+        isSuperAdmin()
+      );
     }
 
     /**
@@ -55,7 +76,7 @@ service cloud.firestore {
 
     /**
      * DATOS INTERNOS (PRODUCTOS, PEDIDOS, PROVEEDORES, OC)
-     * Solo el personal de la organización O el dueño del edificio (tú en tus tests) pueden acceder.
+     * Privacidad total: Solo el staff del edificio O el dueño legal pueden acceder.
      */
     
     match /products/{id} {

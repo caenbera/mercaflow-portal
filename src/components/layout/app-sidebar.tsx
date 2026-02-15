@@ -21,7 +21,7 @@ import { useOrganizations } from '@/hooks/use-organizations';
 import { 
   LayoutGrid, ShoppingCart, Package, Users,
   ClipboardList, Leaf, Truck, ShoppingBag, Boxes, Headset, 
-  ChevronRight, Trophy, Building2, Globe, Store
+  ChevronRight, Trophy, Building2, Globe, Store, Share2
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/navigation';
@@ -83,10 +83,8 @@ export function AppSidebar() {
         { href: `/admin/dashboard`, label: t('dashboard'), icon: LayoutGrid },
         { href: `/admin/orders`, label: t('manageOrders'), icon: ShoppingCart },
         { href: `/admin/clients`, label: t('manageClients'), icon: Users },
+        { href: `/admin/network`, label: "Red de Suministro", icon: Share2 },
         { href: `/admin/support`, label: t('support'), icon: Headset },
-    ],
-    sales: [
-        { href: `/admin/sales`, label: t('prospects'), icon: Users },
     ],
     catalog: [
         { href: `/admin/products`, label: t('manageProducts'), icon: Package },
@@ -148,7 +146,6 @@ export function AppSidebar() {
                   const isActive = activeOrgId === org.id;
                   
                   if (!isOwner) {
-                    // Muestra edificios de terceros como elementos de lista simples (solo lectura macro)
                     return (
                       <SidebarMenuItem key={org.id}>
                         <SidebarMenuButton 
@@ -166,7 +163,6 @@ export function AppSidebar() {
                     );
                   }
 
-                  // Muestra edificios de prueba con todos sus módulos (Desplegables)
                   const modules = getModuleItems(org.id);
                   return (
                     <SidebarMenuItem key={org.id}>

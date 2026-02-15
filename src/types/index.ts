@@ -24,6 +24,15 @@ export interface Organization {
   address?: string;
 }
 
+export interface OrganizationConnection {
+  id: string;
+  fromOrgId: string;
+  toOrgId: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  type: 'supplier-client';
+  createdAt: Timestamp;
+}
+
 export interface UserProfile {
   uid: string;
   email: string;
