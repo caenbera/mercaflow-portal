@@ -1,9 +1,10 @@
+
 import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 
 export const metadata: Metadata = {
-  title: 'Fresh Hub Portal',
-  description: "Wholesale fresh produce for Chicago's latin businesses.",
+  title: 'MercaFlow Portal',
+  description: "Wholesale fresh produce ecosystem for Chicago's latin businesses.",
 };
 
 /**

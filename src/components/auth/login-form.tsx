@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -149,11 +150,11 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="mx-auto max-w-sm w-full">
+    <Card className="mx-auto max-w-sm w-full border-none shadow-xl">
       <CardHeader className="text-center">
          <div className="flex justify-center items-center gap-2 mb-4">
           <Sprout className="h-8 w-8 text-primary" />
-          <h1 className="text-2xl font-headline font-bold">Fresh Hub Portal</h1>
+          <h1 className="text-2xl font-headline font-bold text-slate-800">MercaFlow Portal</h1>
         </div>
         <CardTitle className="text-2xl font-headline">{t('login_title')}</CardTitle>
         <CardDescription>{t('login_desc')}</CardDescription>

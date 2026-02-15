@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -197,9 +198,9 @@ export function AppSidebar() {
     return (
       <Sidebar>
         <SidebarHeader>
-          <Link href="/" className="flex items-center gap-3 text-sidebar-foreground">
-            <Leaf className="h-6 w-6" />
-            <span className="font-bold font-headline text-xl">Fresh Hub</span>
+          <Link href="/" className="flex items-center gap-3 text-sidebar-foreground p-2">
+            <Leaf className="h-6 w-6 text-primary" />
+            <span className="font-bold font-headline text-xl tracking-tight">MercaFlow</span>
           </Link>
         </SidebarHeader>
         <SidebarContent>
@@ -216,9 +217,9 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <Link href="/" className="flex items-center gap-3 text-sidebar-foreground">
-          <Leaf className="h-6 w-6" />
-          <span className="font-bold font-headline text-xl">Fresh Hub</span>
+        <Link href="/" className="flex items-center gap-3 text-sidebar-foreground p-2">
+          <Leaf className="h-6 w-6 text-primary" />
+          <span className="font-bold font-headline text-xl tracking-tight">MercaFlow</span>
         </Link>
       </SidebarHeader>
       <SidebarContent className="p-2">

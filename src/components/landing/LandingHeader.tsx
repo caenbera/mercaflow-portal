@@ -1,3 +1,4 @@
+
 'use client';
 import { MessageCircle, Phone, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,9 +17,9 @@ export function LandingPageHeader() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-3 md:py-4">
                 <div className="flex items-center space-x-3">
-                    <Image src="https://i.postimg.cc/y86gF4Cp/the-fresh_hub-noback.png" alt="The Fresh Hub" width={48} height={48} className="h-10 w-auto md:h-12" />
+                    <Image src="https://i.postimg.cc/y86gF4Cp/the-fresh_hub-noback.png" alt="MercaFlow Portal" width={48} height={48} className="h-10 w-auto md:h-12" />
                     <div>
-                        <h1 className="text-xl md:text-2xl font-bold text-gray-900 font-headline">The Fresh Hub</h1>
+                        <h1 className="text-xl md:text-2xl font-bold text-gray-900 font-headline tracking-tight">MercaFlow Portal</h1>
                         <p className="text-xs md:text-sm text-gray-600">{t('header_subtitle')}</p>
                     </div>
                 </div>

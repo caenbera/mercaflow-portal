@@ -1,10 +1,11 @@
+
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   const manifest = {
-    name: "Fresh Hub Portal",
-    short_name: "Fresh Hub",
-    description: "Wholesale fresh produce for Chicago's latin businesses.",
+    name: "MercaFlow Portal",
+    short_name: "MercaFlow",
+    description: "Ecosistema de productos frescos al por mayor para la comunidad latina.",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

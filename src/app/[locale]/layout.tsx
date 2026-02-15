@@ -1,3 +1,4 @@
+
 import type { ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
@@ -27,14 +28,14 @@ export async function generateMetadata({
     openGraph: {
       title: t('title'),
       description: t('description'),
-      url: 'https://the-fresh-hub.com', // A placeholder URL is fine
-      siteName: 'Fresh Hub Portal',
+      url: 'https://mercaflow-portal.com',
+      siteName: 'MercaFlow Portal',
       images: [
         {
           url: iconUrl,
           width: 512,
           height: 512,
-          alt: 'Fresh Hub Logo',
+          alt: 'MercaFlow Logo',
         },
       ],
       locale: locale === 'es' ? 'es_ES' : 'en_US',
@@ -79,7 +80,7 @@ export default async function RootLayout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter  :wght@300;400;600;700&family=Poppins:wght@400;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@400;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
