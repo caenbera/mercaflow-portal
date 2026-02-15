@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { Organization } from '@/types';
 import { useAuth } from '@/context/auth-context';
@@ -21,12 +21,9 @@ export function useOrganizations() {
     }
 
     const orgsCollection = collection(db, 'organizations');
-    let q = query(orgsCollection, orderBy('createdAt', 'desc'));
-
-    // Si no es superadmin, solo debería ver su propia organización (aunque esto es para el panel global)
-    if (role !== 'superadmin') {
-        // En una fase posterior filtraremos más estrictamente, por ahora permitimos lectura al staff
-    }
+    // Eliminamos el orderBy para evitar problemas de índices en el prototipo inicial.
+    // Ordenamos manualmente en el cliente si es necesario.
+    const q = query(orgsCollection);
 
     const unsubscribe = onSnapshot(
       q,
@@ -35,6 +32,14 @@ export function useOrganizations() {
         querySnapshot.forEach((doc) => {
           orgsData.push({ id: doc.id, ...doc.data() } as Organization);
         });
+        
+        // Ordenamos por fecha de creación descendente en el cliente
+        orgsData.sort((a, b) => {
+          const timeA = a.createdAt?.toMillis() || 0;
+          const timeB = b.createdAt?.toMillis() || 0;
+          return timeB - timeA;
+        });
+
         setOrganizations(orgsData);
         setLoading(false);
       },

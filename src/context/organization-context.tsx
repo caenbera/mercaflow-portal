@@ -23,7 +23,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   // Inicialización inteligente del contexto
   useEffect(() => {
-    if (!orgsLoading && organizations.length > 0) {
+    if (!orgsLoading && organizations && organizations.length > 0) {
       // 1. Si el usuario ya tiene un ID activo en estado, buscarlo
       if (activeOrgId) {
         const found = organizations.find(o => o.id === activeOrgId);
@@ -43,8 +43,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // 3. Como último recurso para el Super Admin, activar la primera de la lista
-      if (role === 'superadmin' && !activeOrgId) {
+      // 3. Como último recurso para el Super Admin, activar la primera de la lista (si existe)
+      if (role === 'superadmin' && !activeOrgId && organizations.length > 0) {
         setActiveOrgId(organizations[0].id);
         setActiveOrg(organizations[0]);
       }
@@ -53,9 +53,11 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   // Sincronizar el objeto cuando cambia el ID
   useEffect(() => {
-    if (activeOrgId && organizations.length > 0) {
+    if (activeOrgId && organizations && organizations.length > 0) {
       const org = organizations.find(o => o.id === activeOrgId) || null;
       setActiveOrg(org);
+    } else if (!activeOrgId) {
+      setActiveOrg(null);
     }
   }, [activeOrgId, organizations]);
 
