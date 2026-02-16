@@ -180,56 +180,56 @@ export default function OrganizationsManagementPage() {
         <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-sidebar p-1.5 h-auto mb-8 rounded-2xl border border-sidebar-border shadow-inner">
           <TabsTrigger 
             value="importer" 
-            className="py-3 gap-3 rounded-xl text-sidebar-foreground/60 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-primary transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            className="group py-3 gap-3 rounded-xl text-sidebar-foreground/60 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-primary transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             <Globe className="h-5 w-5" />
             <div className="flex flex-col items-start leading-none">
               <span className="font-bold text-sm">Importadores</span>
               <span className="text-[9px] opacity-60 font-medium uppercase tracking-tighter">Nivel 1</span>
             </div>
-            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none">
+            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none group-data-[state=active]:bg-primary group-data-[state=active]:text-white">
               {groupedOrgs.importer.length}
             </Badge>
           </TabsTrigger>
           
           <TabsTrigger 
             value="distributor" 
-            className="py-3 gap-3 rounded-xl text-sidebar-foreground/60 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-primary transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            className="group py-3 gap-3 rounded-xl text-sidebar-foreground/60 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-primary transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             <Truck className="h-5 w-5" />
             <div className="flex flex-col items-start leading-none">
               <span className="font-bold text-sm">Distribuidores</span>
               <span className="text-[9px] opacity-60 font-medium uppercase tracking-tighter">Nivel 2</span>
             </div>
-            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none">
+            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none group-data-[state=active]:bg-primary group-data-[state=active]:text-white">
               {groupedOrgs.distributor.length}
             </Badge>
           </TabsTrigger>
           
           <TabsTrigger 
             value="wholesaler" 
-            className="py-3 gap-3 rounded-xl text-sidebar-foreground/60 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-primary transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            className="group py-3 gap-3 rounded-xl text-sidebar-foreground/60 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-primary transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             <ShoppingBag className="h-5 w-5" />
             <div className="flex flex-col items-start leading-none">
               <span className="font-bold text-sm">Mayoristas</span>
               <span className="text-[9px] opacity-60 font-medium uppercase tracking-tighter">Nivel 3</span>
             </div>
-            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none">
+            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none group-data-[state=active]:bg-primary group-data-[state=active]:text-white">
               {groupedOrgs.wholesaler.length}
             </Badge>
           </TabsTrigger>
           
           <TabsTrigger 
             value="retailer" 
-            className="py-3 gap-3 rounded-xl text-sidebar-foreground/60 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-primary transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            className="group py-3 gap-3 rounded-xl text-sidebar-foreground/60 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-primary transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             <Store className="h-5 w-5" />
             <div className="flex flex-col items-start leading-none">
               <span className="font-bold text-sm">Minoristas</span>
               <span className="text-[9px] opacity-60 font-medium uppercase tracking-tighter">Nivel 4</span>
             </div>
-            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none">
+            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none group-data-[state=active]:bg-primary group-data-[state=active]:text-white">
               {groupedOrgs.retailer.length}
             </Badge>
           </TabsTrigger>
