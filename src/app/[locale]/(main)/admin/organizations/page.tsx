@@ -78,7 +78,7 @@ export default function OrganizationsManagementPage() {
       return (
         <div className="text-center py-20 bg-muted/20 rounded-2xl border-2 border-dashed">
           <Building2 className="mx-auto h-12 w-12 text-muted-foreground opacity-20" />
-          <h3 className="mt-4 font-bold">No hay registros en esta categoría</h3>
+          <h3 className="mt-4 font-bold text-slate-800">No hay registros en esta categoría</h3>
           <p className="text-sm text-muted-foreground">Crea un nuevo edificio para comenzar a poblar tu ecosistema.</p>
         </div>
       );
@@ -89,7 +89,7 @@ export default function OrganizationsManagementPage() {
         {orgs.map((org) => {
           const isTest = org.ownerId === user?.uid;
           return (
-            <Card key={org.id} className={cn("overflow-hidden hover:shadow-lg transition-all border-l-4", isTest ? "border-l-yellow-400" : "border-l-primary")}>
+            <Card key={org.id} className={cn("overflow-hidden hover:shadow-lg transition-all border-l-4 border-t border-r border-b", isTest ? "border-l-yellow-400" : "border-l-primary")}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-slate-50 rounded-xl border">
@@ -97,7 +97,7 @@ export default function OrganizationsManagementPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <CardTitle className="text-lg font-bold truncate">{org.name}</CardTitle>
+                      <CardTitle className="text-lg font-bold truncate text-slate-800">{org.name}</CardTitle>
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Badge variant="outline" className="capitalize text-[10px] py-0 h-4 font-mono tracking-tighter">
@@ -121,7 +121,7 @@ export default function OrganizationsManagementPage() {
                 <div className="space-y-2 text-sm mt-4">
                   <div className="flex justify-between items-center bg-slate-50/50 p-2 rounded-lg">
                     <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-semibold"><User className="h-3 w-3" /> Dueño:</span>
-                    <span className="font-medium truncate max-w-[150px] text-xs">{isTest ? "Tú (Super Admin)" : org.ownerId.substring(0, 8) + "..."}</span>
+                    <span className="font-medium truncate max-w-[150px] text-xs text-slate-700">{isTest ? "Tú (Super Admin)" : org.ownerId.substring(0, 8) + "..."}</span>
                   </div>
                   <div className="flex justify-between items-center bg-slate-50/50 p-2 rounded-lg">
                     <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-semibold"><ShieldCheck className="h-3 w-3" /> Estado:</span>
@@ -158,17 +158,17 @@ export default function OrganizationsManagementPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 flex flex-col gap-8">
+    <div className="p-4 sm:p-6 lg:p-8 flex flex-col gap-8 min-h-screen">
       <OrganizationDialog 
         open={isDialogOpen} 
         onOpenChange={setIsDialogOpen} 
         organization={selectedOrg} 
       />
 
-      <div className="flex justify-between items-end">
+      <div className="flex justify-between items-end flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold font-headline tracking-tight text-slate-900">Alcaldía de Edificios</h1>
-          <p className="text-muted-foreground text-sm mt-1">Supervisa y administra el ecosistema jerárquico de MercaFlow.</p>
+          <p className="text-slate-500 text-sm mt-1">Supervisa y administra el ecosistema jerárquico de MercaFlow.</p>
         </div>
         <Button onClick={handleCreate} className="shadow-lg hover:shadow-xl transition-all h-11 px-6 rounded-xl font-bold bg-primary hover:bg-primary/90">
           <PlusCircle className="mr-2 h-5 w-5" />
@@ -177,41 +177,61 @@ export default function OrganizationsManagementPage() {
       </div>
 
       <Tabs defaultValue="wholesaler" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-slate-100 p-1.5 h-auto mb-8 rounded-2xl border">
-          <TabsTrigger value="importer" className="py-3 gap-3 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-primary transition-all">
-            <Globe className="h-5 w-5 opacity-70" />
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-sidebar p-1.5 h-auto mb-8 rounded-2xl border border-sidebar-border shadow-inner">
+          <TabsTrigger 
+            value="importer" 
+            className="py-3 gap-3 rounded-xl text-sidebar-foreground/60 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-primary transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            <Globe className="h-5 w-5" />
             <div className="flex flex-col items-start leading-none">
               <span className="font-bold text-sm">Importadores</span>
-              <span className="text-[10px] opacity-60 font-medium">Nivel 1</span>
+              <span className="text-[9px] opacity-60 font-medium uppercase tracking-tighter">Nivel 1</span>
             </div>
-            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-slate-200/50 text-slate-600 font-bold">{groupedOrgs.importer.length}</Badge>
+            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none">
+              {groupedOrgs.importer.length}
+            </Badge>
           </TabsTrigger>
           
-          <TabsTrigger value="distributor" className="py-3 gap-3 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-primary transition-all">
-            <Truck className="h-5 w-5 opacity-70" />
+          <TabsTrigger 
+            value="distributor" 
+            className="py-3 gap-3 rounded-xl text-sidebar-foreground/60 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-primary transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            <Truck className="h-5 w-5" />
             <div className="flex flex-col items-start leading-none">
               <span className="font-bold text-sm">Distribuidores</span>
-              <span className="text-[10px] opacity-60 font-medium">Nivel 2</span>
+              <span className="text-[9px] opacity-60 font-medium uppercase tracking-tighter">Nivel 2</span>
             </div>
-            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-slate-200/50 text-slate-600 font-bold">{groupedOrgs.distributor.length}</Badge>
+            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none">
+              {groupedOrgs.distributor.length}
+            </Badge>
           </TabsTrigger>
           
-          <TabsTrigger value="wholesaler" className="py-3 gap-3 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-primary transition-all">
-            <ShoppingBag className="h-5 w-5 opacity-70" />
+          <TabsTrigger 
+            value="wholesaler" 
+            className="py-3 gap-3 rounded-xl text-sidebar-foreground/60 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-primary transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            <ShoppingBag className="h-5 w-5" />
             <div className="flex flex-col items-start leading-none">
               <span className="font-bold text-sm">Mayoristas</span>
-              <span className="text-[10px] opacity-60 font-medium">Nivel 3</span>
+              <span className="text-[9px] opacity-60 font-medium uppercase tracking-tighter">Nivel 3</span>
             </div>
-            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-slate-200/50 text-slate-600 font-bold">{groupedOrgs.wholesaler.length}</Badge>
+            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none">
+              {groupedOrgs.wholesaler.length}
+            </Badge>
           </TabsTrigger>
           
-          <TabsTrigger value="retailer" className="py-3 gap-3 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-primary transition-all">
-            <Store className="h-5 w-5 opacity-70" />
+          <TabsTrigger 
+            value="retailer" 
+            className="py-3 gap-3 rounded-xl text-sidebar-foreground/60 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-primary transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            <Store className="h-5 w-5" />
             <div className="flex flex-col items-start leading-none">
               <span className="font-bold text-sm">Minoristas</span>
-              <span className="text-[10px] opacity-60 font-medium">Nivel 4</span>
+              <span className="text-[9px] opacity-60 font-medium uppercase tracking-tighter">Nivel 4</span>
             </div>
-            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-slate-200/50 text-slate-600 font-bold">{groupedOrgs.retailer.length}</Badge>
+            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none">
+              {groupedOrgs.retailer.length}
+            </Badge>
           </TabsTrigger>
         </TabsList>
 
