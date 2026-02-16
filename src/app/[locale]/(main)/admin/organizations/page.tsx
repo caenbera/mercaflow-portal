@@ -10,13 +10,15 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   PlusCircle, Building2, Globe, Truck, ShoppingBag, 
-  Store, MoreVertical, Pencil, Trash2, ShieldCheck, User,
-  Info, MessageSquare, Mail, Link as LinkIcon, Lock, Unlock
+  Store, MoreVertical, Pencil, Trash2, ShieldCheck,
+  Info, MessageSquare, Mail, Lock, Unlock, DatabaseZap, Loader2
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OrganizationDialog } from '@/components/admin/organizations/organization-dialog';
 import type { Organization, OrganizationType } from '@/types';
 import { deleteOrganization } from '@/lib/firestore/organizations';
+import { migrateLegacyProducts } from '@/lib/firestore/products';
+import { migrateLegacySuppliers } from '@/lib/firestore/suppliers';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import {
@@ -34,6 +36,7 @@ export default function OrganizationsManagementPage() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
+  const [isMigrating, setIsMigrating] = useState<string | null>(null);
 
   const handleEdit = (org: Organization) => {
     setSelectedOrg(org);
@@ -53,6 +56,23 @@ export default function OrganizationsManagementPage() {
       } catch (e) {
         toast({ variant: "destructive", title: "Error al eliminar" });
       }
+    }
+  };
+
+  const handleMigrateLegacyData = async (orgId: string) => {
+    setIsMigrating(orgId);
+    try {
+      const prodCount = await migrateLegacyProducts(orgId);
+      const suppCount = await migrateLegacySuppliers(orgId);
+      
+      toast({ 
+        title: "Migración Exitosa", 
+        description: `Se han vinculado ${prodCount} productos y ${suppCount} proveedores a este edificio.` 
+      });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error en migración", description: "Ocurrió un problema al mover los datos." });
+    } finally {
+      setIsMigrating(null);
     }
   };
 
@@ -104,7 +124,7 @@ export default function OrganizationsManagementPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {orgs.map((org) => {
           const isMyTestOrg = org.ownerId === user?.uid;
-          const isClaimed = !!org.ownerEmail && org.ownerId !== user?.uid; // Simplificado: si el dueño ya no es el superadmin
+          const isClaimed = !!org.ownerEmail && org.ownerId !== user?.uid;
 
           return (
             <Card key={org.id} className={cn("overflow-hidden hover:shadow-lg transition-all border-l-4 border-t border-r border-b", isMyTestOrg ? "border-l-yellow-400" : "border-l-primary")}>
@@ -129,6 +149,12 @@ export default function OrganizationsManagementPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => handleEdit(org)}><Pencil className="mr-2 h-4 w-4" /> Configurar Convenio</DropdownMenuItem>
+                    {isMyTestOrg && (
+                      <DropdownMenuItem onClick={() => handleMigrateLegacyData(org.id)} disabled={!!isMigrating}>
+                        {isMigrating === org.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DatabaseZap className="mr-2 h-4 w-4" />}
+                        Vincular Datos Huérfanos
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(org.id)}><Trash2 className="mr-2 h-4 w-4" /> Eliminar</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -141,7 +167,6 @@ export default function OrganizationsManagementPage() {
                     <span className="font-medium truncate max-w-[150px] text-xs text-slate-700">{org.ownerEmail || "Sin asignar"}</span>
                   </div>
                   
-                  {/* Convenios Visuales */}
                   <div className="flex gap-1.5 mt-3">
                     <Badge variant={org.adminAgreements?.catalog ? "default" : "outline"} className={cn("text-[8px] h-5 px-1.5 gap-1", !org.adminAgreements?.catalog && "opacity-40")}>
                       {org.adminAgreements?.catalog ? <Unlock className="h-2 w-2" /> : <Lock className="h-2 w-2" />} Catálogo
