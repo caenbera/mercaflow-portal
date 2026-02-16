@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import {
   Select,
@@ -29,17 +31,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { createOrganization, updateOrganization } from '@/lib/firestore/organizations';
+import { addAdminInvite } from '@/lib/firestore/users';
 import { useToast } from '@/hooks/use-toast';
 import type { Organization, OrganizationType, OrganizationStatus } from '@/types';
 import { useAuth } from '@/context/auth-context';
+import { ShieldAlert, Info, UserCheck, Lock } from 'lucide-react';
 
 const orgSchema = z.object({
   name: z.string().min(3, "El nombre debe tener al menos 3 caracteres."),
   type: z.enum(['importer', 'distributor', 'wholesaler', 'retailer']),
   status: z.enum(['active', 'suspended', 'pending']),
   slug: z.string().min(3, "El slug debe ser único."),
-  contactEmail: z.string().email("Correo inválido.").optional(),
+  ownerEmail: z.string().email("Correo de dueño inválido.").optional().or(z.literal('')),
+  adminAgreements: z.object({
+    catalog: z.boolean().default(false),
+    operations: z.boolean().default(false),
+    finance: z.boolean().default(false),
+  }),
 });
 
 type FormValues = z.infer<typeof orgSchema>;
@@ -62,7 +72,12 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
       type: 'wholesaler',
       status: 'active',
       slug: '',
-      contactEmail: '',
+      ownerEmail: '',
+      adminAgreements: {
+        catalog: false,
+        operations: false,
+        finance: false,
+      },
     },
   });
 
@@ -74,7 +89,12 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
           type: organization.type,
           status: organization.status,
           slug: organization.slug,
-          contactEmail: organization.contactEmail || '',
+          ownerEmail: organization.ownerEmail || '',
+          adminAgreements: organization.adminAgreements || {
+            catalog: false,
+            operations: false,
+            finance: false,
+          },
         });
       } else {
         form.reset({
@@ -82,7 +102,12 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
           type: 'wholesaler',
           status: 'active',
           slug: '',
-          contactEmail: '',
+          ownerEmail: '',
+          adminAgreements: {
+            catalog: false,
+            operations: false,
+            finance: false,
+          },
         });
       }
     }
@@ -94,13 +119,27 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
     try {
       if (organization) {
         await updateOrganization(organization.id, values);
-        toast({ title: "Organización actualizada" });
+        
+        // Si el email del dueño cambió, actualizamos la invitación
+        if (values.ownerEmail && values.ownerEmail !== organization.ownerEmail) {
+          await addAdminInvite(values.ownerEmail, 'client', organization.id);
+        }
+        
+        toast({ title: "Edificio actualizado" });
       } else {
-        await createOrganization({
+        // Al crear, asignamos temporalmente al Super Admin como dueño técnico
+        // hasta que el cliente reclame el edificio
+        const newOrgId = await createOrganization({
           ...values,
           ownerId: user.uid,
         });
-        toast({ title: "Organización creada con éxito" });
+
+        // Creamos la invitación obligatoria para el dueño real
+        if (values.ownerEmail) {
+          await addAdminInvite(values.ownerEmail, 'client', newOrgId);
+        }
+
+        toast({ title: "Edificio creado e invitación reservada" });
       }
       onOpenChange(false);
     } catch (e) {
@@ -110,68 +149,132 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
     }
   };
 
+  const isTestOrg = organization?.ownerId === user?.uid;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{organization ? 'Editar Edificio' : 'Crear Nuevo Edificio'}</DialogTitle>
+          <DialogTitle>{organization ? 'Configuración del Edificio' : 'Crear Nuevo Edificio'}</DialogTitle>
+          <DialogDescription>
+            Configura la identidad del edificio y define tus niveles de acceso administrativo.
+          </DialogDescription>
         </DialogHeader>
+        
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="name" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nombre de la Empresa</FormLabel>
-                <FormControl><Input placeholder="Ej: Fresh Hub Chicago" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )}/>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="type" render={({ field }) => (
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
+                <Info className="h-4 w-4" /> Datos Básicos
+              </h3>
+              <FormField control={form.control} name="name" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tipo de Nodo</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      <SelectItem value="importer">Importador</SelectItem>
-                      <SelectItem value="distributor">Distribuidor</SelectItem>
-                      <SelectItem value="wholesaler">Mayorista</SelectItem>
-                      <SelectItem value="retailer">Minorista / Super</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Nombre de la Empresa</FormLabel>
+                  <FormControl><Input placeholder="Ej: Fresh Hub Chicago" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}/>
-              <FormField control={form.control} name="status" render={({ field }) => (
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="type" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Nodo</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="importer">Importador</SelectItem>
+                        <SelectItem value="distributor">Distribuidor</SelectItem>
+                        <SelectItem value="wholesaler">Mayorista</SelectItem>
+                        <SelectItem value="retailer">Minorista / Super</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
+                <FormField control={form.control} name="status" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="active">Activo</SelectItem>
+                        <SelectItem value="suspended">Suspendido</SelectItem>
+                        <SelectItem value="pending">Pendiente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
+              </div>
+              <FormField control={form.control} name="slug" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Estado</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      <SelectItem value="active">Activo</SelectItem>
-                      <SelectItem value="suspended">Suspendido</SelectItem>
-                      <SelectItem value="pending">Pendiente</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Slug (ID de URL)</FormLabel>
+                  <FormControl><Input placeholder="ej: fresh-hub-chi" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}/>
             </div>
-            <FormField control={form.control} name="slug" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Slug (ID de URL)</FormLabel>
-                <FormControl><Input placeholder="ej: fresh-hub-chi" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )}/>
-            <FormField control={form.control} name="contactEmail" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email de Contacto</FormLabel>
-                <FormControl><Input type="email" placeholder="admin@empresa.com" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )}/>
+
+            <div className="space-y-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+              <h3 className="text-sm font-bold uppercase text-blue-700 flex items-center gap-2">
+                <UserCheck className="h-4 w-4" /> Propietario del Edificio
+              </h3>
+              <FormField control={form.control} name="ownerEmail" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Correo Electrónico del Cliente</FormLabel>
+                  <FormControl><Input type="email" placeholder="cliente@empresa.com" {...field} /></FormControl>
+                  <FormDescription className="text-[10px]">
+                    Este correo se usará como "Llave" única para el registro del cliente.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}/>
+            </div>
+
+            <div className="space-y-4 p-4 bg-orange-50/50 rounded-xl border border-orange-100">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold uppercase text-orange-700 flex items-center gap-2">
+                  <Lock className="h-4 w-4" /> Convenios de Acceso (Privacidad)
+                </h3>
+                {isTestOrg && <Badge className="bg-orange-200 text-orange-800 text-[8px]">OMITIDO EN PRUEBAS</Badge>}
+              </div>
+              <p className="text-[10px] text-orange-800 mb-2">
+                Define a qué módulos tendrás acceso como Super Administrador. Estos switches controlan la visibilidad de los datos del cliente.
+              </p>
+              
+              <div className="space-y-3">
+                <FormField control={form.control} name="adminAgreements.catalog" render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border bg-background p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-xs">Convenio de Catálogo</FormLabel>
+                      <FormDescription className="text-[10px]">Ver/Editar productos y precios.</FormDescription>
+                    </div>
+                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                  </FormItem>
+                )}/>
+                <FormField control={form.control} name="adminAgreements.operations" render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border bg-background p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-xs">Convenio Operativo</FormLabel>
+                      <FormDescription className="text-[10px]">Gestionar pedidos, picking y compras.</FormDescription>
+                    </div>
+                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                  </FormItem>
+                )}/>
+                <FormField control={form.control} name="adminAgreements.finance" render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border bg-background p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-xs">Convenio Financiero</FormLabel>
+                      <FormDescription className="text-[10px]">Acceso a facturas y reportes de rentabilidad.</FormDescription>
+                    </div>
+                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                  </FormItem>
+                )}/>
+              </div>
+            </div>
+
             <DialogFooter>
-              <Button type="submit" disabled={isLoading}>{isLoading ? 'Guardando...' : 'Confirmar'}</Button>
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+              <Button type="submit" disabled={isLoading}>{isLoading ? 'Guardando...' : 'Confirmar Cambios'}</Button>
             </DialogFooter>
           </form>
         </Form>

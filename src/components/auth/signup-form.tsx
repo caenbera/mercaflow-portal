@@ -5,114 +5,123 @@ import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Sprout, Info } from 'lucide-react';
+import { Sprout, Info, ShieldAlert, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, WithFieldValue, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, WithFieldValue, getDoc, updateDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
-import { Link, useRouter } from '@/navigation';
+import { Link, useRouter, usePathname } from '@/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import type { UserProfile, AdminInvite, UserRole } from '@/types';
+import type { UserProfile, AdminInvite, Organization } from '@/types';
 import { debounce } from 'lodash';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useSearchParams } from 'next/navigation';
 
 const SUPER_ADMIN_EMAIL = 'caenbera@gmail.com';
 
-// Schema is now a function to dynamically adjust validation based on invite status
-const createSignupSchema = (isInvited: boolean, isSuperAdmin: boolean) => z.object({
+const signupSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
+  contactPerson: z.string().min(2, "Nombre de contacto requerido."),
   businessName: z.string().optional(),
-  contactPerson: z.string().min(isInvited || isSuperAdmin ? 0 : 2, "Contact person is required."),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-}).refine(data => {
-  if (isSuperAdmin || isInvited) return true;
-  return !!data.businessName && data.businessName.length >= 2;
-}, {
-  message: "Business name must be at least 2 characters.",
-  path: ["businessName"],
-}).refine(data => {
-  if (isSuperAdmin || isInvited) return true;
-  return !!data.phone && data.phone.length >= 10;
-}, {
-  message: "Please enter a valid phone number.",
-  path: ["phone"],
-}).refine(data => {
-  if (isSuperAdmin || isInvited) return true;
-  return !!data.address && data.address.length >= 5;
-}, {
-  message: "Please enter a valid address.",
-  path: ["address"],
 });
-
 
 export function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [inviteData, setInviteData] = useState<AdminInvite | null>(null);
+  const [targetOrg, setTargetOrg] = useState<Organization | null>(null);
   const [isCheckingInvite, setIsCheckingInvite] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   const t = useTranslations('Auth');
   const locale = useLocale();
 
-  const formSchema = createSignupSchema(!!inviteData, isSuperAdmin);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof signupSchema>>({
+    resolver: zodResolver(signupSchema),
     defaultValues: {
       businessName: "",
       contactPerson: "",
-      email: "",
-      phone: "",
-      address: "",
+      email: searchParams.get('email') || "",
       password: "",
     },
   });
 
   const watchedEmail = form.watch("email");
 
-  // Debounced check for invite
-  const debouncedCheckInvite = useCallback(
+  const checkInvite = useCallback(
     debounce(async (email: string) => {
       if (!email || !z.string().email().safeParse(email).success) {
         setInviteData(null);
-        setIsCheckingInvite(false);
+        setTargetOrg(null);
+        setInviteError(null);
         return;
       }
+
       setIsCheckingInvite(true);
+      setInviteError(null);
       try {
+        // 1. Verificar si el correo es el del Super Admin
+        if (email.toLowerCase() === SUPER_ADMIN_EMAIL) {
+          setIsSuperAdmin(true);
+          setInviteData(null);
+          setIsCheckingInvite(false);
+          return;
+        } else {
+          setIsSuperAdmin(false);
+        }
+
+        // 2. Buscar invitación en la colección adminInvites
         const inviteDocRef = doc(db, 'adminInvites', email.toLowerCase());
         const docSnap = await getDoc(inviteDocRef);
+        
         if (docSnap.exists() && docSnap.data().status === 'pending') {
-          setInviteData(docSnap.data() as AdminInvite);
+          const invite = docSnap.data() as AdminInvite;
+          setInviteData(invite);
+
+          // Si la invitación tiene un organizationId, cargamos los datos del edificio
+          if (invite.organizationId) {
+            const orgDoc = await getDoc(doc(db, 'organizations', invite.organizationId));
+            if (orgDoc.exists()) {
+              setTargetOrg({ id: orgDoc.id, ...orgDoc.data() } as Organization);
+              form.setValue('businessName', orgDoc.data().name);
+            }
+          }
         } else {
+          // Bloqueo estricto: Si no hay invitación ni es superadmin, no puede registrarse
           setInviteData(null);
+          setTargetOrg(null);
+          setInviteError("Este correo no tiene una invitación activa. Por favor, contacta al administrador.");
         }
       } catch (error) {
         console.error("Error checking for invite:", error);
-        setInviteData(null);
+        setInviteError("Ocurrió un error al validar tu acceso.");
       } finally {
         setIsCheckingInvite(false);
       }
     }, 500),
-    []
+    [form]
   );
 
   useEffect(() => {
-    setIsSuperAdmin(watchedEmail.toLowerCase() === SUPER_ADMIN_EMAIL);
-    debouncedCheckInvite(watchedEmail);
-  }, [watchedEmail, debouncedCheckInvite]);
+    checkInvite(watchedEmail);
+  }, [watchedEmail, checkInvite]);
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof signupSchema>) {
+    if (!inviteData && !isSuperAdmin) {
+      toast({ variant: 'destructive', title: "Acceso denegado", description: "Necesitas una invitación para registrarte." });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
@@ -123,50 +132,31 @@ export function SignupForm() {
         email: values.email,
         createdAt: serverTimestamp(),
         contactPerson: values.contactPerson,
-        status: 'active', // All new users are active by default now
+        status: 'active',
       };
       
       if (inviteData) {
-        // Invited Admin/Picker
         userData.role = inviteData.role;
-        userData.businessName = `${values.contactPerson} (${inviteData.role})`; // e.g., "John Doe (admin)"
-        // Claim the invite
-        const inviteDocRef = doc(db, 'adminInvites', inviteData.email);
-        const updateInviteData = { status: 'claimed' };
-        updateDoc(inviteDocRef, updateInviteData).catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: inviteDocRef.path,
-            operation: 'update',
-            requestResourceData: updateInviteData,
-          });
-          errorEmitter.emit('permission-error', permissionError);
-        });
+        userData.organizationId = inviteData.organizationId;
+        userData.businessName = values.businessName || targetOrg?.name || 'Cliente MercaFlow';
+        
+        // Si el rol es el del dueño del edificio, actualizamos el ownerId de la organización
+        if (inviteData.role === 'client' && inviteData.organizationId) {
+          const orgRef = doc(db, 'organizations', inviteData.organizationId);
+          await updateDoc(orgRef, { ownerId: user.uid }).catch(e => console.error("Error updating org owner", e));
+        }
+
+        // Marcar invitación como reclamada
+        const inviteDocRef = doc(db, 'adminInvites', inviteData.email.toLowerCase());
+        await updateDoc(inviteDocRef, { status: 'claimed' });
+
       } else if (isSuperAdmin) {
-        // Super Admin
         userData.role = 'superadmin';
-        userData.businessName = 'Super Admin';
-      } else {
-        // Regular Client
-        userData.role = 'client';
-        userData.status = 'pending_approval';
-        userData.businessName = values.businessName;
-        userData.phone = values.phone;
-        userData.address = values.address;
-        userData.tier = 'standard';
-        userData.creditLimit = 0;
-        userData.paymentTerms = 'Net 15';
-        userData.priceList = 'Standard';
+        userData.businessName = 'Super Admin Principal';
       }
       
       const userDocRef = doc(db, "users", user.uid);
-      setDoc(userDocRef, userData).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: 'create',
-          requestResourceData: userData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
+      await setDoc(userDocRef, userData);
       
       auth.languageCode = locale;
       await sendEmailVerification(user);
@@ -179,8 +169,8 @@ export function SignupForm() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Signup Failed",
-        description: error.message || "An unknown error occurred.",
+        title: "Error al registrarse",
+        description: error.message || "Ocurrió un error inesperado.",
       });
     } finally {
       setIsLoading(false);
@@ -188,119 +178,108 @@ export function SignupForm() {
   }
   
   return (
-    <Card className="mx-auto max-w-sm w-full">
+    <Card className="mx-auto max-w-sm w-full border-none shadow-2xl">
       <CardHeader className="text-center">
          <div className="flex justify-center items-center gap-2 mb-4">
           <Sprout className="h-8 w-8 text-primary" />
-          <h1 className="text-2xl font-headline font-bold">MercaFlow Portal</h1>
+          <h1 className="text-2xl font-headline font-bold">MercaFlow</h1>
         </div>
         <CardTitle className="text-2xl font-headline">{t('signup_title')}</CardTitle>
-        <CardDescription>{t('signup_desc')}</CardDescription>
+        <CardDescription>El registro requiere invitación previa del administrador.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Email Invitado</FormLabel>
                   <FormControl>
-                    <Input placeholder="name@example.com" {...field} />
+                    <div className="relative">
+                      <Input placeholder="tu@empresa.com" {...field} />
+                      {isCheckingInvite && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {inviteData && (
-              <Alert className="bg-blue-50 border-blue-200 text-blue-800">
-                <Info className="h-4 w-4 !text-blue-700" />
-                <AlertDescription className="text-xs">
-                  Welcome! You've been invited as a <strong className="capitalize">{inviteData.role}</strong>. Please complete your registration.
-                </AlertDescription>
+            {inviteError && (
+              <Alert variant="destructive" className="bg-red-50">
+                <ShieldAlert className="h-4 w-4" />
+                <AlertDescription className="text-xs">{inviteError}</AlertDescription>
               </Alert>
             )}
 
-            <FormField
-              control={form.control}
-              name="contactPerson"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{inviteData ? 'Full Name' : 'Contact Person'}</FormLabel>
-                  <FormControl>
-                    <Input placeholder={inviteData ? 'Your Name' : "Manager's Name"} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {(inviteData || isSuperAdmin) && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                <Alert className="bg-green-50 border-green-200 text-green-800">
+                  <Info className="h-4 w-4 !text-green-700" />
+                  <AlertTitle className="text-xs font-bold uppercase tracking-wider">Invitación Validada</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    {isSuperAdmin 
+                      ? "Identidad de Administrador confirmada." 
+                      : `Acceso autorizado para gestionar "${targetOrg?.name || 'tu edificio'}".`}
+                  </AlertDescription>
+                </Alert>
 
-            {!isSuperAdmin && !inviteData && (
-              <>
                 <FormField
                   control={form.control}
-                  name="businessName"
+                  name="contactPerson"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Business Name</FormLabel>
+                      <FormLabel>Nombre Completo</FormLabel>
                       <FormControl>
-                        <Input placeholder="Your Business Inc." {...field} />
+                        <Input placeholder="Tu nombre" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                {!isSuperAdmin && targetOrg && (
+                  <FormField
+                    control={form.control}
+                    name="businessName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nombre del Negocio</FormLabel>
+                        <FormControl>
+                          <Input readOnly className="bg-muted" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
                 <FormField
                   control={form.control}
-                  name="phone"
+                  name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
+                      <FormLabel>Crea tu Contraseña</FormLabel>
                       <FormControl>
-                        <Input placeholder="(555) 555-5555" {...field} />
+                        <Input type="password" placeholder="••••••••" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Business Address</FormLabel>
-                      <FormControl>
-                        <Input placeholder="123 Main St, Chicago, IL" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
+
+                <Button type="submit" className="w-full !mt-4" disabled={isLoading}>
+                  {isLoading ? t('creating_account') : t('create_account')}
+                </Button>
+              </div>
             )}
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" className="w-full !mt-4" disabled={isLoading || isCheckingInvite}>
-              {isLoading ? t('creating_account') : t('create_account')}
-            </Button>
           </form>
         </Form>
-        <div className="mt-4 text-center text-sm">
+        <div className="mt-6 text-center text-sm">
           {t('has_account')}{' '}
-          <Link href="/login" className="underline">
+          <Link href="/login" className="underline font-bold text-primary">
             {t('login')}
           </Link>
         </div>

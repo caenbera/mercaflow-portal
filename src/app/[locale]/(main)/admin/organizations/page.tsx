@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { useOrganizations } from '@/hooks/use-organizations';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   PlusCircle, Building2, Globe, Truck, ShoppingBag, 
   Store, MoreVertical, Pencil, Trash2, ShieldCheck, User,
-  Info
+  Info, MessageSquare, Mail, Link as LinkIcon, Lock, Unlock
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OrganizationDialog } from '@/components/admin/organizations/organization-dialog';
@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 
 export default function OrganizationsManagementPage() {
   const { user } = useAuth();
+  const locale = useLocale();
   const { organizations, loading } = useOrganizations();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -53,6 +54,21 @@ export default function OrganizationsManagementPage() {
         toast({ variant: "destructive", title: "Error al eliminar" });
       }
     }
+  };
+
+  const sendInviteWhatsApp = (org: Organization) => {
+    if (!org.ownerEmail) return;
+    const registerLink = `${window.location.origin}/${locale}/signup?email=${encodeURIComponent(org.ownerEmail)}`;
+    const message = `¡Hola! Tu espacio en MercaFlow ya está listo. Regístrate aquí para gestionar tu edificio "${org.name}": ${registerLink}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const sendInviteEmail = (org: Organization) => {
+    if (!org.ownerEmail) return;
+    const registerLink = `${window.location.origin}/${locale}/signup?email=${encodeURIComponent(org.ownerEmail)}`;
+    const subject = `Invitación para gestionar ${org.name} en MercaFlow`;
+    const body = `Hola,\n\nTu espacio administrativo para "${org.name}" ha sido creado. Por favor, completa tu registro en el siguiente enlace:\n\n${registerLink}\n\nSaludos,\nEquipo MercaFlow`;
+    window.location.href = `mailto:${org.ownerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   const getTypeIcon = (type: OrganizationType) => {
@@ -87,23 +103,23 @@ export default function OrganizationsManagementPage() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {orgs.map((org) => {
-          const isTest = org.ownerId === user?.uid;
+          const isMyTestOrg = org.ownerId === user?.uid;
+          const isClaimed = !!org.ownerEmail && org.ownerId !== user?.uid; // Simplificado: si el dueño ya no es el superadmin
+
           return (
-            <Card key={org.id} className={cn("overflow-hidden hover:shadow-lg transition-all border-l-4 border-t border-r border-b", isTest ? "border-l-yellow-400" : "border-l-primary")}>
+            <Card key={org.id} className={cn("overflow-hidden hover:shadow-lg transition-all border-l-4 border-t border-r border-b", isMyTestOrg ? "border-l-yellow-400" : "border-l-primary")}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-slate-50 rounded-xl border">
                     {getTypeIcon(org.type)}
                   </div>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <CardTitle className="text-lg font-bold truncate text-slate-800">{org.name}</CardTitle>
-                    </div>
+                    <CardTitle className="text-lg font-bold truncate text-slate-800">{org.name}</CardTitle>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Badge variant="outline" className="capitalize text-[10px] py-0 h-4 font-mono tracking-tighter">
                         {org.slug}
                       </Badge>
-                      {isTest && <Badge className="bg-yellow-400 text-yellow-900 text-[8px] h-4 font-bold px-1.5 shadow-sm">PRUEBA</Badge>}
+                      {isMyTestOrg && <Badge className="bg-yellow-400 text-yellow-900 text-[8px] h-4 font-bold px-1.5 shadow-sm">PRUEBA</Badge>}
                     </div>
                   </div>
                 </div>
@@ -112,40 +128,56 @@ export default function OrganizationsManagementPage() {
                     <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><MoreVertical className="h-4 w-4" /></Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEdit(org)}><Pencil className="mr-2 h-4 w-4" /> Configurar</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleEdit(org)}><Pencil className="mr-2 h-4 w-4" /> Configurar Convenio</DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(org.id)}><Trash2 className="mr-2 h-4 w-4" /> Eliminar</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </CardHeader>
+              
               <CardContent>
                 <div className="space-y-2 text-sm mt-4">
                   <div className="flex justify-between items-center bg-slate-50/50 p-2 rounded-lg">
-                    <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-semibold"><User className="h-3 w-3" /> Dueño:</span>
-                    <span className="font-medium truncate max-w-[150px] text-xs text-slate-700">{isTest ? "Tú (Super Admin)" : org.ownerId.substring(0, 8) + "..."}</span>
+                    <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-semibold"><Mail className="h-3 w-3" /> Dueño:</span>
+                    <span className="font-medium truncate max-w-[150px] text-xs text-slate-700">{org.ownerEmail || "Sin asignar"}</span>
                   </div>
-                  <div className="flex justify-between items-center bg-slate-50/50 p-2 rounded-lg">
-                    <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-semibold"><ShieldCheck className="h-3 w-3" /> Estado:</span>
-                    <Badge className={cn(
-                      "text-[10px] h-5 px-2",
-                      org.status === 'active' ? "bg-green-100 text-green-700 hover:bg-green-100 border-green-200" : "bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-yellow-200"
-                    )}>
-                      {org.status}
+                  
+                  {/* Convenios Visuales */}
+                  <div className="flex gap-1.5 mt-3">
+                    <Badge variant={org.adminAgreements?.catalog ? "default" : "outline"} className={cn("text-[8px] h-5 px-1.5 gap-1", !org.adminAgreements?.catalog && "opacity-40")}>
+                      {org.adminAgreements?.catalog ? <Unlock className="h-2 w-2" /> : <Lock className="h-2 w-2" />} Catálogo
+                    </Badge>
+                    <Badge variant={org.adminAgreements?.operations ? "default" : "outline"} className={cn("text-[8px] h-5 px-1.5 gap-1", !org.adminAgreements?.operations && "opacity-40")}>
+                      {org.adminAgreements?.operations ? <Unlock className="h-2 w-2" /> : <Lock className="h-2 w-2" />} Operación
+                    </Badge>
+                    <Badge variant={org.adminAgreements?.finance ? "default" : "outline"} className={cn("text-[8px] h-5 px-1.5 gap-1", !org.adminAgreements?.finance && "opacity-40")}>
+                      {org.adminAgreements?.finance ? <Unlock className="h-2 w-2" /> : <Lock className="h-2 w-2" />} Finanzas
                     </Badge>
                   </div>
                 </div>
                 
-                {isTest ? (
+                {org.ownerEmail && !isClaimed && !isMyTestOrg && (
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <Button size="sm" variant="outline" className="h-9 border-green-200 text-green-700 hover:bg-green-50" onClick={() => sendInviteWhatsApp(org)}>
+                      <MessageSquare className="h-3.5 w-3.5 mr-1.5" /> WhatsApp
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-9" onClick={() => sendInviteEmail(org)}>
+                      <Mail className="h-3.5 w-3.5 mr-1.5" /> Email
+                    </Button>
+                  </div>
+                )}
+
+                {isMyTestOrg ? (
                   <div className="mt-4 p-3 bg-yellow-50/50 rounded-xl border border-yellow-100 flex gap-2 items-start">
                     <Info className="h-3.5 w-3.5 text-yellow-600 mt-0.5 shrink-0" />
                     <p className="text-[10px] text-yellow-800 leading-relaxed font-medium">
-                      Este es tu laboratorio personal. Tienes acceso total a sus módulos internos desde el menú lateral.
+                      Estructura de prueba. Tienes acceso total a todos los módulos internos desde el menú lateral.
                     </p>
                   </div>
                 ) : (
                   <div className="mt-4 p-3 bg-blue-50/50 rounded-xl border border-blue-100 flex gap-2 items-start">
                     <ShieldCheck className="h-3.5 w-3.5 text-blue-600 mt-0.5 shrink-0" />
                     <p className="text-[10px] text-blue-800 leading-relaxed font-medium">
-                      Edificio privado del cliente. Los datos internos (ventas, stock, precios) están protegidos y aislados.
+                      Edificio de cliente. Solo puedes ver los módulos habilitados por los switches de convenio.
                     </p>
                   </div>
                 )}
@@ -168,7 +200,7 @@ export default function OrganizationsManagementPage() {
       <div className="flex justify-between items-end flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold font-headline tracking-tight text-slate-900">Alcaldía de Edificios</h1>
-          <p className="text-slate-500 text-sm mt-1">Supervisa y administra el ecosistema jerárquico de MercaFlow.</p>
+          <p className="text-slate-500 text-sm mt-1">Crea edificios y reserva correos de clientes para invitarlos al ecosistema.</p>
         </div>
         <Button onClick={handleCreate} className="shadow-lg hover:shadow-xl transition-all h-11 px-6 rounded-xl font-bold bg-primary hover:bg-primary/90">
           <PlusCircle className="mr-2 h-5 w-5" />
@@ -187,7 +219,7 @@ export default function OrganizationsManagementPage() {
               <span className="font-bold text-sm">Importadores</span>
               <span className="text-[9px] opacity-60 font-medium uppercase tracking-tighter">Nivel 1</span>
             </div>
-            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none group-data-[state=active]:bg-primary group-data-[state=active]:text-white">
+            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none group-data-[state=active]:bg-primary group-data-[state=active]:text-white transition-colors">
               {groupedOrgs.importer.length}
             </Badge>
           </TabsTrigger>
@@ -201,7 +233,7 @@ export default function OrganizationsManagementPage() {
               <span className="font-bold text-sm">Distribuidores</span>
               <span className="text-[9px] opacity-60 font-medium uppercase tracking-tighter">Nivel 2</span>
             </div>
-            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none group-data-[state=active]:bg-primary group-data-[state=active]:text-white">
+            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none group-data-[state=active]:bg-primary group-data-[state=active]:text-white transition-colors">
               {groupedOrgs.distributor.length}
             </Badge>
           </TabsTrigger>
@@ -215,7 +247,7 @@ export default function OrganizationsManagementPage() {
               <span className="font-bold text-sm">Mayoristas</span>
               <span className="text-[9px] opacity-60 font-medium uppercase tracking-tighter">Nivel 3</span>
             </div>
-            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none group-data-[state=active]:bg-primary group-data-[state=active]:text-white">
+            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none group-data-[state=active]:bg-primary group-data-[state=active]:text-white transition-colors">
               {groupedOrgs.wholesaler.length}
             </Badge>
           </TabsTrigger>
@@ -229,7 +261,7 @@ export default function OrganizationsManagementPage() {
               <span className="font-bold text-sm">Minoristas</span>
               <span className="text-[9px] opacity-60 font-medium uppercase tracking-tighter">Nivel 4</span>
             </div>
-            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none group-data-[state=active]:bg-primary group-data-[state=active]:text-white">
+            <Badge variant="secondary" className="ml-auto h-6 px-2 min-w-[1.5rem] rounded-lg bg-white/10 text-sidebar-foreground font-bold border-none group-data-[state=active]:bg-primary group-data-[state=active]:text-white transition-colors">
               {groupedOrgs.retailer.length}
             </Badge>
           </TabsTrigger>

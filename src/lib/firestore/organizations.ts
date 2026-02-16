@@ -6,13 +6,9 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
-  query,
-  where,
-  getDocs,
-  orderBy
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import type { Organization, OrganizationType } from '@/types';
+import type { Organization } from '@/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -39,13 +35,17 @@ export const createOrganization = async (orgData: Omit<Organization, 'id' | 'cre
 
 export const updateOrganization = async (id: string, orgData: Partial<Organization>) => {
   const orgDoc = doc(db, 'organizations', id);
+  
+  // Limpiar undefined para evitar errores de Firestore
+  const cleanData = Object.fromEntries(Object.entries(orgData).filter(([_, v]) => v !== undefined));
+
   try {
-    await updateDoc(orgDoc, orgData);
+    await updateDoc(orgDoc, cleanData);
   } catch (serverError: any) {
     const permissionError = new FirestorePermissionError({
       path: orgDoc.path,
       operation: 'update',
-      requestResourceData: orgData,
+      requestResourceData: cleanData,
     });
     errorEmitter.emit('permission-error', permissionError);
     throw serverError;

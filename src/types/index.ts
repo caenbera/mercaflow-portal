@@ -10,6 +10,12 @@ export type ClientTier = 'standard' | 'bronze' | 'silver' | 'gold';
 export type OrganizationType = 'importer' | 'distributor' | 'wholesaler' | 'retailer';
 export type OrganizationStatus = 'active' | 'suspended' | 'pending';
 
+export interface AdminAgreements {
+  catalog: boolean;
+  operations: boolean;
+  finance: boolean;
+}
+
 export interface StoreConfig {
   enabled: boolean;
   themeColor?: string;
@@ -26,6 +32,8 @@ export interface Organization {
   status: OrganizationStatus;
   slug: string;
   ownerId: string;
+  ownerEmail?: string; // Correo reservado para el cliente
+  adminAgreements?: AdminAgreements; // Permisos otorgados al Super Admin
   parentOrgId?: string;
   createdAt: Timestamp;
   contactEmail?: string;
@@ -59,6 +67,14 @@ export interface UserProfile {
   paymentTerms?: string;
   priceList?: string;
   rewardPoints?: number;
+  pushSubscription?: any;
+}
+
+export interface AdminInvite {
+  email: string;
+  role: UserRole;
+  status: 'pending' | 'claimed';
+  organizationId?: string; // Para vincular directamente al edificio
 }
 
 // --- CATALOG ---

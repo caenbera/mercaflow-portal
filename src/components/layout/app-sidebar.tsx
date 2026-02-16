@@ -24,12 +24,12 @@ import { useOrganizations } from '@/hooks/use-organizations';
 import { 
   LayoutGrid, ShoppingCart, Package, Users,
   ClipboardList, Leaf, Truck, ShoppingBag, Boxes, Headset, 
-  ChevronRight, Trophy, Building2, Globe, Store, Share2, Plus
+  ChevronRight, Trophy, Building2, Globe, Store, Share2, Plus, Lock
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/navigation';
 import { cn } from '@/lib/utils';
-import type { OrganizationType } from '@/types';
+import type { OrganizationType, Organization } from '@/types';
 import { Badge } from '@/components/ui/badge';
 
 export interface NavItem {
@@ -41,6 +41,8 @@ export interface NavItem {
 const CollapsibleSidebarGroup = ({ title, items, defaultOpen = false, icon: Icon }: { title: string; items: NavItem[]; defaultOpen?: boolean; icon?: React.ElementType }) => {
   const pathname = usePathname();
   const isActiveGroup = items.some(item => pathname.startsWith(item.href));
+
+  if (items.length === 0) return null;
 
   return (
     <Collapsible defaultOpen={defaultOpen || isActiveGroup} className="w-full">
@@ -81,7 +83,10 @@ export function AppSidebar() {
 
   const loading = authLoading || orgsLoading;
 
-  const getModuleItems = (orgId: string, orgType: OrganizationType) => {
+  const getModuleItems = (org: Organization) => {
+    const isMyTestOrg = org.ownerId === user?.uid;
+    const agreements = org.adminAgreements || { catalog: false, operations: false, finance: false };
+
     const modules: any = {
       management: [
           { href: `/admin/dashboard`, label: t('dashboard'), icon: LayoutGrid },
@@ -104,7 +109,20 @@ export function AppSidebar() {
       ]
     };
 
-    if (orgType === 'retailer') {
+    // Si NO es mi edificio de prueba, aplicamos filtros de convenio
+    if (!isMyTestOrg) {
+      if (!agreements.operations) {
+        modules.management = modules.management.filter((m: any) => m.href !== '/admin/orders');
+        modules.procurement = [];
+        modules.warehouse = [];
+      }
+      if (!agreements.catalog) {
+        modules.catalog = [];
+      }
+      // Finanzas aún no tiene módulo exclusivo pero se aplicará aquí
+    }
+
+    if (org.type === 'retailer') {
       modules.management.push({ href: `/admin/store`, label: "Tienda B2C", icon: Globe });
     }
 
@@ -126,7 +144,6 @@ export function AppSidebar() {
 
     return (
       <div className="space-y-6">
-        {/* Gestión Global (Alcaldía) */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Plataforma</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -135,7 +152,7 @@ export function AppSidebar() {
                 <SidebarMenuButton asChild tooltip={t('manageOrganizations')}>
                   <Link href="/admin/organizations">
                     <Building2 />
-                    <span>Gestión de Clientes</span>
+                    <span>Gestión de Edificios</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -143,7 +160,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Listado Jerárquico */}
         {orgTypes.map((type) => {
           const typeOrgs = organizations.filter(o => o.type === type);
           if (typeOrgs.length === 0) return null;
@@ -159,28 +175,11 @@ export function AppSidebar() {
                     const isMyTestOrg = org.ownerId === user?.uid;
                     const isActive = activeOrgId === org.id;
                     const OrgIcon = getOrgTypeIcon(org.type);
+                    const modules = getModuleItems(org);
+                    
+                    // Contamos si tiene algún acceso por convenio
+                    const hasSomeAccess = isMyTestOrg || Object.values(org.adminAgreements || {}).some(v => v);
 
-                    // Si NO es mi edificio de prueba, solo mostramos el acceso a su ficha de cliente
-                    if (!isMyTestOrg) {
-                      return (
-                        <SidebarMenuItem key={org.id}>
-                          <SidebarMenuButton 
-                            asChild 
-                            isActive={isActive} 
-                            onClick={() => setActiveOrgId(org.id)}
-                            className="opacity-80"
-                          >
-                            <Link href="/admin/organizations">
-                              <OrgIcon className="h-4 w-4" />
-                              <span className="truncate">{org.name}</span>
-                            </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      );
-                    }
-
-                    // Si ES mi edificio de prueba, mostramos toda la estructura interna
-                    const modules = getModuleItems(org.id, org.type);
                     return (
                       <SidebarMenuItem key={org.id}>
                         <Collapsible 
@@ -198,16 +197,25 @@ export function AppSidebar() {
                             >
                               <OrgIcon className="h-4 w-4 shrink-0" />
                               <span className="truncate">{org.name}</span>
-                              <Badge variant="outline" className="text-[8px] h-3 px-1 ml-auto bg-yellow-400/10 text-yellow-600 border-yellow-400/20">TEST</Badge>
+                              {isMyTestOrg && <Badge variant="outline" className="text-[8px] h-3 px-1 ml-auto bg-yellow-400/10 text-yellow-600 border-yellow-400/20">TEST</Badge>}
+                              {!isMyTestOrg && !hasSomeAccess && <Lock className="h-3 w-3 ml-auto text-muted-foreground/50" />}
                               <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 shrink-0" />
                             </SidebarMenuButton>
                           </CollapsibleTrigger>
                           <CollapsibleContent>
                             <div className="pl-4 py-1 space-y-1">
-                              <CollapsibleSidebarGroup title={t('group_management')} items={modules.management} icon={LayoutGrid} />
-                              <CollapsibleSidebarGroup title={t('group_catalog')} items={modules.catalog} icon={Package} />
-                              <CollapsibleSidebarGroup title={t('group_procurement')} items={modules.procurement} icon={ShoppingBag} />
-                              <CollapsibleSidebarGroup title={t('group_warehouse')} items={modules.warehouse} icon={Boxes} />
+                              {hasSomeAccess ? (
+                                <>
+                                  <CollapsibleSidebarGroup title={t('group_management')} items={modules.management} icon={LayoutGrid} />
+                                  <CollapsibleSidebarGroup title={t('group_catalog')} items={modules.catalog} icon={Package} />
+                                  <CollapsibleSidebarGroup title={t('group_procurement')} items={modules.procurement} icon={ShoppingBag} />
+                                  <CollapsibleSidebarGroup title={t('group_warehouse')} items={modules.warehouse} icon={Boxes} />
+                                </>
+                              ) : (
+                                <div className="p-2 text-[10px] text-muted-foreground italic">
+                                  Sin convenios de acceso activos para este cliente.
+                                </div>
+                              )}
                             </div>
                           </CollapsibleContent>
                         </Collapsible>

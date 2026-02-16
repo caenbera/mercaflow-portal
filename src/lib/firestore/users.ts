@@ -1,5 +1,4 @@
 
-
 import { doc, updateDoc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -42,26 +41,32 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
 
 export const deleteUser = (uid: string) => {
   const userDoc = doc(db, 'users', uid);
-  // This only deletes the Firestore user document, not the Firebase Auth user.
-  // This is the expected behavior for a client-side only operation.
   return deleteDoc(userDoc).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: userDoc.path,
       operation: 'delete',
     });
     errorEmitter.emit('permission-error', permissionError);
-    throw serverError; // Re-throw for component-level catch
+    throw serverError;
   });
 };
 
-export const addAdminInvite = (email: string, role: UserRole) => {
+/**
+ * Crea o actualiza una invitación de pre-aprobación para un usuario.
+ * @param email Correo invitado
+ * @param role Rol asignado
+ * @param organizationId (Opcional) Edificio vinculado
+ */
+export const addAdminInvite = (email: string, role: UserRole, organizationId?: string) => {
   const inviteDocRef = doc(db, 'adminInvites', email.toLowerCase());
   const inviteData = {
     email: email.toLowerCase(),
     role: role,
     status: 'pending',
+    organizationId: organizationId || null,
   };
-  return setDoc(inviteDocRef, inviteData).catch(async (serverError) => {
+  
+  return setDoc(inviteDocRef, inviteData, { merge: true }).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: inviteDocRef.path,
       operation: 'create',
