@@ -2,7 +2,7 @@
 import type { Timestamp } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 
-export type UserRole = 'client' | 'admin' | 'superadmin' | 'picker' | 'purchaser' | 'salesperson';
+export type UserRole = 'client' | 'admin' | 'superadmin' | 'picker' | 'purchaser' | 'salesperson' | 'customer';
 export type UserStatus = 'active' | 'pending_approval' | 'blocked';
 export type ClientTier = 'standard' | 'bronze' | 'silver' | 'gold';
 
@@ -16,13 +16,38 @@ export interface AdminAgreements {
   finance: boolean;
 }
 
+export interface StoreTestimonial {
+  name: string;
+  role: string;
+  text: string;
+  avatarUrl?: string;
+}
+
 export interface StoreConfig {
   enabled: boolean;
   themeColor?: string;
-  welcomeMessage?: { es: string; en: string };
   logoUrl?: string;
-  allowDelivery?: boolean;
+  heroImage?: string;
+  heroTitle?: { es: string; en: string };
+  heroSubtitle?: { es: string; en: string };
+  welcomeMessage?: { es: string; en: string };
+  categoriesImages?: {
+    fruits?: string;
+    vegetables?: string;
+    groceries?: string;
+  };
+  testimonials?: StoreTestimonial[];
+  contactPhone?: string;
+  contactWhatsapp?: string;
+  contactEmail?: string;
+  contactAddress?: string;
+  socialLinks?: {
+    facebook?: string;
+    instagram?: string;
+    tiktok?: string;
+  };
   minOrderAmount?: number;
+  newsletterEnabled?: boolean;
 }
 
 export interface Organization {
@@ -32,8 +57,8 @@ export interface Organization {
   status: OrganizationStatus;
   slug: string;
   ownerId: string;
-  ownerEmail?: string; // Correo reservado para el cliente
-  adminAgreements?: AdminAgreements; // Permisos otorgados al Super Admin
+  ownerEmail?: string; 
+  adminAgreements?: AdminAgreements; 
   parentOrgId?: string;
   createdAt: Timestamp;
   contactEmail?: string;
@@ -74,7 +99,7 @@ export interface AdminInvite {
   email: string;
   role: UserRole;
   status: 'pending' | 'claimed';
-  organizationId?: string; // Para vincular directamente al edificio
+  organizationId?: string; 
 }
 
 // --- CATALOG ---

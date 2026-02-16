@@ -32,12 +32,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { createOrganization, updateOrganization } from '@/lib/firestore/organizations';
 import { addAdminInvite } from '@/lib/firestore/users';
 import { useToast } from '@/hooks/use-toast';
 import type { Organization, OrganizationType, OrganizationStatus } from '@/types';
 import { useAuth } from '@/context/auth-context';
-import { ShieldAlert, Info, UserCheck, Lock } from 'lucide-react';
+import { ShieldAlert, Info, UserCheck, Lock, Globe } from 'lucide-react';
 
 const orgSchema = z.object({
   name: z.string().min(3, "El nombre debe tener al menos 3 caracteres."),
@@ -50,6 +51,9 @@ const orgSchema = z.object({
     operations: z.boolean().default(false),
     finance: z.boolean().default(false),
   }),
+  storeConfig: z.object({
+    enabled: z.boolean().default(false),
+  }).optional(),
 });
 
 type FormValues = z.infer<typeof orgSchema>;
@@ -78,6 +82,9 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
         operations: false,
         finance: false,
       },
+      storeConfig: {
+        enabled: false,
+      }
     },
   });
 
@@ -95,6 +102,9 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
             operations: false,
             finance: false,
           },
+          storeConfig: {
+            enabled: organization.storeConfig?.enabled || false,
+          }
         });
       } else {
         form.reset({
@@ -108,6 +118,9 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
             operations: false,
             finance: false,
           },
+          storeConfig: {
+            enabled: false,
+          }
         });
       }
     }
@@ -119,26 +132,18 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
     try {
       if (organization) {
         await updateOrganization(organization.id, values);
-        
-        // Si el email del dueño cambió, actualizamos la invitación
         if (values.ownerEmail && values.ownerEmail !== organization.ownerEmail) {
           await addAdminInvite(values.ownerEmail, 'client', organization.id);
         }
-        
         toast({ title: "Edificio actualizado" });
       } else {
-        // Al crear, asignamos temporalmente al Super Admin como dueño técnico
-        // hasta que el cliente reclame el edificio
         const newOrgId = await createOrganization({
           ...values,
           ownerId: user.uid,
         });
-
-        // Creamos la invitación obligatoria para el dueño real
         if (values.ownerEmail) {
           await addAdminInvite(values.ownerEmail, 'client', newOrgId);
         }
-
         toast({ title: "Edificio creado e invitación reservada" });
       }
       onOpenChange(false);
@@ -150,6 +155,7 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
   };
 
   const isTestOrg = organization?.ownerId === user?.uid;
+  const watchedType = form.watch('type');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -213,6 +219,23 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
                 </FormItem>
               )}/>
             </div>
+
+            {watchedType === 'retailer' && (
+              <div className="space-y-4 p-4 bg-green-50/50 rounded-xl border border-green-100">
+                <h3 className="text-sm font-bold uppercase text-green-700 flex items-center gap-2">
+                  <Globe className="h-4 w-4" /> Servicio de Tienda Online
+                </h3>
+                <FormField control={form.control} name="storeConfig.enabled" render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border bg-background p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-xs">Habilitar Web Pública B2C</オリン>
+                      <FormDescription className="text-[10px]">Permite al cliente tener su propia landing page y tienda.</FormDescription>
+                    </div>
+                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                  </FormItem>
+                )}/>
+              </div>
+            )}
 
             <div className="space-y-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
               <h3 className="text-sm font-bold uppercase text-blue-700 flex items-center gap-2">
