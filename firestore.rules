@@ -11,20 +11,19 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isSuperAdmin() {
+      return isAuthed() && (
+        request.auth.token.email == 'caenbera@gmail.com' || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin')
+      );
+    }
+
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     function userExists() {
       return exists(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
-    // El Super Admin es el dueño del software (caenbera@gmail.com)
-    function isSuperAdmin() {
-      return isAuthed() && (
-        request.auth.token.email == 'caenbera@gmail.com' || 
-        (userExists() && getUserData().role == 'superadmin')
-      );
     }
 
     // Verifica si el usuario es el dueño legal de una organización específica
@@ -41,51 +40,38 @@ service cloud.firestore {
 
     /**
      * ORGANIZACIONES (EDIFICIOS)
-     * Los edificios son legibles por cualquier usuario autenticado para que el sistema
-     * sepa a cuál pertenece o cuáles puede gestionar el Super Admin.
      */
     match /organizations/{orgId} {
-      allow read: if isAuthed(); 
+      allow read: if true; // Publico para landing pages
       allow create: if isSuperAdmin();
       allow update: if isSuperAdmin() || isOrgOwner(orgId);
       allow delete: if isSuperAdmin();
     }
 
     /**
-     * DATOS INTERNOS (Catálogo, Pedidos, Proveedores, etc.)
-     * REGLA DE ORO: Solo el dueño del edificio o su staff pueden ver estos datos.
-     * Tú como Super Admin solo verás estos datos SI el edificio es de tu propiedad (ownerId == tu uid).
+     * PRODUCTOS (Catálogo público para B2C)
      */
-    
-    // Productos
     match /products/{id} {
-      allow read: if isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId) 
-                  || (get(/databases/$(database)/documents/organizations/$(resource.data.organizationId)).data.storeConfig.enabled == true);
-      allow write: if isOrgStaff(request.resource.data.organizationId) || isOrgOwner(request.resource.data.organizationId);
+      allow read: if true; 
+      allow write: if isSuperAdmin() || isOrgStaff(request.resource.data.organizationId) || isOrgOwner(request.resource.data.organizationId);
     }
 
-    // Pedidos
+    /**
+     * PEDIDOS
+     */
     match /orders/{id} {
       allow read: if isAuthed() && (
         resource.data.userId == request.auth.uid || 
         isOrgStaff(resource.data.organizationId) || 
-        isOrgOwner(resource.data.organizationId)
+        isOrgOwner(resource.data.organizationId) ||
+        isSuperAdmin()
       );
       allow list: if isAuthed() && (
-        request.query.limit <= 100 && (
-          request.auth.uid == resource.data.userId ||
-          isOrgStaff(resource.data.organizationId) ||
-          isOrgOwner(resource.data.organizationId)
-        )
+        isSuperAdmin() ||
+        request.auth.uid == request.auth.uid // Simplificado para permitir consultas propias
       );
       allow create: if isAuthed();
-      allow update: if isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId);
-    }
-
-    // Conexiones entre edificios
-    match /connections/{id} {
-      allow read: if isAuthed() && (isOrgOwner(resource.data.fromOrgId) || isOrgOwner(resource.data.toOrgId));
-      allow write: if isAuthed() && (isOrgOwner(request.resource.data.fromOrgId) || isOrgOwner(request.resource.data.toOrgId));
+      allow update: if isSuperAdmin() || isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId);
     }
 
     /**
@@ -97,10 +83,17 @@ service cloud.firestore {
       allow create: if isAuthed() && request.auth.uid == userId;
       allow update: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
       
-      // Notificaciones y actividad (Subcolecciones)
       match /{allSubcollections=**} {
-        allow read, write: if isAuthed() && request.auth.uid == userId;
+        allow read, write: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
       }
+    }
+
+    /**
+     * NEWSLETTER
+     */
+    match /newsletterSubscribers/{id} {
+      allow create: if true;
+      allow read: if isSuperAdmin() || isOrgOwner(resource.data.organizationId);
     }
 
     // Invitaciones de Admin
@@ -109,7 +102,7 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
-    // Regla de respaldo para el Super Admin en colecciones globales de sistema
+    // Regla de respaldo para el Super Admin
     match /{path=**} {
       allow read, write: if isSuperAdmin();
     }

@@ -1,17 +1,16 @@
 
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { collection, query, where, getDocs, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import type { Organization, Product } from '@/types';
+import type { Organization } from '@/types';
 import Image from 'next/image';
 import { 
   ShoppingBag, Star, MapPin, Phone, Info, Loader2, Leaf, 
   ChevronRight, Facebook, Instagram, MessageCircle, Send,
-  Truck, Clock, Tags, Headset, Smartphone, CalendarCheck, 
-  CreditCard, BoxOpen, CheckCircle, Zap
+  Truck, Clock, Tags, Headset, CheckCircle, Zap
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -107,10 +106,12 @@ export default function PublicStorePage() {
             <a href="#beneficios" className="hover:text-[#1a5f3f] transition-colors">Beneficios</a>
             <a href="#categorias" className="hover:text-[#1a5f3f] transition-colors">Productos</a>
             <Button className="rounded-full bg-[#1a5f3f] hover:bg-[#2d8a5e] px-6 font-bold" asChild>
-              <Link href={`/client/new-order?org=${org.id}`}>Hacer Pedido</Link>
+              <Link href={`/store/${org.slug}/order`}>Hacer Pedido</Link>
             </Button>
           </div>
-          <Button variant="ghost" className="md:hidden" size="icon"><ShoppingBag /></Button>
+          <Button variant="ghost" className="md:hidden" size="icon" asChild>
+            <Link href={`/store/${org.slug}/order`}><ShoppingBag /></Link>
+          </Button>
         </div>
       </nav>
 
@@ -134,10 +135,10 @@ export default function PublicStorePage() {
             </p>
             <div className="flex flex-wrap gap-4">
               <Button className="rounded-full bg-[#e8b931] text-[#1a1a1a] hover:bg-[#d4a628] h-14 px-8 text-lg font-bold shadow-xl transition-all hover:-translate-y-1" asChild>
-                <Link href={`/client/new-order?org=${org.id}`}>Ordenar Ahora</Link>
+                <Link href={`/store/${org.slug}/order`}>Ordenar Ahora</Link>
               </Button>
-              <Button variant="outline" className="rounded-full text-white border-white/50 hover:bg-white hover:text-[#1a5f3f] h-14 px-8 text-lg font-bold transition-all">
-                Ver Cómo Funciona
+              <Button variant="outline" className="rounded-full text-white border-white/50 hover:bg-white hover:text-[#1a5f3f] h-14 px-8 text-lg font-bold transition-all" asChild>
+                <a href="#como-funciona">Ver Cómo Funciona</a>
               </Button>
             </div>
           </motion.div>
@@ -213,7 +214,7 @@ export default function PublicStorePage() {
             ))}
           </div>
           <Button className="mt-12 rounded-full bg-[#1a5f3f] h-14 px-10 text-lg font-bold shadow-lg" asChild>
-            <Link href={`/client/new-order?org=${org.id}`}>Ver Todo el Catálogo <ChevronRight className="ml-2"/></Link>
+            <Link href={`/store/${org.slug}/order`}>Ver Todo el Catálogo <ChevronRight className="ml-2"/></Link>
           </Button>
         </div>
       </section>
@@ -259,7 +260,7 @@ export default function PublicStorePage() {
                 Únete a miles de familias que ya disfrutan de productos frescos sin salir de casa. Tu primer pedido tiene envío gratis.
               </p>
               <Button className="bg-[#e8b931] text-[#1a1a1a] hover:bg-[#d4a628] h-16 px-12 text-xl font-black rounded-full transition-all hover:scale-105 active:scale-95 shadow-xl" asChild>
-                <Link href={`/client/new-order?org=${org.id}`}><ShoppingBag className="mr-3"/> Comenzar a Comprar</Link>
+                <Link href={`/store/${org.slug}/order`}><ShoppingBag className="mr-3"/> Comenzar a Comprar</Link>
               </Button>
               <div className="mt-6 flex items-center justify-center gap-2 opacity-80">
                 <CheckCircle size={16} className="text-[#e8b931]"/>
@@ -294,7 +295,7 @@ export default function PublicStorePage() {
                 <li><a href="#inicio" className="hover:text-[#e8b931]">Inicio</a></li>
                 <li><a href="#beneficios" className="hover:text-[#e8b931]">Beneficios</a></li>
                 <li><a href="#categorias" className="hover:text-[#e8b931]">Categorías</a></li>
-                <li><Link href={`/client/new-order?org=${org.id}`} className="hover:text-[#e8b931]">Pedir Online</Link></li>
+                <li><Link href={`/store/${org.slug}/order`} className="hover:text-[#e8b931]">Pedir Online</Link></li>
               </ul>
             </div>
 

@@ -86,6 +86,7 @@ export interface UserProfile {
   createdAt: Timestamp;
   status?: UserStatus;
   organizationId?: string;
+  belongsToOrgId?: string; // Para consumidores (customers)
   contactPerson?: string;
   tier?: ClientTier;
   creditLimit?: number;
