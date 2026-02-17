@@ -9,6 +9,7 @@ import { Download, Upload, FileText, Loader2 } from 'lucide-react';
 import type { Product, ProductInput } from '@/types';
 import { getProductBySku, addProduct, updateProduct } from '@/lib/firestore/products';
 import Papa from 'papaparse';
+import { useOrganization } from '@/context/organization-context';
 
 interface ProductImportDialogProps {
   open: boolean;
@@ -44,6 +45,7 @@ const CSV_TEMPLATE_HEADERS = [
 export function ProductImportDialog({ open, onOpenChange, supplierId, supplierName, products }: ProductImportDialogProps) {
   const t = useTranslations('SuppliersPage');
   const { toast } = useToast();
+  const { activeOrgId } = useOrganization();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -73,9 +75,14 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
       return;
     }
 
+    // Filtrar productos por organización activa si existe
+    const filteredProducts = activeOrgId 
+      ? products.filter(p => p.organizationId === activeOrgId)
+      : products;
+
     const csvRows = [CSV_TEMPLATE_HEADERS.join(',')];
 
-    for (const product of products) {
+    for (const product of filteredProducts) {
         const supplierInfo = product.suppliers.find(s => s.supplierId === supplierId);
         const cost = supplierInfo?.cost ?? 0;
         const price = product.salePrice;
@@ -145,8 +152,8 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
     } else {
       toast({
         variant: 'destructive',
-        title: 'Invalid File Type',
-        description: 'Please upload a valid .csv file.',
+        title: 'Tipo de archivo inválido',
+        description: 'Por favor sube un archivo .csv válido.',
       });
       setSelectedFile(null);
     }
@@ -154,7 +161,10 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
   };
   
   const handleImport = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !activeOrgId) {
+      toast({ variant: 'destructive', title: "Error", description: "Debes seleccionar un edificio primero." });
+      return;
+    }
     setIsProcessing(true);
 
     Papa.parse(selectedFile, {
@@ -200,7 +210,9 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
 
             if (existingProduct) {
               // UPDATE logic: Build a payload with all available data from the CSV
-              const updatePayload: Partial<ProductInput> = {};
+              const updatePayload: Partial<ProductInput> = {
+                organizationId: activeOrgId
+              };
               
               if(rowData.nombre_interno_es) updatePayload.name = { ...existingProduct.name, es: rowData.nombre_interno_es };
               if(rowData.nombre_interno_en) updatePayload.name = { ...(updatePayload.name || existingProduct.name), en: rowData.nombre_interno_en };
@@ -233,15 +245,14 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
               }
               updatePayload.suppliers = suppliers;
               
-              if(Object.keys(updatePayload).length > 0) {
-                  await updateProduct(existingProduct.id, updatePayload);
-                  updatedCount++;
-              }
+              await updateProduct(existingProduct.id, updatePayload);
+              updatedCount++;
 
             } else {
               // CREATE logic
               const createPayload: ProductInput = {
                 sku,
+                organizationId: activeOrgId,
                 name: { es: rowData.nombre_interno_es || '', en: rowData.nombre_interno_en || '' },
                 category: { es: rowData.categoria_es || '', en: rowData.categoria_en || '' },
                 subcategory: { es: rowData.subcategoria_es || '', en: rowData.subcategoria_en || '' },
@@ -258,7 +269,7 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
               };
 
               if (!createPayload.name.es || !createPayload.category.es || !createPayload.unit.es || createPayload.salePrice <= 0) {
-                console.warn(`Skipping creation for SKU ${sku} due to missing essential data.`);
+                console.warn(`Omitiendo creación para SKU ${sku} por falta de datos esenciales.`);
                 continue;
               }
 
@@ -266,7 +277,7 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
               createdCount++;
             }
           } catch(e: any) {
-             console.error(`Failed to process row: ${JSON.stringify(rowData)}`, e);
+             console.error(`Fallo al procesar fila: ${JSON.stringify(rowData)}`, e);
           }
         }
 
@@ -342,7 +353,7 @@ export function ProductImportDialog({ open, onOpenChange, supplierId, supplierNa
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             {t('cancel')}
           </Button>
-          <Button onClick={handleImport} disabled={!selectedFile || isProcessing}>
+          <Button onClick={handleImport} disabled={!selectedFile || isProcessing || !activeOrgId}>
             {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t('import_button')}
           </Button>
