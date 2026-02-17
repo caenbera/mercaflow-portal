@@ -33,14 +33,15 @@ export function useUsers() {
 
     if (activeOrgId) {
       // Vista Edificio: Solo usuarios de esta organización
+      // Eliminamos temporalmente el orderBy para descartar problemas de índices
       q = query(
         usersCollection, 
-        where('organizationId', '==', activeOrgId),
-        orderBy('createdAt', 'desc')
+        where('organizationId', '==', activeOrgId)
       );
     } else if (role === 'superadmin') {
       // Vista Plataforma: Todos los usuarios
-      q = query(usersCollection, orderBy('createdAt', 'desc'));
+      // Eliminamos temporalmente el orderBy para descartar problemas de índices
+      q = query(usersCollection);
     } else {
       // Otros casos: lista vacía por seguridad si no hay contexto de admin
       setUsers([]);
@@ -48,7 +49,6 @@ export function useUsers() {
       return;
     }
 
-    setIsLoading(true);
     const unsubscribe = onSnapshot(
       q,
       (querySnapshot) => {
@@ -60,6 +60,14 @@ export function useUsers() {
             usersData.push({ uid: doc.id, ...data } as UserProfile);
           }
         });
+        
+        // Ordenamos manualmente en el cliente por ahora para garantizar éxito en la carga
+        usersData.sort((a, b) => {
+          const timeA = a.createdAt?.toMillis() || 0;
+          const timeB = b.createdAt?.toMillis() || 0;
+          return timeB - timeA;
+        });
+
         setUsers(usersData);
         setLoading(false);
       },
@@ -78,8 +86,4 @@ export function useUsers() {
   }, [user, role, authLoading, activeOrgId]);
 
   return { users, loading, error };
-}
-
-function setIsLoading(arg0: boolean) {
-    // Helper local para manejar estado si fuera necesario fuera del onSnapshot
 }
