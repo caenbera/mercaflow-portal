@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from 'react';
@@ -100,7 +101,7 @@ export function AppSidebar() {
           { href: `/admin/network`, label: "Red de Suministro", icon: Share2 },
       ],
       administration: [
-          { href: `/admin/users`, label: t('manageUsers'), icon: UserCog },
+          { href: `/admin/users`, label: "Personal y Accesos", icon: UserCog },
       ],
       catalog: [
           { href: `/admin/products`, label: t('manageProducts'), icon: Package },
@@ -160,7 +161,11 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={t('manageOrganizations')}>
+                <SidebarMenuButton 
+                  asChild 
+                  tooltip="Gestión de Edificios"
+                  onClick={() => setActiveOrgId(null)}
+                >
                   <Link href="/admin/organizations">
                     <Building2 />
                     <span>Gestión de Edificios</span>
@@ -168,8 +173,12 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={t('manageUsers')}>
-                  <Link href="/admin/users">
+                <SidebarMenuButton 
+                  asChild 
+                  tooltip="Gestión de Usuarios Global"
+                  onClick={() => setActiveOrgId(null)}
+                >
+                  <Link href="/admin/platform/users">
                     <Users />
                     <span>Gestión de Usuarios Global</span>
                   </Link>

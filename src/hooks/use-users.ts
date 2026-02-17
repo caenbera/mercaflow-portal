@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { UserProfile } from '@/types';
 import { useAuth } from '@/context/auth-context';
@@ -12,10 +12,9 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 /**
  * Hook para obtener usuarios.
- * Si hay un edificio activo en el contexto, filtra solo los usuarios de ese edificio.
- * Si no hay edificio activo y el usuario es superadmin, muestra todos los usuarios (Vista Plataforma).
+ * @param forceGlobal Si es true, ignora el edificio activo y muestra todos (solo para Super Admin)
  */
-export function useUsers() {
+export function useUsers(forceGlobal: boolean = false) {
   const { user, role, loading: authLoading } = useAuth();
   const { activeOrgId } = useOrganization();
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -23,7 +22,6 @@ export function useUsers() {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // Es CRÍTICO esperar a que el auth y el rol estén resueltos antes de consultar
     if (authLoading || !user || role === null) {
         return;
     }
@@ -31,19 +29,16 @@ export function useUsers() {
     const usersCollection = collection(db, 'users');
     let q;
 
-    if (activeOrgId) {
+    // Si pedimos global y somos superadmin, o si simplemente no hay edificio seleccionado
+    if ((forceGlobal || !activeOrgId) && role === 'superadmin') {
+      q = query(usersCollection);
+    } else if (activeOrgId) {
       // Vista Edificio: Solo usuarios de esta organización
-      // Eliminamos temporalmente el orderBy para descartar problemas de índices
       q = query(
         usersCollection, 
         where('organizationId', '==', activeOrgId)
       );
-    } else if (role === 'superadmin') {
-      // Vista Plataforma: Todos los usuarios
-      // Eliminamos temporalmente el orderBy para descartar problemas de índices
-      q = query(usersCollection);
     } else {
-      // Otros casos: lista vacía por seguridad si no hay contexto de admin
       setUsers([]);
       setLoading(false);
       return;
@@ -61,7 +56,7 @@ export function useUsers() {
           }
         });
         
-        // Ordenamos manualmente en el cliente por ahora para garantizar éxito en la carga
+        // Ordenamos en el cliente para evitar errores de índices faltantes en el servidor
         usersData.sort((a, b) => {
           const timeA = a.createdAt?.toMillis() || 0;
           const timeB = b.createdAt?.toMillis() || 0;
@@ -83,7 +78,7 @@ export function useUsers() {
     );
 
     return () => unsubscribe();
-  }, [user, role, authLoading, activeOrgId]);
+  }, [user, role, authLoading, activeOrgId, forceGlobal]);
 
   return { users, loading, error };
 }
