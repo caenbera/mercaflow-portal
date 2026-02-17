@@ -26,7 +26,7 @@ import {
   LayoutGrid, ShoppingCart, Package, Users,
   ClipboardList, Leaf, Truck, ShoppingBag, Boxes, Headset, 
   ChevronRight, Trophy, Building2, Globe, Store, Share2, Plus, Lock,
-  Target, UserCog, Eye
+  Target, UserCog, Eye, History, FileText, UserCircle, Tag
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/navigation';
@@ -40,7 +40,7 @@ export interface NavItem {
   icon: React.ElementType;
 }
 
-const CollapsibleSidebarGroup = ({ title, items, defaultOpen = false, icon: Icon }: { title: string; items: NavItem[]; defaultOpen?: boolean; icon?: React.ElementType }) => {
+const CollapsibleSidebarGroup = ({ title, items, defaultOpen = false, icon: Icon, activeColor }: { title: string; items: NavItem[]; defaultOpen?: boolean; icon?: React.ElementType; activeColor?: string }) => {
   const pathname = usePathname();
   const isActiveGroup = items.some(item => pathname.startsWith(item.href));
 
@@ -50,7 +50,7 @@ const CollapsibleSidebarGroup = ({ title, items, defaultOpen = false, icon: Icon
     <Collapsible defaultOpen={defaultOpen || isActiveGroup} className="w-full">
       <CollapsibleTrigger className="group flex w-full items-center justify-between rounded-md px-2 h-9 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
         <div className="flex items-center gap-2">
-          {Icon && <Icon className="h-4 w-4" />}
+          {Icon && <Icon className={cn("h-4 w-4", isActiveGroup && activeColor)} />}
           <span>{title}</span>
         </div>
         <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-90" />
@@ -65,7 +65,7 @@ const CollapsibleSidebarGroup = ({ title, items, defaultOpen = false, icon: Icon
                 tooltip={item.label}
               >
                 <Link href={item.href}>
-                  <item.icon />
+                  <item.icon className={cn(pathname.startsWith(item.href) && activeColor)} />
                   <span>{item.label}</span>
                 </Link>
               </SidebarMenuButton>
@@ -115,9 +115,22 @@ export function AppSidebar() {
       warehouse: [
           { href: `/admin/picking`, label: t('picking'), icon: Boxes },
       ],
-      clientView: [
-          { href: `/client/new-order`, label: t('clientPortal'), icon: Eye },
-      ]
+      clientPortal: {
+        store: [
+          { href: `/client/new-order`, label: t('newOrder'), icon: ShoppingCart },
+          { href: `/client/offers`, label: t('offers'), icon: Tag },
+          { href: `/client/rewards`, label: t('my_rewards'), icon: Trophy },
+        ],
+        activity: [
+          { href: `/client/dashboard`, label: t('dashboard'), icon: LayoutGrid },
+          { href: `/client/history`, label: t('orderHistory'), icon: History },
+          { href: `/client/invoices`, label: t('invoices'), icon: FileText },
+        ],
+        account: [
+          { href: `/client/account`, label: t('my_account'), icon: UserCircle },
+          { href: `/client/support`, label: t('support'), icon: Headset },
+        ]
+      }
     };
 
     // Si NO es mi edificio de prueba, aplicamos filtros de convenio
@@ -239,17 +252,30 @@ export function AppSidebar() {
                                   <CollapsibleSidebarGroup title={t('group_procurement')} items={modules.procurement} icon={ShoppingBag} />
                                   <CollapsibleSidebarGroup title={t('group_warehouse')} items={modules.warehouse} icon={Boxes} />
                                   <CollapsibleSidebarGroup title={t('group_administration')} items={modules.administration} icon={UserCog} />
-                                  <Separator className="my-1 opacity-50" />
-                                  <SidebarMenu>
-                                    <SidebarMenuItem>
-                                      <SidebarMenuButton asChild tooltip={t('clientPortal')}>
-                                        <Link href="/client/new-order" className="text-primary font-bold">
-                                          <Eye className="text-primary" />
-                                          <span>Ver como Cliente</span>
-                                        </Link>
-                                      </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                  </SidebarMenu>
+                                  
+                                  <div className="mt-2 pt-2 border-t border-sidebar-border/50">
+                                    <div className="px-2 py-1.5 text-[10px] font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+                                      <Eye className="h-3 w-3" /> {t('clientPortal')}
+                                    </div>
+                                    <CollapsibleSidebarGroup 
+                                      title={t('group_store')} 
+                                      items={modules.clientPortal.store} 
+                                      icon={ShoppingBag} 
+                                      activeColor="text-primary"
+                                    />
+                                    <CollapsibleSidebarGroup 
+                                      title={t('group_activity')} 
+                                      items={modules.clientPortal.activity} 
+                                      icon={History} 
+                                      activeColor="text-primary"
+                                    />
+                                    <CollapsibleSidebarGroup 
+                                      title={t('group_account')} 
+                                      items={modules.clientPortal.account} 
+                                      icon={UserCog} 
+                                      activeColor="text-primary"
+                                    />
+                                  </div>
                                 </>
                               ) : (
                                 <div className="p-2 text-[10px] text-muted-foreground italic">
