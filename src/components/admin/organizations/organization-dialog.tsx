@@ -228,7 +228,7 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
                 <FormField control={form.control} name="storeConfig.enabled" render={({ field }) => (
                   <FormItem className="flex items-center justify-between rounded-lg border bg-background p-3 shadow-sm">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-xs">Habilitar Web Pública B2C</オリン>
+                      <FormLabel className="text-xs">Habilitar Web Pública B2C</FormLabel>
                       <FormDescription className="text-[10px]">Permite al cliente tener su propia landing page y tienda.</FormDescription>
                     </div>
                     <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>

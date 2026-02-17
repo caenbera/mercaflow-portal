@@ -15,11 +15,11 @@ export async function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
-export async function generateMetadata({
-  params: { locale },
-}: {
-  params: { locale: string };
+export async function generateMetadata(props: {
+  params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
+  const params = await props.params;
+  const locale = params.locale;
   const t = await getTranslations({ locale, namespace: 'Metadata' });
   const iconUrl = "https://i.postimg.cc/sxBVGnMp/icon.png?v=2";
 
@@ -52,13 +52,14 @@ export async function generateMetadata({
 }
 
 
-export default async function RootLayout({
-  children,
-  params: { locale },
-}: Readonly<{
+export default async function RootLayout(props: {
   children: ReactNode;
-  params: { locale: string };
-}>) {
+  params: Promise<{ locale: string }>;
+}) {
+  const params = await props.params;
+  const locale = params.locale;
+  const children = props.children;
+
   setRequestLocale(locale);
   const messages = await getMessages();
   const iconUrl = "https://i.postimg.cc/sxBVGnMp/icon.png?v=2";
@@ -74,10 +75,10 @@ export default async function RootLayout({
         <link rel="icon" href={iconUrl} type="image/png" />
         <link rel="apple-touch-icon" href={iconUrl}></link>
         <meta name="theme-color" content="#27ae60" />
-        <link rel="preconnect" href="https://fonts.googleapis.com  " />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
-          href="https://fonts.gstatic.com  "
+          href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
         <link
