@@ -23,6 +23,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Camera, Plus, Check, Undo2, Pencil, Trash2, Loader2, Box } from 'lucide-react'; 
 import { cn } from '@/lib/utils';
 import { useSuppliers } from '@/hooks/use-suppliers';
+import { useOrganization } from '@/context/organization-context';
 
 import { useProductCategories, type ProductCategoryWithId } from '@/hooks/useProductCategories';
 import { useProductUnits, type ProductUnit } from '@/hooks/useProductUnits';
@@ -75,10 +76,11 @@ interface ProductFormProps {
 
 export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [isSkuLoading, setIsSkuLoading] = useState(false);
+  const [isSkuLoading, setIsLoadingSku] = useState(false);
   const { toast } = useToast();
   const t = useTranslations('ProductsPage');
   const { suppliers: allSuppliers, loading: suppliersLoading } = useSuppliers();
+  const { activeOrgId } = useOrganization();
   const pathname = usePathname();
 
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -228,7 +230,7 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
     const sku = form.getValues('sku');
     if (!sku) return;
 
-    setIsSkuLoading(true);
+    setIsLoadingSku(true);
     try {
       const existingProduct = await getProductBySku(sku);
       if (existingProduct) {
@@ -257,7 +259,7 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
       console.error("Error in handleSkuBlur:", error);
       toast({ variant: "destructive", title: "Error", description: "Could not fetch product data by SKU." });
     } finally {
-      setIsSkuLoading(false);
+      setIsLoadingSku(false);
     }
   }
   
@@ -300,8 +302,17 @@ export function ProductForm({ product, onSuccess, defaultSupplierId }: ProductFo
   const cancelUnitInput = () => { setIsUnitInputMode(false); setEditUnitTarget(null); };
 
   async function onSubmit(values: ProductFormValues) {
+    if (!activeOrgId) {
+      toast({ variant: 'destructive', title: "Error", description: "Debes seleccionar un edificio primero." });
+      return;
+    }
+
     setIsLoading(true);
-    const finalValues: any = { ...values, suppliers: values.suppliers.filter(s => s.supplierId) };
+    const finalValues: any = { 
+      ...values, 
+      organizationId: activeOrgId,
+      suppliers: values.suppliers.filter(s => s.supplierId) 
+    };
 
     if (!finalValues.subcategory?.es || !finalValues.subcategory?.en) {
       delete finalValues.subcategory;

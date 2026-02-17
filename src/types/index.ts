@@ -137,6 +137,46 @@ export interface Product {
   createdAt: Timestamp;
 }
 
+export interface SupplierContact {
+  id: string;
+  department: string;
+  name: string;
+  phone: string;
+  isWhatsapp: boolean;
+}
+
+export interface SupplierDiscount {
+  id: string;
+  type: 'amount' | 'quantity' | 'monthlyVolume';
+  scope: 'order' | 'product';
+  productId?: string;
+  from: number;
+  discount: number;
+}
+
+export interface Supplier {
+  id: string;
+  organizationId: string;
+  name: string;
+  category: string;
+  email: string;
+  address: string;
+  deliveryDays: string;
+  paymentTerms: string;
+  rating: number;
+  status: 'active' | 'inactive';
+  verified: boolean;
+  notes?: string;
+  contacts: SupplierContact[];
+  volumeDiscounts?: SupplierDiscount[];
+  finance: {
+    pendingBalance: number;
+    ytdSpend: number;
+    fillRate: number;
+    onTimeDelivery: boolean;
+  };
+}
+
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface OrderItem {

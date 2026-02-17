@@ -13,9 +13,9 @@ import type { Supplier } from '@/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
-type SupplierFormData = Omit<Supplier, 'id' | 'rating' | 'status' | 'verified' | 'finance'>;
+export type SupplierInput = Omit<Supplier, 'id' | 'rating' | 'status' | 'verified' | 'finance'>;
 
-export const addSupplier = (supplierData: SupplierFormData) => {
+export const addSupplier = (supplierData: SupplierInput) => {
   const suppliersCollection = collection(db, 'suppliers');
   
   const newSupplierData: Omit<Supplier, 'id'> = {

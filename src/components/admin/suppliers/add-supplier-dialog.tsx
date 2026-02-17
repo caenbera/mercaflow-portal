@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -16,8 +17,9 @@ import { Plus, Trash2, Check, Undo2, Pencil, BotMessageSquare, DollarSign, Packa
 import type { Supplier } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { addSupplier, updateSupplier } from '@/lib/firestore/suppliers';
+import { addSupplier, updateSupplier, type SupplierInput } from '@/lib/firestore/suppliers';
 import { useProducts } from '@/hooks/use-products';
+import { useOrganization } from '@/context/organization-context';
 
 const initialCategories = ["Frutas y Verduras", "Empaques y Desechables", "Lácteos y Huevos", "Secos y Abarrotes", "Logística"];
 
@@ -68,6 +70,7 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const { products, loading: productsLoading } = useProducts();
+  const { activeOrgId } = useOrganization();
   
   const [categories, setCategories] = useState(initialCategories);
   const [isInputMode, setIsInputMode] = useState(false);
@@ -121,14 +124,24 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
   const cancelCategoryInput = () => { setIsInputMode(false); setEditModeTarget(null); };
 
   const onSubmit = async (values: FormValues) => {
+    if (!activeOrgId) {
+      toast({ variant: 'destructive', title: "Error", description: "Debes seleccionar un edificio primero." });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const finalData = { ...values, volumeDiscounts: values.volumeDiscounts };
-            if (supplier) {
+      const finalData: SupplierInput = { 
+        ...values, 
+        organizationId: activeOrgId,
+        volumeDiscounts: values.volumeDiscounts 
+      };
+
+      if (supplier) {
         await updateSupplier(supplier.id, finalData);
         toast({ title: t('edit_supplier_success_title'), description: values.name });
       } else {
-        await addSupplier(finalData as any);
+        await addSupplier(finalData);
         toast({ title: t('add_supplier_success_title'), description: values.name });
       }
       onOpenChange(false);
