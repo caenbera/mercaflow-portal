@@ -32,18 +32,19 @@ export function useOrders() {
 
     // Lógica de filtrado según el rol
     if (role === 'admin' || role === 'superadmin' || role === 'picker') {
-      // Para administradores, mostramos los pedidos del edificio en el que están trabajando
+      // Para administradores, intentamos filtrar por la organización de su perfil
       const orgId = userProfile?.organizationId;
-      if (!orgId && role !== 'superadmin') {
-        setLoading(false);
-        return;
-      }
       
-      // Super Admin puede ver todo, pero por defecto filtramos por la organización activa para no saturar
       if (orgId) {
         q = query(ordersCollection, where('organizationId', '==', orgId), orderBy('createdAt', 'desc'));
-      } else {
+      } else if (role === 'superadmin') {
+        // El Super Admin sin organización fija ve todo el historial global
         q = query(ordersCollection, orderBy('createdAt', 'desc'));
+      } else {
+        // Staff sin organización asignada no ve nada
+        setOrders([]);
+        setLoading(false);
+        return;
       }
     } else {
       // Para Clientes (client) o Consumidores (customer), solo sus propios pedidos
@@ -65,13 +66,8 @@ export function useOrders() {
         setLoading(false);
       },
       (serverError) => {
-        // Silenciar error si el Super Admin aún no tiene pedidos propios y la regla es restrictiva
-        if (role === 'superadmin' && serverError.code === 'permission-denied') {
-            setOrders([]);
-            setLoading(false);
-            return;
-        }
-
+        // Si hay un error de permisos (posiblemente por falta de índice compuesto),
+        // registramos el error contextual para el agente.
         const permissionError = new FirestorePermissionError({
           path: ordersCollection.path,
           operation: 'list',

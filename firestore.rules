@@ -61,15 +61,12 @@ service cloud.firestore {
      */
     match /orders/{id} {
       allow read: if isAuthed() && (
+        isSuperAdmin() ||
         resource.data.userId == request.auth.uid || 
         isOrgStaff(resource.data.organizationId) || 
-        isOrgOwner(resource.data.organizationId) ||
-        isSuperAdmin()
+        isOrgOwner(resource.data.organizationId)
       );
-      allow list: if isAuthed() && (
-        isSuperAdmin() ||
-        request.auth.uid == request.auth.uid // Simplificado para permitir consultas propias
-      );
+      allow list: if isAuthed(); // Permitir el listado, el filtrado se hace por consulta
       allow create: if isAuthed();
       allow update: if isSuperAdmin() || isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId);
     }
@@ -102,7 +99,7 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
-    // Regla de respaldo para el Super Admin
+    // Regla de respaldo absoluta para el Super Admin
     match /{path=**} {
       allow read, write: if isSuperAdmin();
     }

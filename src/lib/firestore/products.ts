@@ -91,19 +91,17 @@ export const getProductBySku = async (sku: string): Promise<Product | null> => {
 
 /**
  * Vincula todos los productos que no tienen organizationId a una organización específica.
+ * Realiza un escaneo total para atrapar campos inexistentes.
  */
 export const migrateLegacyProducts = async (targetOrgId: string) => {
-  const q = query(collection(db, 'products'), where('organizationId', '==', null));
-  const querySnapshot = await getDocs(q);
-  
-  // También buscamos los que simplemente no tienen el campo (viejos registros)
   const allSnapshot = await getDocs(collection(db, 'products'));
   const batch = writeBatch(db);
   let count = 0;
 
   allSnapshot.forEach((docSnap) => {
     const data = docSnap.data();
-    if (!data.organizationId) {
+    // Captura campos nulos, vacíos o inexistentes
+    if (!data.organizationId || data.organizationId === null || data.organizationId === "") {
       batch.update(docSnap.ref, { organizationId: targetOrgId });
       count++;
     }
