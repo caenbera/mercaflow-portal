@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -18,6 +17,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/context/auth-context';
 import { useOrganization } from '@/context/organization-context';
 import { useOrganizations } from '@/hooks/use-organizations';
