@@ -24,7 +24,8 @@ import { useOrganizations } from '@/hooks/use-organizations';
 import { 
   LayoutGrid, ShoppingCart, Package, Users,
   ClipboardList, Leaf, Truck, ShoppingBag, Boxes, Headset, 
-  ChevronRight, Trophy, Building2, Globe, Store, Share2, Plus, Lock
+  ChevronRight, Trophy, Building2, Globe, Store, Share2, Plus, Lock,
+  Target, UserCog, Eye
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/navigation';
@@ -92,8 +93,14 @@ export function AppSidebar() {
           { href: `/admin/dashboard`, label: t('dashboard'), icon: LayoutGrid },
           { href: `/admin/orders`, label: t('manageOrders'), icon: ShoppingCart },
           { href: `/admin/clients`, label: t('manageClients'), icon: Users },
-          { href: `/admin/network`, label: "Red de Suministro", icon: Share2 },
           { href: `/admin/support`, label: t('support'), icon: Headset },
+      ],
+      sales: [
+          { href: `/admin/sales`, label: t('prospects'), icon: Target },
+          { href: `/admin/network`, label: "Red de Suministro", icon: Share2 },
+      ],
+      administration: [
+          { href: `/admin/users`, label: t('manageUsers'), icon: UserCog },
       ],
       catalog: [
           { href: `/admin/products`, label: t('manageProducts'), icon: Package },
@@ -106,6 +113,9 @@ export function AppSidebar() {
       ],
       warehouse: [
           { href: `/admin/picking`, label: t('picking'), icon: Boxes },
+      ],
+      clientView: [
+          { href: `/client/new-order`, label: t('clientPortal'), icon: Eye },
       ]
     };
 
@@ -113,13 +123,14 @@ export function AppSidebar() {
     if (!isMyTestOrg) {
       if (!agreements.operations) {
         modules.management = modules.management.filter((m: any) => m.href !== '/admin/orders');
+        modules.sales = [];
+        modules.administration = [];
         modules.procurement = [];
         modules.warehouse = [];
       }
       if (!agreements.catalog) {
         modules.catalog = [];
       }
-      // Finanzas aún no tiene módulo exclusivo pero se aplicará aquí
     }
 
     if (org.type === 'retailer') {
@@ -156,6 +167,14 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip={t('manageUsers')}>
+                  <Link href="/admin/users">
+                    <Users />
+                    <span>Gestión de Usuarios Global</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -177,7 +196,6 @@ export function AppSidebar() {
                     const OrgIcon = getOrgTypeIcon(org.type);
                     const modules = getModuleItems(org);
                     
-                    // Contamos si tiene algún acceso por convenio
                     const hasSomeAccess = isMyTestOrg || Object.values(org.adminAgreements || {}).some(v => v);
 
                     return (
@@ -207,9 +225,22 @@ export function AppSidebar() {
                               {hasSomeAccess ? (
                                 <>
                                   <CollapsibleSidebarGroup title={t('group_management')} items={modules.management} icon={LayoutGrid} />
+                                  <CollapsibleSidebarGroup title={t('group_sales')} items={modules.sales} icon={Target} />
                                   <CollapsibleSidebarGroup title={t('group_catalog')} items={modules.catalog} icon={Package} />
                                   <CollapsibleSidebarGroup title={t('group_procurement')} items={modules.procurement} icon={ShoppingBag} />
                                   <CollapsibleSidebarGroup title={t('group_warehouse')} items={modules.warehouse} icon={Boxes} />
+                                  <CollapsibleSidebarGroup title={t('group_administration')} items={modules.administration} icon={UserCog} />
+                                  <Separator className="my-1 opacity-50" />
+                                  <SidebarMenu>
+                                    <SidebarMenuItem>
+                                      <SidebarMenuButton asChild tooltip={t('clientPortal')}>
+                                        <Link href="/client/new-order" className="text-primary font-bold">
+                                          <Eye className="text-primary" />
+                                          <span>Ver como Cliente</span>
+                                        </Link>
+                                      </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                  </SidebarMenu>
                                 </>
                               ) : (
                                 <div className="p-2 text-[10px] text-muted-foreground italic">
