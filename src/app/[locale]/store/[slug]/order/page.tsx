@@ -22,7 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { 
   Search, ShoppingBasket, Star, Minus, Plus, 
   CalendarIcon, MessageSquarePlus, Pencil, Loader2, ArrowLeft,
-  ChevronRight, Lock
+  ChevronRight, Lock, Info
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
