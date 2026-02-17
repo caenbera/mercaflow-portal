@@ -10,8 +10,8 @@ import Image from 'next/image';
 import { 
   ShoppingBag, Star, MapPin, Phone, Info, Loader2, Leaf, 
   ChevronRight, Facebook, Instagram, MessageCircle, Send,
-  Truck, Clock, Tags, Headset, MobileIcon, CalendarCheck, 
-  CreditCard, BoxOpen, CheckCircle
+  Truck, Clock, Tags, Headset, Smartphone, CalendarCheck, 
+  CreditCard, BoxOpen, CheckCircle, Zap
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
