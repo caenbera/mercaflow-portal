@@ -11,10 +11,16 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // El Super Admin por correo tiene poder absoluto para evitar bloqueos en el prototipo
+    function isEmailSuperAdmin() {
+      return isAuthed() && request.auth.token.email == 'caenbera@gmail.com';
+    }
+
     function isSuperAdmin() {
-      return isAuthed() && (
-        request.auth.token.email == 'caenbera@gmail.com' || 
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin')
+      return isEmailSuperAdmin() || (
+        isAuthed() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin'
       );
     }
 
@@ -29,13 +35,18 @@ service cloud.firestore {
     // Verifica si el usuario es el dueño legal de una organización específica
     function isOrgOwner(orgId) {
       return isAuthed() && (
-        get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid
+        isSuperAdmin() ||
+        (exists(/databases/$(database)/documents/organizations/$(orgId)) && 
+         get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid)
       );
     }
 
     // Verifica si el usuario pertenece al staff de esa organización
     function isOrgStaff(orgId) {
-      return isAuthed() && userExists() && getUserData().organizationId == orgId;
+      return isAuthed() && (
+        isSuperAdmin() ||
+        (userExists() && getUserData().organizationId == orgId)
+      );
     }
 
     /**
@@ -49,7 +60,7 @@ service cloud.firestore {
     }
 
     /**
-     * PRODUCTOS (Catálogo público para B2C)
+     * PRODUCTOS
      */
     match /products/{id} {
       allow read: if true; 
@@ -66,7 +77,7 @@ service cloud.firestore {
         isOrgStaff(resource.data.organizationId) || 
         isOrgOwner(resource.data.organizationId)
       );
-      allow list: if isAuthed(); // Permitir el listado, el filtrado se hace por consulta
+      allow list: if isAuthed();
       allow create: if isAuthed();
       allow update: if isSuperAdmin() || isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId);
     }
@@ -75,10 +86,9 @@ service cloud.firestore {
      * USUARIOS Y PERFILES
      */
     match /users/{userId} {
-      allow get: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
+      allow read: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
       allow list: if isSuperAdmin();
-      allow create: if isAuthed() && request.auth.uid == userId;
-      allow update: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
+      allow write: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
       
       match /{allSubcollections=**} {
         allow read, write: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());

@@ -16,15 +16,15 @@ import { FirestorePermissionError } from '@/firebase/errors';
  * Si no hay edificio activo y el usuario es superadmin, muestra todos los usuarios (Vista Plataforma).
  */
 export function useUsers() {
-  const { user, role } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
   const { activeOrgId } = useOrganization();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!user) {
-        setLoading(false);
+    // Es CRÍTICO esperar a que el auth y el rol estén resueltos antes de consultar
+    if (authLoading || !user || role === null) {
         return;
     }
 
@@ -42,12 +42,13 @@ export function useUsers() {
       // Vista Plataforma: Todos los usuarios
       q = query(usersCollection, orderBy('createdAt', 'desc'));
     } else {
-      // Otros casos: lista vacía por seguridad
+      // Otros casos: lista vacía por seguridad si no hay contexto de admin
       setUsers([]);
       setLoading(false);
       return;
     }
 
+    setIsLoading(true);
     const unsubscribe = onSnapshot(
       q,
       (querySnapshot) => {
@@ -74,7 +75,11 @@ export function useUsers() {
     );
 
     return () => unsubscribe();
-  }, [user, role, activeOrgId]);
+  }, [user, role, authLoading, activeOrgId]);
 
   return { users, loading, error };
+}
+
+function setIsLoading(arg0: boolean) {
+    // Helper local para manejar estado si fuera necesario fuera del onSnapshot
 }
