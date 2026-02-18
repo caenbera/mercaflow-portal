@@ -362,7 +362,7 @@ export default function DashboardPage() {
                     {categoryChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                     </Pie>
                     <Legend iconType="circle" iconSize={10} verticalAlign="bottom" />
-                    <Tooltip formatter={(value, name) => [`${value}%`, name]} contentStyle={{ borderRadius: '1rem', border: 'none', shadow: 'xl' }} />
+                    <Tooltip formatter={(value, name) => [`${value}%`, name]} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
                 </PieChart>
                 </ResponsiveContainer>
               ) : <p className="text-sm text-muted-foreground">No hay datos de ventas para mostrar</p>
