@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -28,6 +27,8 @@ import { usePriceLists } from '@/hooks/use-pricelists';
 import { useCart } from '@/context/cart-context';
 import { useOffers } from '@/hooks/use-offers';
 import { calculateDiscount } from '@/lib/pricing';
+import { useOrganization } from '@/context/organization-context';
+import { Timestamp } from 'firebase/firestore';
 
 const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
@@ -98,6 +99,7 @@ export default function NewOrderPage() {
   const t = useTranslations('ClientNewOrderPage');
   const locale = useLocale() as 'es' | 'en';
   const { user, userProfile } = useAuth();
+  const { activeOrgId } = useOrganization();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { products, loading: productsLoading } = useProducts();
@@ -262,7 +264,7 @@ export default function NewOrderPage() {
   };
 
   const handleSubmitOrder = async () => {
-    if (!user || !userProfile) {
+    if (!user || !userProfile || !activeOrgId) {
       toast({ variant: "destructive", title: t('error'), description: t('noUserError') });
       return;
     }
@@ -282,6 +284,7 @@ export default function NewOrderPage() {
     setIsSubmitting(true);
     try {
       await addOrder({
+        organizationId: activeOrgId,
         userId: user.uid,
         businessName: userProfile.businessName,
         items: orderItems.map(({ photoUrl, ...item }) => item),
@@ -292,7 +295,8 @@ export default function NewOrderPage() {
         notes: {
             general: generalObservations,
             items: notes
-        }
+        },
+        deliveryDate: Timestamp.fromDate(deliveryDate),
       });
       toast({ title: t('orderPlaced'), description: t('orderPlacedDesc') });
       clearCart();
