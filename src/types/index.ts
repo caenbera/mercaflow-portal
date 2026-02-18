@@ -192,6 +192,14 @@ export interface Prospect {
   updatedAt: Timestamp;
 }
 
+export interface ClientNote {
+  id: string;
+  text: string;
+  authorId: string;
+  authorName: string;
+  createdAt: Timestamp;
+}
+
 // --- FINANCE & PRICING ---
 export interface Invoice {
   id: string;
