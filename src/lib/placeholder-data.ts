@@ -3,6 +3,7 @@ import type { Supplier, SupplierProduct } from '@/types';
 export const suppliers: Supplier[] = [
     {
         id: "agrofresh-farms",
+        organizationId: "org-1",
         name: "AgroFresh Farms",
         category: "Frutas y Verduras",
         email: "pedidos@agrofresh.com",
@@ -26,6 +27,7 @@ export const suppliers: Supplier[] = [
     },
     {
         id: "packpro-solutions",
+        organizationId: "org-1",
         name: "PackPro Solutions",
         category: "Empaques y Desechables",
         email: "sales@packpro.com",
@@ -47,6 +49,7 @@ export const suppliers: Supplier[] = [
     },
     {
         id: "dairy-kings",
+        organizationId: "org-1",
         name: "Dairy Kings",
         category: "Lácteos y Huevos",
         email: "orders@dairykings.com",
@@ -68,6 +71,7 @@ export const suppliers: Supplier[] = [
     },
     {
         id: "importadora-global",
+        organizationId: "org-1",
         name: "Importadora Global",
         category: "Secos y Abarrotes",
         email: "import@global.com",

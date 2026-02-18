@@ -1,4 +1,3 @@
-
 import type { Timestamp } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 
@@ -292,6 +291,17 @@ export interface Supplier {
 }
 
 export type SupplierInput = Omit<Supplier, 'id' | 'rating' | 'status' | 'verified' | 'finance'>;
+
+export interface SupplierProduct {
+  id: string;
+  sku: string;
+  name: string;
+  imageUrl: string;
+  purchaseUnit: string;
+  currentCost: number;
+  previousCost: number | null;
+  stockStatus: 'available' | 'limited' | 'unavailable';
+}
 
 // --- ORDERS ---
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
