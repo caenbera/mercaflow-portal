@@ -247,7 +247,7 @@ export interface PurchaseOrder {
 
 // --- SUPPLIERS ---
 export interface SupplierContact {
-  id: string;
+  id?: string;
   department: string;
   name: string;
   phone: string;
@@ -255,7 +255,7 @@ export interface SupplierContact {
 }
 
 export interface SupplierDiscount {
-  id: string;
+  id?: string;
   type: 'amount' | 'quantity' | 'monthlyVolume';
   scope: 'order' | 'product';
   productId?: string;

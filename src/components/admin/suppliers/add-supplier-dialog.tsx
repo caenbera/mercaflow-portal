@@ -2,12 +2,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useTranslations } from 'next-intl';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,7 +18,6 @@ import type { Supplier, Organization } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { addSupplier, updateSupplier, type SupplierInput } from '@/lib/firestore/suppliers';
-import { useProducts } from '@/hooks/use-products';
 import { useOrganization } from '@/context/organization-context';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -34,7 +33,7 @@ const contactSchema = z.object({
 });
 
 const discountSchema = z.object({
-  id: z.string(),
+  id: z.string().optional(),
   type: z.enum(['amount', 'quantity', 'monthlyVolume']),
   scope: z.enum(['order', 'product']),
   productId: z.string().optional(),
@@ -72,7 +71,6 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
   const t = useTranslations('SuppliersPage');
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const { products, loading: productsLoading } = useProducts();
   const { activeOrgId } = useOrganization();
   
   const [categories, setCategories] = useState(initialCategories);
@@ -100,19 +98,14 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
     name: "contacts",
   });
   
-  const { fields: discountFields, append: appendDiscount, remove: removeDiscount } = useFieldArray({
-    control: form.control,
-    name: "volumeDiscounts",
-  });
-
   useEffect(() => {
     if (open && supplier) {
       form.reset({
         ...supplier,
         notes: supplier.notes || '',
         linkedOrgId: supplier.linkedOrgId || '',
-        contacts: supplier.contacts.map(c => ({...c, id: c.id || `contact-${Math.random()}`})),
-        volumeDiscounts: supplier.volumeDiscounts?.map(d => ({...d, id: d.id || `discount-${Math.random()}`})) || [],
+        contacts: supplier.contacts.map(c => ({...c, id: c.id})),
+        volumeDiscounts: supplier.volumeDiscounts?.map(d => ({...d, id: d.id})) || [],
       });
       setSlugInput('');
       setVerifiedOrg(null);
@@ -120,7 +113,7 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
       form.reset({
         name: '', category: '', email: '', address: '', deliveryDays: '',
         paymentTerms: 'Net 15', notes: '', linkedOrgId: '',
-        contacts: [{ id: `contact-${Date.now()}`, department: 'Ventas', name: '', phone: '', isWhatsapp: true }],
+        contacts: [{ department: 'Ventas', name: '', phone: '', isWhatsapp: true }],
         volumeDiscounts: [],
       });
       setSlugInput('');
@@ -169,10 +162,32 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
 
     setIsLoading(true);
     try {
+      // Conversión segura para cumplir con SupplierInput (basado en Supplier sin ID)
       const finalData: SupplierInput = { 
-        ...values, 
+        name: values.name,
+        category: values.category,
+        email: values.email,
+        address: values.address,
+        deliveryDays: values.deliveryDays,
+        paymentTerms: values.paymentTerms,
+        notes: values.notes,
+        linkedOrgId: values.linkedOrgId,
         organizationId: activeOrgId,
-        volumeDiscounts: values.volumeDiscounts 
+        contacts: values.contacts.map(c => ({
+            name: c.name,
+            phone: c.phone,
+            department: c.department,
+            isWhatsapp: c.isWhatsapp,
+            id: c.id
+        })),
+        volumeDiscounts: values.volumeDiscounts?.map(d => ({
+            type: d.type,
+            scope: d.scope,
+            from: d.from,
+            discount: d.discount,
+            productId: d.productId,
+            id: d.id
+        }))
       };
 
       if (supplier) {
@@ -247,7 +262,7 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
                       <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>{t('email_label')}</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem> )}/>
                       <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>{t('address_label')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                     </div>
-                    <FormField control={form.control} name="category" render={({ field }) => ( <FormItem><FormLabel>{t('category')}</FormLabel><div className="flex items-center gap-2">{isInputMode ? ( <> <Input ref={categoryInputRef} onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); handleSaveCategory(); }}} /> <Button type="button" size="icon" onClick={handleSaveCategory}><Check className="h-4 w-4" /></Button> <Button type="button" size="icon" variant="ghost" onClick={cancelCategoryInput}><Undo2 className="h-4 w-4" /></Button> </> ) : ( <> <Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('category_placeholder')} /></SelectTrigger></FormControl> <SelectContent> {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)} </SelectContent> </Select> <div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border"> <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentCategory} onClick={startEditingCategory}><Pencil className="h-3.5 w-3.5" /></Button> <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentCategory} onClick={handleDeleteCategory}><Trash2 className="h-3.5 w-3.5" /></Button> <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={startCreatingCategory}><Plus className="h-4 w-4" /></Button> </div> </> )}</div> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name="category" render={({ field }) => ( <FormItem><FormLabel>{t('category')}</FormLabel><div className="flex items-center gap-2">{isInputMode ? ( <> <Input ref={categoryInputRef} onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); handleSaveCategory(); }}} /> <Button type="button" size="icon" onClick={handleSaveCategory}><Check className="h-4 w-4" /></Button> <Button type="button" size="icon" variant="ghost" onClick={cancelCategoryInput}><Undo2 className="h-4 w-4" /></Button> </> ) : ( <> <Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('category_placeholder')} /></SelectTrigger></FormControl> <SelectContent> {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)} </SelectContent> </Select> <div className="flex gap-1 shrink-0 bg-gray-50 p-1 rounded-md border border-gray-200"><Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={!currentCategory} onClick={startEditingCategory}><Pencil className="h-3.5 w-3.5" /></Button> <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!currentCategory} onClick={handleDeleteCategory}><Trash2 className="h-3.5 w-3.5" /></Button> <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={startCreatingCategory}><Plus className="h-4 w-4" /></Button> </div> </> )}</div> <FormMessage /> </FormItem> )}/>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField control={form.control} name="deliveryDays" render={({ field }) => ( <FormItem><FormLabel>{t('delivery_days')}</FormLabel><FormControl><Input placeholder={t('delivery_days_placeholder')} {...field} /></FormControl><FormMessage /></FormItem> )}/>
                       <FormField control={form.control} name="paymentTerms" render={({ field }) => ( <FormItem><FormLabel>{t('payment_terms')}</FormLabel> <Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl> <SelectContent><SelectItem value="Net 7">Net 7</SelectItem><SelectItem value="Net 15">Net 15</SelectItem><SelectItem value="Net 30">Net 30</SelectItem><SelectItem value="COD">COD (Cash on Delivery)</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )}/>
@@ -258,7 +273,7 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
                   <FormLabel className="font-bold">{t('contacts_section_title')}</FormLabel>
                   <div className="space-y-3">
                     {contactFields.map((field, index) => ( <div key={field.id} className="grid grid-cols-[1fr,1fr,1fr,auto,auto] gap-2 items-end p-2 border rounded-lg bg-muted/30"> <FormField control={form.control} name={`contacts.${index}.department`} render={({ field }) => ( <FormItem><FormLabel className="text-xs">{t('contact_department')}</FormLabel><FormControl><Input {...field} placeholder={t('contact_department_placeholder')} /></FormControl><FormMessage /></FormItem> )}/> <FormField control={form.control} name={`contacts.${index}.name`} render={({ field }) => ( <FormItem><FormLabel className="text-xs">{t('contact_name')}</FormLabel><FormControl><Input {...field} placeholder={t('contact_name_placeholder')} /></FormControl><FormMessage /></FormItem> )}/> <FormField control={form.control} name={`contacts.${index}.phone`} render={({ field }) => ( <FormItem><FormLabel className="text-xs">{t('phone_label')}</FormLabel><FormControl><Input {...field} type="tel" /></FormControl><FormMessage /></FormItem> )}/> <FormField control={form.control} name={`contacts.${index}.isWhatsapp`} render={({ field }) => ( <FormItem className="flex flex-col items-center"><FormLabel className="text-xs flex items-center gap-1"><BotMessageSquare className="h-3 w-3"/> WhatsApp</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem> )}/> <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeContact(index)}><Trash2 className="h-4 w-4"/></Button> </div> ))}
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendContact({ id: `contact-${Date.now()}`, department: 'Ventas', name: '', phone: '', isWhatsapp: false })}> <Plus className="mr-2 h-4 w-4" /> {t('add_contact_button')} </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendContact({ department: 'Ventas', name: '', phone: '', isWhatsapp: false })}> <Plus className="mr-2 h-4 w-4" /> {t('add_contact_button')} </Button>
                   </div>
                   
                   <FormField control={form.control} name="notes" render={({ field }) => ( <FormItem><FormLabel>{t('internal_note')}</FormLabel><FormControl><Textarea placeholder={t('internal_note_placeholder')} {...field} /></FormControl><FormMessage /></FormItem> )}/>
