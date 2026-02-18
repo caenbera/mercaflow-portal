@@ -157,6 +157,7 @@ export interface SupplierDiscount {
 export interface Supplier {
   id: string;
   organizationId: string;
+  linkedOrgId?: string; // ID del edificio MercaFlow vinculado
   name: string;
   category: string;
   email: string;

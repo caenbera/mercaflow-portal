@@ -69,7 +69,6 @@ export const deleteSupplier = (id: string) => {
 
 /**
  * Vincula todos los proveedores sin organizationId a una organización específica.
- * Realiza un escaneo total para atrapar campos inexistentes.
  */
 export const migrateLegacySuppliers = async (targetOrgId: string) => {
   const allSnapshot = await getDocs(collection(db, 'suppliers'));
