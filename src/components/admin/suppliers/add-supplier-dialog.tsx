@@ -14,10 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, Check, Undo2, Pencil, BotMessageSquare, Search, Loader2, Link as LinkIcon, Building2 } from 'lucide-react';
-import type { Supplier, Organization } from '@/types';
+import type { Supplier, Organization, SupplierInput } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { addSupplier, updateSupplier, type SupplierInput } from '@/lib/firestore/suppliers';
+import { addSupplier, updateSupplier } from '@/lib/firestore/suppliers';
 import { useOrganization } from '@/context/organization-context';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -162,7 +162,6 @@ export function AddSupplierDialog({ open, onOpenChange, supplier }: AddSupplierD
 
     setIsLoading(true);
     try {
-      // Conversión segura para cumplir con SupplierInput (basado en Supplier sin ID)
       const finalData: SupplierInput = { 
         name: values.name,
         category: values.category,
