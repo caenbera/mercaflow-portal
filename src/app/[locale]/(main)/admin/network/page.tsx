@@ -7,11 +7,6 @@ import { useOrganizations } from '@/hooks/use-organizations';
 import { useConnections } from '@/hooks/use-connections';
 import { useSuppliers } from '@/hooks/use-suppliers';
 import { useProducts } from '@/hooks/use-products';
-import { 
-  sendConnectionRequest, 
-  updateConnectionStatus, 
-  deleteConnection 
-} from '@/lib/firestore/connections';
 import { updateProduct } from '@/lib/firestore/products';
 import { 
   Card, CardContent, CardHeader, CardTitle, CardDescription 
@@ -22,10 +17,13 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { 
-  Search, Users, Link as LinkIcon, Link2Off, 
-  Check, X, Loader2, Globe, Truck, ShoppingBag, Store,
-  RefreshCw, AlertCircle, Info, ArrowRight, Zap, Flame
+  Users, Link as LinkIcon, Link2Off, 
+  Check, X, Loader2, Truck, ShoppingBag, Store,
+  RefreshCw, Info, Zap, Flame, ArrowUp, ArrowDown,
+  ArrowRight, Calculator
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -36,16 +34,20 @@ import type { Product, Supplier } from '@/types';
 import Image from 'next/image';
 
 interface SyncItem {
-  id: string; // SKU o ID del producto local
+  id: string; 
   sku: string;
   name: string;
   photoUrl: string;
   currentCost: number;
   newCost: number;
+  currentSalePrice: number;
+  suggestedSalePrice: number;
   status: 'new' | 'price_change' | 'synced';
   remoteProduct: Product;
   localProduct?: Product;
   supplierName: string;
+  pricingMethod?: 'margin' | 'markup';
+  marginOrMarkup: number;
 }
 
 export default function SupplyNetworkPage() {
@@ -57,7 +59,6 @@ export default function SupplyNetworkPage() {
   const { toast } = useToast();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('sync');
 
   // Sync State
@@ -65,20 +66,10 @@ export default function SupplyNetworkPage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedSkus, setSelectedSkus] = useState<string[]>([]);
   const [isProcessingSync, setIsProcessingSync] = useState(false);
+  const [maintainMargins, setMaintainMargins] = useState(true);
 
   const loading = orgsLoading || connLoading || suppliersLoading || productsLoading;
 
-  // Filtrado de edificios para conectar
-  const filteredOrgs = useMemo(() => {
-    if (!searchTerm) return [];
-    return organizations.filter(org => 
-      org.id !== activeOrgId && 
-      (org.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-       org.slug.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [organizations, searchTerm, activeOrgId]);
-
-  // Lógica de Sincronización
   const handleCheckForUpdates = async () => {
     if (!activeOrgId) return;
     setIsSyncing(true);
@@ -90,7 +81,6 @@ export default function SupplyNetworkPage() {
       const allUpdates: SyncItem[] = [];
 
       for (const supplier of linkedSuppliers) {
-        // Consultar productos de la organización vinculada
         const q = query(collection(db, 'products'), where('organizationId', '==', supplier.linkedOrgId));
         const snap = await getDocs(q);
         const remoteProducts = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
@@ -99,22 +89,28 @@ export default function SupplyNetworkPage() {
           const local = localProducts.find(lp => lp.sku === remote.sku);
           
           if (!local) {
-            // Producto Nuevo
-            allUpdates.push({
-              id: remote.id,
-              sku: remote.sku,
-              name: remote.name.es,
-              photoUrl: remote.photoUrl || '',
-              currentCost: 0,
-              newCost: remote.salePrice,
-              status: 'new',
-              remoteProduct: remote,
-              supplierName: supplier.name
-            });
+            // Producto Nuevo (Omitido de la sincronización de precios masiva por ahora)
+            continue;
           } else {
             // Verificar cambio de precio
             const supplierInfo = local.suppliers?.find(s => s.supplierId === supplier.id);
             if (supplierInfo && supplierInfo.cost !== remote.salePrice) {
+              
+              // Calcular Sugerido basándonos en la regla guardada
+              let marginOrMarkup = 0;
+              let suggestedPrice = local.salePrice;
+              const method = local.pricingMethod || 'margin';
+
+              if (method === 'margin') {
+                marginOrMarkup = local.salePrice > 0 ? ((local.salePrice - supplierInfo.cost) / local.salePrice) * 100 : 0;
+                if (marginOrMarkup < 100) {
+                  suggestedPrice = remote.salePrice / (1 - (marginOrMarkup / 100));
+                }
+              } else {
+                marginOrMarkup = supplierInfo.cost > 0 ? ((local.salePrice - supplierInfo.cost) / supplierInfo.cost) * 100 : 0;
+                suggestedPrice = remote.salePrice * (1 + (marginOrMarkup / 100));
+              }
+
               allUpdates.push({
                 id: local.id,
                 sku: local.sku,
@@ -122,10 +118,14 @@ export default function SupplyNetworkPage() {
                 photoUrl: local.photoUrl || '',
                 currentCost: supplierInfo.cost,
                 newCost: remote.salePrice,
+                currentSalePrice: local.salePrice,
+                suggestedSalePrice: suggestedPrice,
                 status: 'price_change',
                 remoteProduct: remote,
                 localProduct: local,
-                supplierName: supplier.name
+                supplierName: supplier.name,
+                pricingMethod: method,
+                marginOrMarkup: marginOrMarkup
               });
             }
           }
@@ -133,7 +133,7 @@ export default function SupplyNetworkPage() {
       }
       setSyncItems(allUpdates);
       if (allUpdates.length === 0) {
-        toast({ title: "Catálogo al día", description: "No se encontraron cambios pendientes en tus proveedores vinculados." });
+        toast({ title: "Catálogo al día", description: "No se encontraron cambios de costo en tus proveedores vinculados." });
       }
     } catch (e) {
       console.error(e);
@@ -150,24 +150,27 @@ export default function SupplyNetworkPage() {
       let count = 0;
       for (const sku of selectedSkus) {
         const item = syncItems.find(i => i.sku === sku);
-        if (!item) continue;
+        if (!item || !item.localProduct) continue;
 
-        if (item.status === 'price_change' && item.localProduct) {
-          // Actualizar costo del proveedor vinculado en el producto local
-          const updatedSuppliers = item.localProduct.suppliers.map(s => {
-            const supplier = suppliers.find(sup => sup.name === item.supplierName);
-            if (s.supplierId === supplier?.id) {
-              return { ...s, cost: item.newCost };
-            }
-            return s;
-          });
-          await updateProduct(item.localProduct.id, { suppliers: updatedSuppliers });
-          count++;
+        const updatedSuppliers = item.localProduct.suppliers.map(s => {
+          const supplier = suppliers.find(sup => sup.name === item.supplierName);
+          if (s.supplierId === supplier?.id) {
+            return { ...s, cost: item.newCost };
+          }
+          return s;
+        });
+
+        const updatePayload: any = { suppliers: updatedSuppliers };
+        
+        // Si el usuario marcó mantener márgenes, actualizamos también el precio de venta
+        if (maintainMargins) {
+          updatePayload.salePrice = parseFloat(item.suggestedSalePrice.toFixed(2));
         }
-        // Nota: La creación de productos 'new' requiere un flujo más complejo de categorías/unidades
-        // Para este MVP, nos enfocamos en cambios de precio que es lo más crítico.
+
+        await updateProduct(item.localProduct.id, updatePayload);
+        count++;
       }
-      toast({ title: "Sincronización Exitosa", description: `Se actualizaron ${count} precios de productos.` });
+      toast({ title: "Sincronización Exitosa", description: `Se actualizaron ${count} productos en tu catálogo.` });
       handleCheckForUpdates();
     } catch (e) {
       toast({ variant: 'destructive', title: "Error", description: "Ocurrió un problema al aplicar los cambios." });
@@ -192,7 +195,7 @@ export default function SupplyNetworkPage() {
             <LinkIcon className="text-primary h-8 w-8" />
             Red de Suministro Inteligente
           </h1>
-          <p className="text-slate-500 mt-1">Conecta con tus proveedores en MercaFlow para automatizar costos y catálogos.</p>
+          <p className="text-slate-500 mt-1">Sincroniza costos y protege tu rentabilidad automáticamente.</p>
         </div>
         <div className="flex gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl border border-white/10 shadow-xl items-center">
           <div className="flex flex-col text-right">
@@ -218,10 +221,10 @@ export default function SupplyNetworkPage() {
           <div className="grid gap-6">
             <Card className="border-none shadow-md overflow-hidden">
               <CardHeader className="bg-slate-50/50 border-b pb-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
-                    <CardTitle className="text-lg">Actualizaciones de Red Pendientes</CardTitle>
-                    <CardDescription>Compara tus costos actuales con los precios de venta de tus proveedores vinculados.</CardDescription>
+                    <CardTitle className="text-lg">Detección de Cambios en la Red</CardTitle>
+                    <CardDescription>Compara tus costos con los precios vivos de tus proveedores.</CardDescription>
                   </div>
                   <Button onClick={handleCheckForUpdates} disabled={isSyncing} className="bg-primary hover:bg-primary/90 rounded-full h-11 px-6 shadow-lg">
                     {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
@@ -238,11 +241,11 @@ export default function SupplyNetworkPage() {
                           <TableRow className="bg-slate-50/30">
                             <TableHead className="w-[50px] pl-6"></TableHead>
                             <TableHead>Producto / SKU</TableHead>
-                            <TableHead>Proveedor</TableHead>
                             <TableHead className="text-right">Costo Actual</TableHead>
                             <TableHead className="text-right">Nuevo Costo</TableHead>
                             <TableHead className="text-center">Diferencia</TableHead>
-                            <TableHead className="text-center">Tipo</TableHead>
+                            <TableHead className="text-right">Precio Actual</TableHead>
+                            <TableHead className="text-right bg-primary/5">Precio Sugerido</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -256,7 +259,6 @@ export default function SupplyNetworkPage() {
                                   <Checkbox 
                                     checked={selectedSkus.includes(item.sku)}
                                     onCheckedChange={() => toggleSelect(item.sku)}
-                                    disabled={item.status === 'new'} // Inhabilitado por ahora para 'new' en MVP
                                   />
                                 </TableCell>
                                 <TableCell>
@@ -266,39 +268,33 @@ export default function SupplyNetworkPage() {
                                     </div>
                                     <div>
                                       <p className="font-bold text-sm text-slate-800">{item.name}</p>
-                                      <p className="text-[10px] font-mono text-muted-foreground uppercase">{item.sku}</p>
+                                      <p className="text-[10px] text-muted-foreground">{item.supplierName}</p>
                                     </div>
                                   </div>
                                 </TableCell>
-                                <TableCell>
-                                  <Badge variant="outline" className="bg-white shadow-sm border-slate-200">
-                                    <Truck className="h-3 w-3 mr-1.5 text-primary" /> {item.supplierName}
-                                  </Badge>
+                                <TableCell className="text-right text-slate-500 font-medium">
+                                  {formatCurrency(item.currentCost)}
                                 </TableCell>
-                                <TableCell className="text-right font-medium text-slate-500">
-                                  {item.currentCost > 0 ? formatCurrency(item.currentCost) : '---'}
-                                </TableCell>
-                                <TableCell className="text-right font-bold text-primary">
+                                <TableCell className="text-right font-black text-slate-900">
                                   {formatCurrency(item.newCost)}
                                 </TableCell>
                                 <TableCell className="text-center">
-                                  {item.status === 'price_change' && (
-                                    <div className={cn(
-                                      "inline-flex items-center gap-1 font-bold text-xs px-2 py-1 rounded-lg",
-                                      diff > 0 ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"
-                                    )}>
-                                      {diff > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                                      {Math.abs(diffPercent).toFixed(1)}%
-                                    </div>
-                                  )}
-                                  {item.status === 'new' && <span className="text-muted-foreground italic text-xs">Sin histórico</span>}
+                                  <div className={cn(
+                                    "inline-flex items-center gap-1 font-bold text-xs px-2 py-1 rounded-lg",
+                                    diff > 0 ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"
+                                  )}>
+                                    {diff > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                                    {Math.abs(diffPercent).toFixed(1)}%
+                                  </div>
                                 </TableCell>
-                                <TableCell className="text-center">
-                                  {item.status === 'new' ? (
-                                    <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none text-[10px] font-bold">NUEVO</Badge>
-                                  ) : (
-                                    <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-none text-[10px] font-bold">CAMBIO PRECIO</Badge>
-                                  )}
+                                <TableCell className="text-right text-slate-500">
+                                  {formatCurrency(item.currentSalePrice)}
+                                </TableCell>
+                                <TableCell className="text-right font-black text-primary bg-primary/5">
+                                  {formatCurrency(item.suggestedSalePrice)}
+                                  <div className="text-[9px] text-primary/60 uppercase font-bold">
+                                    {item.pricingMethod === 'margin' ? 'Mantener Margen' : 'Mantener Recargo'}
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             );
@@ -306,17 +302,31 @@ export default function SupplyNetworkPage() {
                         </TableBody>
                       </Table>
                     </div>
-                    <div className="p-4 bg-slate-50 border-t flex justify-between items-center">
-                      <p className="text-sm text-slate-600 font-medium">
-                        {selectedSkus.length} productos seleccionados para actualizar.
-                      </p>
+                    <div className="p-6 bg-slate-50 border-t flex flex-col md:flex-row justify-between items-center gap-6">
+                      <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border shadow-sm flex-grow w-full md:w-auto">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                          <Calculator className="h-5 w-5" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor="maintain-margins" className="font-bold text-sm">Proteger Rentabilidad Automáticamente</Label>
+                            <Switch 
+                              id="maintain-margins" 
+                              checked={maintainMargins} 
+                              onCheckedChange={setMaintainMargins} 
+                            />
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">Si está activo, ajustaremos tu precio de venta para mantener tus márgenes actuales.</p>
+                        </div>
+                      </div>
+                      
                       <Button 
                         disabled={selectedSkus.length === 0 || isProcessingSync}
                         onClick={handleApplySync}
-                        className="bg-slate-900 hover:bg-slate-800 text-white px-8 rounded-xl font-bold h-12 shadow-lg"
+                        className="bg-slate-900 hover:bg-slate-800 text-white px-10 rounded-xl font-bold h-14 shadow-xl shrink-0 w-full md:w-auto"
                       >
-                        {isProcessingSync ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
-                        Aplicar Cambios en mi Catálogo
+                        {isProcessingSync ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5" />}
+                        Actualizar {selectedSkus.length} Productos
                       </Button>
                     </div>
                   </div>
@@ -326,43 +336,13 @@ export default function SupplyNetworkPage() {
                       <RefreshCw className="h-8 w-8 text-slate-300" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-slate-800">No hay cambios pendientes</h3>
-                      <p className="text-slate-500 max-w-sm mx-auto mt-1">Tu catálogo está sincronizado con la red. Haz clic en "Buscar Cambios" para verificar nuevamente.</p>
+                      <h3 className="text-xl font-bold text-slate-800">Todo al día</h3>
+                      <p className="text-slate-500 max-w-sm mx-auto mt-1">No hay cambios de costo pendientes en tu red. Haz clic en "Buscar Cambios" para verificar.</p>
                     </div>
                   </div>
                 )}
               </CardContent>
             </Card>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="bg-blue-50 border-blue-100">
-                <CardContent className="p-4 flex gap-4">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0"><Info className="h-5 w-5" /></div>
-                  <div className="text-xs text-blue-800 space-y-1">
-                    <p className="font-bold">¿Cómo funciona?</p>
-                    <p>Al sincronizar, actualizamos tu **Costo de Compra** con el precio actual del proveedor. Esto recalculerá tu margen de ganancia automáticamente.</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-orange-50 border-orange-100">
-                <CardContent className="p-4 flex gap-4">
-                  <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 shrink-0"><Flame className="h-5 w-5" /></div>
-                  <div className="text-xs text-orange-800 space-y-1">
-                    <p className="font-bold">Nuevos Productos</p>
-                    <p>Próximamente podrás importar productos nuevos del proveedor directamente a tus categorías locales con un clic.</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-green-50 border-green-100">
-                <CardContent className="p-4 flex gap-4">
-                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0"><Check className="h-5 w-5" /></div>
-                  <div className="text-xs text-green-800 space-y-1">
-                    <p className="font-bold">Control Total</p>
-                    <p>Tú decides qué cambios aceptar. Nada en tu catálogo cambia sin que tú lo apruebes manualmente en esta pantalla.</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
           </div>
         </TabsContent>
 
@@ -384,41 +364,6 @@ export default function SupplyNetworkPage() {
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {filteredOrgs.map(org => {
-                      const conn = connections.find(c => c.fromOrgId === org.id || c.toOrgId === org.id);
-                      return (
-                        <div key={org.id} className="p-3 border rounded-xl flex items-center justify-between bg-card transition-all hover:border-primary/50">
-                          <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center"><Store className="h-4 w-4 text-slate-500" /></div>
-                            <div>
-                              <div className="text-sm font-bold text-slate-800">{org.name}</div>
-                              <p className="text-[10px] text-muted-foreground font-mono">{org.slug}</p>
-                            </div>
-                          </div>
-                          {conn ? (
-                            <Badge variant={conn.status === 'accepted' ? 'default' : 'secondary'} className="capitalize text-[10px]">
-                              {conn.status}
-                            </Badge>
-                          ) : (
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
-                              className="h-8 w-8 rounded-full p-0 hover:bg-primary/10 hover:text-primary"
-                              onClick={() => {}}
-                              disabled={!!isSubmitting}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {searchTerm && filteredOrgs.length === 0 && (
-                      <p className="text-center text-xs text-muted-foreground py-4 italic">No se encontraron edificios con ese nombre.</p>
-                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -455,14 +400,6 @@ export default function SupplyNetworkPage() {
                                   </Badge>
                                 </div>
                               </div>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-full"
-                                onClick={() => {}}
-                              >
-                                <Link2Off className="h-4 w-4" />
-                              </Button>
                             </div>
                             <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 pt-3 border-t mt-2">
                               <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
@@ -475,7 +412,7 @@ export default function SupplyNetworkPage() {
                   ) : (
                     <div className="text-center py-16 border-2 border-dashed rounded-3xl bg-slate-50/50">
                       <LinkIcon className="mx-auto h-10 w-10 text-slate-300 mb-3 opacity-50" />
-                      <p className="text-sm text-slate-500 max-w-xs mx-auto">Aún no tienes socios comerciales vinculados. Empieza buscando edificios arriba.</p>
+                      <p className="text-sm text-slate-500 max-w-xs mx-auto">Aún no tienes socios comerciales vinculados.</p>
                     </div>
                   )}
                 </CardContent>
@@ -488,30 +425,10 @@ export default function SupplyNetworkPage() {
   );
 }
 
-function Plus({ className }: { className?: string }) {
-  return <PlusCircle className={className} />;
-}
-
-function PlusCircle({ className }: { className?: string }) {
+function Search({ className }: { className?: string }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/>
-    </svg>
-  );
-}
-
-function ArrowDown({ className }: { className?: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="m7 10 5 5 5-5"/>
-    </svg>
-  );
-}
-
-function ArrowUp({ className }: { className?: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="m17 14-5-5-5 5"/>
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
     </svg>
   );
 }

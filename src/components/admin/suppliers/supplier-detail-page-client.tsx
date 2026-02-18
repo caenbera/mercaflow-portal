@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProductImportDialog } from './product-import-dialog';
+import { ImportWizardDialog } from './import-wizard-dialog';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { addProduct } from '@/lib/firestore/products';
@@ -111,7 +112,8 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
   // Red MercaFlow State
   const [remoteProducts, setRemoteProducts] = useState<Product[]>([]);
   const [isRemoteLoading, setIsRemoteLoading] = useState(false);
-  const [importingSku, setImportingSku] = useState<string | null>(null);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [productToImport, setProductToImport] = useState<Product | null>(null);
 
   const fetchRemoteProducts = async () => {
     if (!supplier.linkedOrgId) return;
@@ -129,47 +131,14 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
     }
   };
 
-  const handleImportRemote = async (remote: Product) => {
-    if (!activeOrgId) return;
-    
+  const handleOpenWizard = (remote: Product) => {
     // Verificar si ya existe por SKU
     if (supplierCatalog.some(p => p.sku === remote.sku)) {
       toast({ title: "Producto ya existe", description: "Este SKU ya forma parte de tu catálogo local." });
       return;
     }
-
-    setImportingSku(remote.sku);
-    try {
-      await addProduct({
-        sku: remote.sku,
-        organizationId: activeOrgId,
-        name: remote.name,
-        category: remote.category,
-        subcategory: remote.subcategory,
-        unit: remote.unit,
-        photoUrl: remote.photoUrl,
-        salePrice: remote.salePrice * 1.25, // Margen sugerido del 25% inicial
-        stock: 0,
-        minStock: 10,
-        active: true,
-        isBox: remote.isBox,
-        pricingMethod: 'margin',
-        calculationDirection: 'costToPrice',
-        suppliers: [
-          {
-            supplierId: supplier.id,
-            cost: remote.salePrice,
-            isPrimary: true,
-            supplierProductName: remote.name.es
-          }
-        ]
-      });
-      toast({ title: "Producto Importado", description: `${remote.name.es} ahora está en tu catálogo.` });
-    } catch (e) {
-      toast({ variant: 'destructive', title: "Error al importar" });
-    } finally {
-      setImportingSku(null);
-    }
+    setProductToImport(remote);
+    setIsWizardOpen(true);
   };
 
   const handleRatingChange = (newRating: number) => {
@@ -219,6 +188,13 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
         supplierId={supplier.id} 
         supplierName={supplier.name} 
         products={supplierCatalog}
+      />
+      <ImportWizardDialog
+        open={isWizardOpen}
+        onOpenChange={setIsWizardOpen}
+        remoteProduct={productToImport}
+        supplier={supplier}
+        onSuccess={fetchRemoteProducts}
       />
       
       <div className="flex flex-col gap-6 max-w-7xl mx-auto">
@@ -413,7 +389,7 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
                       <div className="flex justify-between items-center">
                         <div>
                           <CardTitle className="text-lg flex items-center gap-2">
-                            <Globe className="h-5 w-5 text-primary" /> Productos Disponibles del Proveedor
+                            <Globe className="h-5 w-5 text-primary" /> Catálogo en Red MercaFlow
                           </CardTitle>
                           <p className="text-xs text-slate-400 mt-1">Viendo el inventario real de <strong>{supplier.name}</strong> en MercaFlow.</p>
                         </div>
@@ -466,10 +442,9 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
                                         <Button 
                                           size="sm" 
                                           className="bg-primary hover:bg-primary/90 h-9 px-4 rounded-xl font-bold shadow-sm"
-                                          onClick={() => handleImportRemote(remote)}
-                                          disabled={importingSku === remote.sku}
+                                          onClick={() => handleOpenWizard(remote)}
                                         >
-                                          {importingSku === remote.sku ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 mr-1.5" />}
+                                          <Zap className="h-4 w-4 mr-1.5" />
                                           Importar
                                         </Button>
                                       )}
@@ -494,4 +469,3 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
     </>
   );
 }
-    
