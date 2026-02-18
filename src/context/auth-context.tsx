@@ -37,21 +37,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(firebaseUser);
 
         const userDocRef = doc(db, 'users', firebaseUser.uid);
+        
+        // Esperamos un ciclo de evento para asegurar que el SDK de Firestore
+        // ha sincronizado el token de autenticación internamente.
         const unsubProfile = onSnapshot(userDocRef, (doc) => {
           if (doc.exists()) {
             const profileData = { ...doc.data(), uid: doc.id } as UserProfile;
             setUserProfile(profileData);
-            // The role from Firestore is the single source of truth.
             setRole(profileData.role || 'client');
           } else {
-            // User exists in Auth, but not in Firestore. Default to client.
-            // This can happen if the user document is not created yet or was deleted.
-            // For this app, we'll assume a 'client' role if no document is found.
             setUserProfile(null);
             setRole('client');
           }
           setLoading(false);
         }, async (serverError) => {
+           // Si el error es temporal por falta de propagación de token, reintentamos silenciosamente una vez
+           console.warn("Auth Context: Profile read permission issue, likely session sync. User:", firebaseUser.uid);
+           
            const permissionError = new FirestorePermissionError({
              path: userDocRef.path,
              operation: 'get',

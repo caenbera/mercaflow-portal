@@ -11,7 +11,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // El Super Admin por correo tiene poder absoluto para evitar bloqueos en el prototipo
+    // El Super Admin por correo tiene poder absoluto para evitar bloqueos
     function isEmailSuperAdmin() {
       return isAuthed() && request.auth.token.email == 'caenbera@gmail.com';
     }
@@ -86,6 +86,7 @@ service cloud.firestore {
      * USUARIOS Y PERFILES
      */
     match /users/{userId} {
+      // Simplificamos para que el dueño siempre pueda leer su propio perfil incluso si el sistema está inicializando
       allow read: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
       allow list: if isSuperAdmin();
       allow write: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());

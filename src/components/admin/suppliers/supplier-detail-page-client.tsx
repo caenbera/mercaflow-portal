@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   ArrowLeft,
   Star,
@@ -113,7 +114,8 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
   const [remoteProducts, setRemoteProducts] = useState<Product[]>([]);
   const [isRemoteLoading, setIsRemoteLoading] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [productToImport, setProductToImport] = useState<Product | null>(null);
+  const [productsToImport, setProductsToImport] = useState<Product[]>([]);
+  const [selectedRemoteSkus, setSelectedRemoteSkus] = useState<string[]>([]);
 
   const fetchRemoteProducts = async () => {
     if (!supplier.linkedOrgId) return;
@@ -131,14 +133,36 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
     }
   };
 
-  const handleOpenWizard = (remote: Product) => {
-    // Verificar si ya existe por SKU
-    if (supplierCatalog.some(p => p.sku === remote.sku)) {
-      toast({ title: "Producto ya existe", description: "Este SKU ya forma parte de tu catálogo local." });
+  const handleOpenWizard = (remotes: Product[]) => {
+    // Filtrar los que ya existen
+    const existingSkus = new Set(supplierCatalog.map(p => p.sku));
+    const onlyNew = remotes.filter(r => !existingSkus.has(r.sku));
+
+    if (onlyNew.length === 0) {
+      toast({ title: "Productos ya existentes", description: "Todos los productos seleccionados ya están en tu catálogo." });
       return;
     }
-    setProductToImport(remote);
+
+    if (onlyNew.length < remotes.length) {
+      toast({ title: "Algunos ya existen", description: `${remotes.length - onlyNew.length} productos fueron omitidos por estar ya en catálogo.` });
+    }
+
+    setProductsToImport(onlyNew);
     setIsWizardOpen(true);
+  };
+
+  const toggleSelectRemote = (sku: string) => {
+    setSelectedRemoteSkus(prev => 
+      prev.includes(sku) ? prev.filter(s => s !== sku) : [...prev, sku]
+    );
+  };
+
+  const handleSelectAllRemote = () => {
+    if (selectedRemoteSkus.length === remoteProducts.length) {
+      setSelectedRemoteSkus([]);
+    } else {
+      setSelectedRemoteSkus(remoteProducts.map(p => p.sku));
+    }
   };
 
   const handleRatingChange = (newRating: number) => {
@@ -192,9 +216,12 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
       <ImportWizardDialog
         open={isWizardOpen}
         onOpenChange={setIsWizardOpen}
-        remoteProduct={productToImport}
+        remoteProducts={productsToImport}
         supplier={supplier}
-        onSuccess={fetchRemoteProducts}
+        onSuccess={() => {
+          fetchRemoteProducts();
+          setSelectedRemoteSkus([]);
+        }}
       />
       
       <div className="flex flex-col gap-6 max-w-7xl mx-auto">
@@ -393,9 +420,24 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
                           </CardTitle>
                           <p className="text-xs text-slate-400 mt-1">Viendo el inventario real de <strong>{supplier.name}</strong> en MercaFlow.</p>
                         </div>
-                        <Button variant="secondary" size="sm" onClick={fetchRemoteProducts} disabled={isRemoteLoading}>
-                          {isRemoteLoading ? <Loader2 className="animate-spin" /> : "Actualizar Vista"}
-                        </Button>
+                        <div className="flex gap-2">
+                          {selectedRemoteSkus.length > 0 && (
+                            <Button 
+                              variant="default" 
+                              className="bg-primary hover:bg-primary/90 rounded-xl"
+                              onClick={() => {
+                                const products = remoteProducts.filter(p => selectedRemoteSkus.includes(p.sku));
+                                handleOpenWizard(products);
+                              }}
+                            >
+                              <Zap className="h-4 w-4 mr-2" />
+                              Importar Seleccionados ({selectedRemoteSkus.length})
+                            </Button>
+                          )}
+                          <Button variant="secondary" size="sm" onClick={fetchRemoteProducts} disabled={isRemoteLoading} className="rounded-xl">
+                            {isRemoteLoading ? <Loader2 className="animate-spin" /> : "Actualizar Vista"}
+                          </Button>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="p-0 bg-white">
@@ -409,7 +451,13 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
                           <Table>
                             <TableHeader className="bg-slate-50/50">
                               <TableRow>
-                                <TableHead className="pl-6 text-[10px] uppercase font-bold text-slate-400 py-4">Producto Remoto</TableHead>
+                                <TableHead className="w-[50px] pl-6">
+                                  <Checkbox 
+                                    checked={remoteProducts.length > 0 && selectedRemoteSkus.length === remoteProducts.length}
+                                    onCheckedChange={handleSelectAllRemote}
+                                  />
+                                </TableHead>
+                                <TableHead className="text-[10px] uppercase font-bold text-slate-400 py-4">Producto Remoto</TableHead>
                                 <TableHead className="text-[10px] uppercase font-bold text-slate-400">Su Unidad</TableHead>
                                 <TableHead className="text-[10px] uppercase font-bold text-slate-400">Tu Costo</TableHead>
                                 <TableHead className="pr-6 text-right text-[10px] uppercase font-bold text-slate-400">Acción</TableHead>
@@ -420,7 +468,15 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
                                 const isAlreadyImported = supplierCatalog.some(p => p.sku === remote.sku);
                                 return (
                                   <TableRow key={remote.id} className={cn("hover:bg-slate-50 transition-colors", isAlreadyImported && "opacity-60 bg-slate-50/30")}>
-                                    <TableCell className="pl-6 py-4">
+                                    <TableCell className="pl-6">
+                                      {!isAlreadyImported && (
+                                        <Checkbox 
+                                          checked={selectedRemoteSkus.includes(remote.sku)}
+                                          onCheckedChange={() => toggleSelectRemote(remote.sku)}
+                                        />
+                                      )}
+                                    </TableCell>
+                                    <TableCell className="py-4">
                                       <div className="flex items-center gap-3">
                                         <div className="h-10 w-10 rounded-lg overflow-hidden border bg-slate-100 shrink-0">
                                           <Image src={remote.photoUrl || '/placeholder.svg'} alt={remote.name.es} width={40} height={40} className="object-cover h-full w-full" />
@@ -441,8 +497,9 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
                                       ) : (
                                         <Button 
                                           size="sm" 
-                                          className="bg-primary hover:bg-primary/90 h-9 px-4 rounded-xl font-bold shadow-sm"
-                                          onClick={() => handleOpenWizard(remote)}
+                                          variant="ghost"
+                                          className="text-primary hover:text-primary hover:bg-primary/10 h-9 px-4 rounded-xl font-bold"
+                                          onClick={() => handleOpenWizard([remote])}
                                         >
                                           <Zap className="h-4 w-4 mr-1.5" />
                                           Importar
@@ -452,7 +509,7 @@ export function SupplierDetailPageClient({ supplier, products: supplierCatalog }
                                   </TableRow>
                                 );
                               }) : (
-                                <TableRow><TableCell colSpan={4} className="h-48 text-center text-slate-400">Este proveedor aún no tiene productos públicos en la red.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={5} className="h-48 text-center text-slate-400">Este proveedor aún no tiene productos públicos en la red.</TableCell></TableRow>
                               )}
                             </TableBody>
                           </Table>
