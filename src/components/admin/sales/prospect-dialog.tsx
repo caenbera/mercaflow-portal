@@ -71,11 +71,18 @@ export function ProspectDialog({ open, onOpenChange, prospect }: ProspectDialogP
   useEffect(() => {
     if (open && prospect) {
       form.reset({
-        ...prospect,
+        name: prospect.name,
+        address: prospect.address,
+        city: prospect.city,
+        state: prospect.state,
         zip: prospect.zip || '',
         phone: prospect.phone || '',
         web: prospect.web || '',
+        category: prospect.category as any,
+        ethnic: prospect.ethnic as any,
         zone: prospect.zone || '',
+        status: prospect.status,
+        priority: prospect.priority,
         notes: prospect.notes || '',
         potentialValue: prospect.potentialValue || 0,
       });
@@ -116,7 +123,7 @@ export function ProspectDialog({ open, onOpenChange, prospect }: ProspectDialogP
         await updateProspect(prospect.id, dataToSave);
         toast({ title: t('toast_update_success_title'), description: values.name });
       } else {
-        await addProspect(dataToSave as Prospect);
+        await addProspect(dataToSave as any);
         toast({ title: t('toast_create_success_title'), description: values.name });
       }
       onOpenChange(false);
@@ -173,7 +180,6 @@ export function ProspectDialog({ open, onOpenChange, prospect }: ProspectDialogP
                         <SelectItem value="venezolano">Venezolano</SelectItem>
                         <SelectItem value="salvadoreno">Salvadoreño</SelectItem>
                         <SelectItem value="guatemalteco">Guatemalteco</SelectItem>
-                        <SelectItem value="hondureño">Hondureño</SelectItem>
                         <SelectItem value="otro">Otro</SelectItem>
                         </SelectContent>
                     </Select>
