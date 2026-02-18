@@ -38,6 +38,9 @@ import {
   AlertTriangle,
   PiggyBank,
   Tag,
+  Share2,
+  Copy,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,12 +52,14 @@ import { useAllOrders } from '@/hooks/use-all-orders';
 import { useUsers } from '@/hooks/use-users';
 import { useProducts } from '@/hooks/use-products';
 import { usePurchaseOrders } from '@/hooks/use-purchase-orders';
+import { useOrganization } from '@/context/organization-context';
 
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/navigation';
 import { Product } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -75,6 +80,8 @@ export default function DashboardPage() {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('Dashboard');
+  const { toast } = useToast();
+  const { activeOrg } = useOrganization();
 
   const [period, setPeriod] = useState('month');
   const [currentDate, setCurrentDate] = useState('');
@@ -89,6 +96,12 @@ export default function DashboardPage() {
   useEffect(() => {
     setCurrentDate(new Date().toLocaleDateString(locale, { day: 'numeric', month: 'short' }));
   }, [locale]);
+
+  const copySlug = () => {
+    if (!activeOrg?.slug) return;
+    navigator.clipboard.writeText(activeOrg.slug);
+    toast({ title: "Código de Red Copiado", description: "Compártelo con tus socios para conectar catálogos." });
+  };
 
 
   // Memoized calculations
@@ -240,13 +253,47 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8 bg-gray-50/50 p-4 sm:p-6 lg:p-8 rounded-xl">
-      <div className="flex justify-between items-start flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Hola, Administrador 👋</h1>
-          <p className="text-muted-foreground">Resumen de actividad, <span id="currentDate">{currentDate}</span></p>
+      
+      {/* Welcome & Identity Card */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2">
+          <h1 className="text-3xl font-bold text-gray-800">Hola, Administrador 👋</h1>
+          <p className="text-muted-foreground mt-1">Resumen de actividad, <span id="currentDate">{currentDate}</span></p>
         </div>
+        
+        {activeOrg && (
+          <Card className="bg-slate-900 text-white overflow-hidden border-none shadow-xl relative">
+            <div className="absolute top-0 right-0 p-3 opacity-10">
+                <Share2 className="h-16 w-16" />
+            </div>
+            <CardContent className="p-4 flex flex-col justify-between h-full min-h-[100px]">
+                <div className="flex items-center gap-2 mb-2">
+                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Identidad en Red MercaFlow</span>
+                </div>
+                <div className="flex justify-between items-end">
+                    <div className="flex flex-col">
+                        <span className="text-2xl font-mono font-black text-primary tracking-tighter">{activeOrg.slug}</span>
+                        <span className="text-[9px] text-slate-500 font-medium">Comparte este código con tus socios</span>
+                    </div>
+                    <Button 
+                        size="sm" 
+                        variant="secondary" 
+                        className="h-8 rounded-lg bg-white/10 hover:bg-white/20 border-white/10 text-white gap-2"
+                        onClick={copySlug}
+                    >
+                        <Copy className="h-3 w-3" />
+                        Copiar
+                    </Button>
+                </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <div className="flex justify-end items-center gap-4">
         <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectTrigger className="w-full sm:w-[200px] bg-white border-gray-200">
                 <SelectValue placeholder={t('select_period_placeholder')} />
             </SelectTrigger>
             <SelectContent>
@@ -262,17 +309,17 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {loading ? Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-2xl" />) :
           kpiCardsConfig.map(({ metric, label, icon, iconBg }) => (
-          <Card key={metric} className="shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
+          <Card key={metric} className="shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl border-gray-100">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
-                <span className="text-sm font-semibold text-gray-500 uppercase">{label} ({periodLabels[period]})</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{label} ({periodLabels[period]})</span>
               </div>
             </CardHeader>
             <CardContent>
               <div className="flex justify-between items-center">
                 <div>
                   <div className="text-3xl font-extrabold text-gray-800">{kpiData?.[metric as keyof typeof kpiData]?.val || '...'}</div>
-                   <div className={`text-xs font-semibold mt-1 inline-flex items-center gap-1 py-1 px-2 rounded-full bg-green-100 text-green-600`}>
+                   <div className={`text-xs font-semibold mt-1 inline-flex items-center gap-1 py-1 px-2 rounded-full bg-green-50 text-green-600`}>
                       <ArrowUp className="h-3 w-3" />
                       <span>{kpiData?.[metric as keyof typeof kpiData]?.trend || '...'}</span>
                     </div>
@@ -287,16 +334,16 @@ export default function DashboardPage() {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 shadow-sm rounded-2xl p-6">
+        <Card className="lg:col-span-2 shadow-sm rounded-2xl p-6 border-gray-100">
           <h3 className="font-bold text-lg text-gray-800 mb-4">Rendimiento de Ventas (Últ. 7 días)</h3>
           <div className="h-80">
             {loading ? <Skeleton className="h-full w-full" /> : 
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={salesChartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                 <defs><linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#27ae60" stopOpacity={0.2}/><stop offset="95%" stopColor="#27ae60" stopOpacity={0}/></linearGradient></defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tickLine={false} axisLine={false} dy={10} />
-                <YAxis tickLine={false} axisLine={false} dx={-10} tickFormatter={(value) => formatCurrency(value)}/>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" tickLine={false} axisLine={false} dy={10} stroke="#94a3b8" fontSize={12} />
+                <YAxis tickLine={false} axisLine={false} dx={-10} tickFormatter={(value) => formatCurrency(value)} stroke="#94a3b8" fontSize={12} />
                 <Tooltip contentStyle={{ borderRadius: '0.75rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0' }} itemStyle={{ fontWeight: '600' }} labelStyle={{ fontWeight: 'normal', color: '#64748b' }} formatter={(value: number) => [formatCurrency(value), 'Ventas']} />
                 <Area type="monotone" dataKey="sales" stroke="#27ae60" strokeWidth={3} fill="url(#colorSales)" />
               </AreaChart>
@@ -304,7 +351,7 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        <Card className="shadow-sm rounded-2xl p-6">
+        <Card className="shadow-sm rounded-2xl p-6 border-gray-100">
           <h3 className="font-bold text-lg text-gray-800 mb-4">Top Categorías</h3>
           <div className="h-80 flex items-center justify-center">
              {loading ? <Skeleton className="h-64 w-64 rounded-full" /> : 
@@ -314,8 +361,8 @@ export default function DashboardPage() {
                     <Pie data={categoryChartData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} fill="#8884d8" paddingAngle={5} dataKey="value" nameKey="name">
                     {categoryChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                     </Pie>
-                    <Legend iconType="circle" iconSize={10} />
-                    <Tooltip formatter={(value, name) => [`${value}%`, name]} />
+                    <Legend iconType="circle" iconSize={10} verticalAlign="bottom" />
+                    <Tooltip formatter={(value, name) => [`${value}%`, name]} contentStyle={{ borderRadius: '1rem', border: 'none', shadow: 'xl' }} />
                 </PieChart>
                 </ResponsiveContainer>
               ) : <p className="text-sm text-muted-foreground">No hay datos de ventas para mostrar</p>
@@ -325,46 +372,50 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <Card className="shadow-sm rounded-2xl p-6">
+        <Card className="shadow-sm rounded-2xl p-6 border-gray-100 overflow-hidden">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-lg text-gray-800">Pedidos Recientes</h3>
             <Button variant="link" size="sm" onClick={() => router.push('/admin/orders')}>Ver Todos</Button>
           </div>
           {loading ? <Skeleton className="h-48 w-full" /> :
-          <Table>
-            <TableHeader><TableRow><TableHead>Pedido ID</TableHead><TableHead>Cliente</TableHead><TableHead>Monto</TableHead><TableHead>Estado</TableHead><TableHead>Acción</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {recentOrdersData.length > 0 ? recentOrdersData.map(order => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-bold">#{order.id.substring(0,7).toUpperCase()}</TableCell>
-                  <TableCell>{order.businessName}</TableCell>
-                  <TableCell className="font-bold">{formatCurrency(order.total)}</TableCell>
-                  <TableCell>{getStatusBadge(order.status)}</TableCell>
-                  <TableCell><Button variant="outline" size="icon" className="h-8 w-8" onClick={() => router.push('/admin/orders')}><Eye className="h-4 w-4" /></Button></TableCell>
-                </TableRow>
-              )) : <TableRow><TableCell colSpan={5} className="text-center h-24">No hay pedidos recientes.</TableCell></TableRow>}
-            </TableBody>
-          </Table>}
+          <div className="overflow-x-auto">
+            <Table>
+                <TableHeader><TableRow className="bg-slate-50/50 border-none"><TableHead className="font-bold text-[10px] uppercase">Pedido</TableHead><TableHead className="font-bold text-[10px] uppercase">Cliente</TableHead><TableHead className="font-bold text-[10px] uppercase text-right">Monto</TableHead><TableHead className="font-bold text-[10px] uppercase">Estado</TableHead><TableHead className="text-right"></TableHead></TableRow></TableHeader>
+                <TableBody>
+                {recentOrdersData.length > 0 ? recentOrdersData.map(order => (
+                    <TableRow key={order.id} className="border-gray-50 hover:bg-slate-50/50">
+                    <TableCell className="font-mono text-xs font-bold">#{order.id.substring(0,7).toUpperCase()}</TableCell>
+                    <TableCell className="font-medium text-sm text-slate-700">{order.businessName}</TableCell>
+                    <TableCell className="font-black text-slate-900 text-right">{formatCurrency(order.total)}</TableCell>
+                    <TableCell>{getStatusBadge(order.status)}</TableCell>
+                    <TableCell className="text-right"><Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => router.push('/admin/orders')}><Eye className="h-4 w-4" /></Button></TableCell>
+                    </TableRow>
+                )) : <TableRow><TableCell colSpan={5} className="text-center h-24">No hay pedidos recientes.</TableCell></TableRow>}
+                </TableBody>
+            </Table>
+          </div>}
         </Card>
 
-         <Card className="shadow-sm rounded-2xl p-6">
-            <h3 className="font-bold text-lg text-gray-800 mb-4 flex items-center gap-2"><AlertTriangle className="text-yellow-500" /> Alertas de Stock Bajo</h3>
+         <Card className="shadow-sm rounded-2xl p-6 border-gray-100">
+            <h3 className="font-bold text-lg text-gray-800 mb-4 flex items-center gap-2"><AlertTriangle className="text-yellow-500 h-5 w-5" /> Alertas de Stock Bajo</h3>
             {loading ? <Skeleton className="h-48 w-full" /> :
             <div className="space-y-4">
               {lowStockProducts.length > 0 ? lowStockProducts.slice(0,3).map((product) => (
-                <div key={product.id} className="flex items-center gap-4 pb-4 border-b last:border-b-0">
-                    <Image src={product.photoUrl || 'https://via.placeholder.com/40'} alt={product.name[locale as 'es'|'en']} width={40} height={40} className="rounded-md" data-ai-hint="product image" />
-                    <div className="flex-grow">
-                        <div className="font-bold text-gray-800">{product.name[locale as 'es'|'en']}</div>
-                        <small className="text-gray-500">SKU: {product.sku}</small>
+                <div key={product.id} className="flex items-center gap-4 pb-4 border-b border-gray-50 last:border-b-0">
+                    <div className="h-10 w-10 rounded-lg bg-slate-100 overflow-hidden shrink-0 border border-gray-100">
+                        <Image src={product.photoUrl || 'https://via.placeholder.com/40'} alt={product.name[locale as 'es'|'en']} width={40} height={40} className="object-cover h-full w-full" data-ai-hint="product image" />
                     </div>
-                    <div className="text-right">
-                        <div className="font-bold text-red-600">{product.stock} restantes</div>
-                        <small className="font-bold text-yellow-600">Min: {product.minStock}</small>
+                    <div className="flex-grow min-w-0">
+                        <div className="font-bold text-gray-800 truncate text-sm">{product.name[locale as 'es'|'en']}</div>
+                        <small className="text-[10px] font-mono text-gray-400 uppercase">{product.sku}</small>
+                    </div>
+                    <div className="text-right shrink-0">
+                        <div className="font-bold text-red-600 text-sm">{product.stock} restantes</div>
+                        <div className="text-[9px] font-bold text-yellow-600 uppercase tracking-tighter">Mínimo: {product.minStock}</div>
                     </div>
                 </div>
               )) : <p className="text-sm text-muted-foreground text-center py-8">¡Todo el inventario está en orden!</p>}
-              {lowStockProducts.length > 0 && <Button className="w-full mt-2" variant="secondary" onClick={() => router.push('/admin/purchasing')}>Ir a Compras</Button>}
+              {lowStockProducts.length > 0 && <Button className="w-full mt-2 rounded-xl h-11 bg-slate-100 text-slate-900 hover:bg-slate-200 border-none shadow-none font-bold" variant="secondary" onClick={() => router.push('/admin/purchasing')}>Ir a Compras</Button>}
             </div>}
          </Card>
       </div>

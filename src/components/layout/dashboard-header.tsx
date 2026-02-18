@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LanguageSwitcher } from '../landing/language-switcher';
 import { useTranslations } from 'next-intl';
 import { NotificationBell } from './notification-bell';
-import { Building2, ChevronRight } from 'lucide-react';
+import { Building2, ChevronRight, Share2 } from 'lucide-react';
 
 export function DashboardHeader() {
   const { user, userProfile, role } = useAuth();
@@ -54,6 +54,12 @@ export function DashboardHeader() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
+  const copySlug = () => {
+    if (!activeOrg?.slug) return;
+    navigator.clipboard.writeText(activeOrg.slug);
+    toast({ title: "Código Copiado", description: "Envía este código a tus clientes para conectarlos a tu red." });
+  };
+
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 py-3">
       <SidebarTrigger />
@@ -66,11 +72,20 @@ export function DashboardHeader() {
         </div>
         <ChevronRight className="h-3 w-3 text-muted-foreground/50" />
         {activeOrg ? (
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-800">{activeOrg.name}</span>
-            <Badge variant="outline" className="text-[10px] uppercase font-bold px-1.5 py-0 h-5 border-primary/30 text-primary bg-primary/5">
-              {activeOrg.type}
-            </Badge>
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col">
+                <span className="font-bold text-slate-800 leading-none">{activeOrg.name}</span>
+                <span className="text-[10px] text-muted-foreground mt-1 uppercase font-bold tracking-tighter">Nivel: {activeOrg.type}</span>
+            </div>
+            
+            <div 
+                className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1 rounded-lg border shadow-sm cursor-pointer hover:bg-slate-800 transition-colors"
+                onClick={copySlug}
+                title="Haz clic para copiar tu Código de Red"
+            >
+                <Share2 className="h-3 w-3 text-primary" />
+                <span className="font-mono text-[11px] font-bold text-primary">{activeOrg.slug}</span>
+            </div>
           </div>
         ) : (
           <span className="text-muted-foreground italic">Selecciona un edificio</span>
