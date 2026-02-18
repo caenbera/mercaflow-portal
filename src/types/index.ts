@@ -222,6 +222,29 @@ export interface PriceList {
   tiers: PriceListTier[];
 }
 
+// --- PROCUREMENT ---
+export interface PurchaseOrderItem {
+  productId: string;
+  name: string;
+  orderedQty: number;
+  receivedQty?: number;
+  price: number;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  poId: string;
+  supplierId: string;
+  supplierName: string;
+  items: PurchaseOrderItem[];
+  subtotal: number;
+  discountInfo?: any;
+  total: number;
+  status: 'pending' | 'completed';
+  createdAt: Timestamp;
+  completedAt?: Timestamp;
+}
+
 // --- SUPPLIERS ---
 export interface SupplierContact {
   id: string;
