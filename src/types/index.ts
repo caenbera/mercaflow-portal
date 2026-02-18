@@ -86,7 +86,7 @@ export interface UserProfile {
   createdAt: Timestamp;
   status?: UserStatus;
   organizationId?: string;
-  belongsToOrgId?: string; // Para consumidores (customers)
+  belongsToOrgId?: string; 
   contactPerson?: string;
   tier?: ClientTier;
   creditLimit?: number;
@@ -103,7 +103,7 @@ export interface AdminInvite {
   organizationId?: string; 
 }
 
-// --- CATALOG ---
+// --- CATALOG & OFFERS ---
 export interface ProductCategory {
   es: string;
   en: string;
@@ -137,6 +137,84 @@ export interface Product {
   createdAt: Timestamp;
 }
 
+export type OfferType = 'percentage' | 'fixedPrice' | 'liquidation' | 'combo';
+
+export interface Offer {
+  id: string;
+  productId: string;
+  productName: { es: string; en: string };
+  productPhotoUrl?: string;
+  productUnit: { es: string; en: string };
+  originalPrice: number;
+  type: OfferType;
+  value: number;
+  category: { es: string; en: string };
+  expiresAt: Timestamp;
+  createdAt: Timestamp;
+  comboProductIds?: string[];
+}
+
+export interface OfferCategory {
+  id: string;
+  name: { es: string; en: string };
+}
+
+// --- SALES & PROSPECTS ---
+export type ProspectStatus = 'pending' | 'contacted' | 'visited' | 'client' | 'not_interested';
+
+export interface ProspectVisit {
+  id: string;
+  date: Timestamp;
+  notes: string;
+  outcome: 'successful' | 'follow-up' | 'no_show';
+}
+
+export interface Prospect {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zip?: string;
+  phone?: string;
+  web?: string;
+  category: string;
+  ethnic: string;
+  zone?: string;
+  status: ProspectStatus;
+  priority: boolean;
+  notes?: string;
+  potentialValue?: number;
+  salespersonId: string;
+  lat?: number | null;
+  lng?: number | null;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+// --- FINANCE & PRICING ---
+export interface Invoice {
+  id: string;
+  userId: string;
+  amount: number;
+  status: 'open' | 'paid' | 'overdue';
+  invoiceDate: Timestamp;
+  dueDate: Timestamp;
+}
+
+export interface PriceListTier {
+  from: number;
+  to: number | null;
+  discount: number;
+}
+
+export interface PriceList {
+  id: string;
+  name: string;
+  tiers: PriceListTier[];
+}
+
+// --- SUPPLIERS ---
 export interface SupplierContact {
   id: string;
   department: string;
@@ -157,7 +235,7 @@ export interface SupplierDiscount {
 export interface Supplier {
   id: string;
   organizationId: string;
-  linkedOrgId?: string; // ID del edificio MercaFlow vinculado
+  linkedOrgId?: string;
   name: string;
   category: string;
   email: string;
@@ -178,6 +256,7 @@ export interface Supplier {
   };
 }
 
+// --- ORDERS ---
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface OrderItem {
@@ -206,6 +285,46 @@ export interface Order {
   };
 }
 
+// --- REWARDS ---
+export interface Reward {
+  id: string;
+  name: { es: string; en: string };
+  description: { es: string; en: string };
+  pointCost: number;
+  iconName: string;
+  color: string;
+}
+
+export interface RewardTier {
+  id: string;
+  name: { es: string; en: string };
+  minPoints: number;
+  iconName: string;
+}
+
+export interface RewardRule {
+  id: string;
+  name: { es: string; en: string };
+  ruleType: 'pointsPerDollar' | 'bonusForAmount' | 'fixedPointsPerOrder' | 'bonusForProduct' | 'multiplierPerDay' | 'firstOrderBonus' | 'anniversaryBonus' | 'bonusForVariety' | 'bonusForCategory' | 'consecutiveBonus';
+  points?: number;
+  amount?: number;
+  perAmount?: number;
+  multiplier?: number;
+  productId?: string;
+  category?: ProductCategory;
+  dayOfWeek?: number;
+  weeks?: number;
+  isActive: boolean;
+}
+
+export interface RewardActivity {
+  id: string;
+  description: string;
+  points: number;
+  createdAt: Timestamp;
+}
+
+// --- SUPPORT & NOTIFICATIONS ---
 export interface SupportTicket {
   id: string;
   organizationId?: string;
@@ -217,6 +336,25 @@ export interface SupportTicket {
   photoUrl?: string;
   status: 'new' | 'in_progress' | 'resolved';
   createdAt: Timestamp;
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  body: string;
+  read: boolean;
+  createdAt: Timestamp;
+  data: {
+    url: string;
+  };
+}
+
+export interface Branch {
+  id: string;
+  alias: string;
+  address: string;
+  city: string;
+  manager: string;
 }
 
 export type { User };
