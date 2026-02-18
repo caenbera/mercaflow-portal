@@ -14,11 +14,10 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import type { Product } from '@/types';
+import type { Product, ProductInput } from '@/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
-type ProductInput = Omit<Product, 'id' | 'createdAt'>;
 type ProductUpdateInput = Partial<ProductInput>;
 
 const productsCollection = collection(db, 'products');

@@ -137,6 +137,8 @@ export interface Product {
   createdAt: Timestamp;
 }
 
+export type ProductInput = Omit<Product, 'id' | 'createdAt'>;
+
 export type OfferType = 'percentage' | 'fixedPrice' | 'liquidation' | 'combo';
 
 export interface Offer {
@@ -191,6 +193,8 @@ export interface Prospect {
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
+
+export type ProspectInput = Omit<Prospect, 'id' | 'createdAt' | 'updatedAt'>;
 
 export interface ClientNote {
   id: string;
@@ -287,6 +291,8 @@ export interface Supplier {
   };
 }
 
+export type SupplierInput = Omit<Supplier, 'id' | 'rating' | 'status' | 'verified' | 'finance'>;
+
 // --- ORDERS ---
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
@@ -315,6 +321,8 @@ export interface Order {
     items?: Record<string, string>;
   };
 }
+
+export type OrderInput = Omit<Order, 'id' | 'createdAt'>;
 
 // --- REWARDS ---
 export interface Reward {

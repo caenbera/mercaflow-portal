@@ -9,11 +9,9 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import type { Supplier } from '@/types';
+import type { Supplier, SupplierInput } from '@/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-
-export type SupplierInput = Omit<Supplier, 'id' | 'rating' | 'status' | 'verified' | 'finance'>;
 
 export const addSupplier = (supplierData: SupplierInput) => {
   const suppliersCollection = collection(db, 'suppliers');
