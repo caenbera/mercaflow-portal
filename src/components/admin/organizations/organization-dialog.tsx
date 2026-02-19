@@ -37,7 +37,7 @@ import { addAdminInvite } from '@/lib/firestore/users';
 import { useToast } from '@/hooks/use-toast';
 import type { Organization, OrganizationType, OrganizationStatus } from '@/types';
 import { useAuth } from '@/context/auth-context';
-import { ShieldAlert, Info, UserCheck, Lock, Globe, Target } from 'lucide-react';
+import { ShieldAlert, Info, UserCheck, Lock, Globe, Target, FlaskConical } from 'lucide-react';
 
 const orgSchema = z.object({
   name: z.string().min(3, "El nombre debe tener al menos 3 caracteres."),
@@ -45,6 +45,7 @@ const orgSchema = z.object({
   status: z.enum(['active', 'suspended', 'pending']),
   slug: z.string().min(3, "El slug debe ser único."),
   ownerEmail: z.string().email("Correo de dueño inválido.").optional().or(z.literal('')),
+  isTest: z.boolean().default(false),
   adminAgreements: z.object({
     catalog: z.boolean().default(false),
     operations: z.boolean().default(false),
@@ -77,6 +78,7 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
       status: 'active',
       slug: '',
       ownerEmail: '',
+      isTest: false,
       adminAgreements: {
         catalog: false,
         operations: false,
@@ -98,6 +100,7 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
           status: organization.status,
           slug: organization.slug,
           ownerEmail: organization.ownerEmail || '',
+          isTest: organization.isTest || false,
           adminAgreements: organization.adminAgreements || {
             catalog: false,
             operations: false,
@@ -115,6 +118,7 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
           status: 'active',
           slug: '',
           ownerEmail: '',
+          isTest: false,
           adminAgreements: {
             catalog: false,
             operations: false,
@@ -157,7 +161,6 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
     }
   };
 
-  const isTestOrg = organization?.ownerId === user?.uid;
   const watchedType = form.watch('type');
 
   return (
@@ -176,6 +179,19 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
               <h3 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
                 <Info className="h-4 w-4" /> Datos Básicos
               </h3>
+              
+              <FormField control={form.control} name="isTest" render={({ field }) => (
+                <FormItem className="flex items-center justify-between rounded-lg border border-yellow-200 bg-yellow-50/50 p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-xs font-bold text-yellow-800 flex items-center gap-1.5">
+                      <FlaskConical className="h-3 w-3" /> Edificio de Prueba
+                    </FormLabel>
+                    <FormDescription className="text-[10px] text-yellow-700">Muestra la etiqueta TEST y se usa para demostraciones.</FormDescription>
+                  </div>
+                  <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                </FormItem>
+              )}/>
+
               <FormField control={form.control} name="name" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nombre de la Empresa</FormLabel>
@@ -257,14 +273,11 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
             </div>
 
             <div className="space-y-4 p-4 bg-orange-50/50 rounded-xl border border-orange-100">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold uppercase text-orange-700 flex items-center gap-2">
-                  <Lock className="h-4 w-4" /> Convenios de Acceso (Privacidad)
-                </h3>
-                {isTestOrg && <Badge className="bg-orange-200 text-orange-800 text-[8px]">OMITIDO EN PRUEBAS</Badge>}
-              </div>
+              <h3 className="text-sm font-bold uppercase text-orange-700 flex items-center gap-2">
+                <Lock className="h-4 w-4" /> Convenios de Acceso (Privacidad)
+              </h3>
               <p className="text-[10px] text-orange-800 mb-2">
-                Define a qué módulos tendrás acceso como Super Administrador y qué servicios premium están habilitados.
+                Define a qué módulos tendrás acceso. Nota: Las restricciones se aplican a todos los usuarios, incluido el Super Administrador.
               </p>
               
               <div className="space-y-3">

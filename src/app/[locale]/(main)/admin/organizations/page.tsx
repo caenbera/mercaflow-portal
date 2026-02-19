@@ -11,7 +11,7 @@ import {
   PlusCircle, Building2, Globe, Truck, ShoppingBag, 
   Store, MoreVertical, Pencil, Trash2, ShieldCheck,
   Info, MessageSquare, Mail, Lock, Unlock, DatabaseZap, Loader2,
-  Target
+  Target, FlaskConical
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OrganizationDialog } from '@/components/admin/organizations/organization-dialog';
@@ -123,7 +123,7 @@ export default function OrganizationsManagementPage() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {orgs.map((org) => {
-          const isMyTestOrg = org.ownerId === user?.uid;
+          const isMyTestOrg = org.isTest;
           const isClaimed = !!org.ownerEmail && org.ownerId !== user?.uid;
 
           return (
@@ -139,7 +139,7 @@ export default function OrganizationsManagementPage() {
                       <Badge variant="outline" className="capitalize text-[10px] py-0 h-4 font-mono tracking-tighter">
                         {org.slug}
                       </Badge>
-                      {isMyTestOrg && <Badge className="bg-yellow-400 text-yellow-900 text-[8px] h-4 font-bold px-1.5 shadow-sm">PRUEBA</Badge>}
+                      {isMyTestOrg && <Badge className="bg-yellow-400 text-yellow-900 text-[8px] h-4 font-bold px-1.5 shadow-sm flex items-center gap-1"><FlaskConical className="h-2 w-2" /> PRUEBA</Badge>}
                     </div>
                   </div>
                 </div>
@@ -198,14 +198,14 @@ export default function OrganizationsManagementPage() {
                   <div className="mt-4 p-3 bg-yellow-50/50 rounded-xl border border-yellow-100 flex gap-2 items-start">
                     <Info className="h-3.5 w-3.5 text-yellow-600 mt-0.5 shrink-0" />
                     <p className="text-[10px] text-yellow-800 leading-relaxed font-medium">
-                      Estructura de prueba. Tienes acceso total a todos los módulos internos desde el menú lateral.
+                      Configuración de prueba. Puedes validar las restricciones apagando los switches en el menú de convenio.
                     </p>
                   </div>
                 ) : (
                   <div className="mt-4 p-3 bg-blue-50/50 rounded-xl border border-blue-100 flex gap-2 items-start">
                     <ShieldCheck className="h-3.5 w-3.5 text-blue-600 mt-0.5 shrink-0" />
                     <p className="text-[10px] text-blue-800 leading-relaxed font-medium">
-                      Edificio de cliente. Solo puedes ver los módulos habilitados por los switches de convenio.
+                      Edificio de cliente. Solo se activan los módulos habilitados por los switches de convenio.
                     </p>
                   </div>
                 )}

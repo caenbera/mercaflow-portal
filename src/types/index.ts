@@ -65,6 +65,7 @@ export interface Organization {
   phone?: string;
   address?: string;
   storeConfig?: StoreConfig;
+  isTest?: boolean; // Nuevo campo para distinguir edificios de prueba
 }
 
 export interface OrganizationConnection {
