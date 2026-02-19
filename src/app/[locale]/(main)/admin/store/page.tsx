@@ -24,6 +24,8 @@ export default function StoreManagementPage() {
   const { activeOrg, activeOrgId } = useOrganization();
   const { toast } = useToast();
   const locale = useLocale();
+  const t = useTranslations('B2CStore');
+  
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   
@@ -89,9 +91,9 @@ export default function StoreManagementPage() {
           minOrderAmount: formData.minOrderAmount,
         }
       });
-      toast({ title: "Landing Page actualizada", description: "Los cambios ya son visibles en tu web pública." });
+      toast({ title: t('toast_save_success_title'), description: t('toast_save_success_desc') });
     } catch (e) {
-      toast({ variant: "destructive", title: "Error", description: "No se pudo guardar la configuración." });
+      toast({ variant: "destructive", title: t('toast_save_error_title'), description: t('toast_save_error_desc') });
     } finally {
       setIsSaving(false);
     }
@@ -103,13 +105,15 @@ export default function StoreManagementPage() {
 
   const copyUrl = () => {
     navigator.clipboard.writeText(storeUrl);
-    toast({ title: "Enlace copiado", description: "Ya puedes compartirlo con tus clientes." });
+    toast({ title: t('toast_link_copied_title'), description: t('toast_link_copied_desc') });
   };
 
   if (!activeOrg || activeOrg.type !== 'retailer') {
     return (
       <div className="p-8 text-center text-muted-foreground">
-        Este módulo de Landing Page solo está disponible para edificios de tipo <strong>Minorista / Supermercado</strong>.
+        {t.rich('not_available_message', {
+          strong: (chunks) => <strong>{chunks}</strong>
+        })}
       </div>
     );
   }
@@ -120,17 +124,17 @@ export default function StoreManagementPage() {
         <div>
           <h1 className="text-3xl font-bold font-headline flex items-center gap-3">
             <Layout className="text-primary h-8 w-8" />
-            Constructor de Web Pública
+            {t('title')}
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">Personaliza cómo te ven tus clientes en internet sin saber programar.</p>
+          <p className="text-muted-foreground mt-1 text-sm">{t('subtitle')}</p>
         </div>
         <div className="flex gap-2">
             <Button variant="outline" onClick={() => window.open(storeUrl, '_blank')} className="h-11">
-                <ExternalLink className="mr-2 h-4 w-4" /> Previsualizar
+                <ExternalLink className="mr-2 h-4 w-4" /> {t('preview_button')}
             </Button>
             <Button onClick={handleSave} disabled={isSaving} className="h-11 px-8 font-bold shadow-lg">
                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
-                Publicar Cambios
+                {isSaving ? t('publishing') : t('publish_button')}
             </Button>
         </div>
       </div>
@@ -141,21 +145,21 @@ export default function StoreManagementPage() {
         <div className="lg:col-span-1 space-y-4">
             <Card className="bg-slate-900 text-white overflow-hidden border-none shadow-xl">
                 <CardHeader className="pb-4">
-                    <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">Estado del Sitio</CardTitle>
+                    <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">{t('site_status_label')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10">
-                        <span className="text-sm font-semibold">{formData.enabled ? "Sitio Activo" : "En Mantenimiento"}</span>
+                        <span className="text-sm font-semibold">{formData.enabled ? t('site_active') : t('site_maintenance')}</span>
                         <Switch 
                             checked={formData.enabled} 
                             onCheckedChange={(val) => setFormData(prev => ({...prev, enabled: val}))} 
                         />
                     </div>
                     <div className="p-3 bg-primary/10 rounded-xl border border-primary/20 space-y-2">
-                        <p className="text-[10px] uppercase font-bold text-primary tracking-widest">Enlace Público</p>
+                        <p className="text-[10px] uppercase font-bold text-primary tracking-widest">{t('public_link_label')}</p>
                         <p className="text-xs font-mono break-all opacity-80">{storeUrl}</p>
                         <Button variant="link" onClick={copyUrl} className="text-white p-0 h-auto text-xs hover:text-primary">
-                            <Copy className="h-3 w-3 mr-1" /> Copiar enlace
+                            <Copy className="h-3 w-3 mr-1" /> {t('copy_link')}
                         </Button>
                     </div>
                 </CardContent>
@@ -167,28 +171,28 @@ export default function StoreManagementPage() {
                     className="w-full justify-start h-12 rounded-xl"
                     onClick={() => setActiveTab('general')}
                 >
-                    <Type className="mr-3 h-4 w-4" /> Cabecera y Textos
+                    <Type className="mr-3 h-4 w-4" /> {t('tab_general')}
                 </Button>
                 <Button 
                     variant={activeTab === 'images' ? 'secondary' : 'ghost'} 
                     className="w-full justify-start h-12 rounded-xl"
                     onClick={() => setActiveTab('images')}
                 >
-                    <ImageIcon className="mr-3 h-4 w-4" /> Galería de Fotos
+                    <ImageIcon className="mr-3 h-4 w-4" /> {t('tab_images')}
                 </Button>
                 <Button 
                     variant={activeTab === 'contact' ? 'secondary' : 'ghost'} 
                     className="w-full justify-start h-12 rounded-xl"
                     onClick={() => setActiveTab('contact')}
                 >
-                    <Share2 className="mr-3 h-4 w-4" /> Contacto y Redes
+                    <Share2 className="mr-3 h-4 w-4" /> {t('tab_contact')}
                 </Button>
                 <Button 
                     variant={activeTab === 'marketing' ? 'secondary' : 'ghost'} 
                     className="w-full justify-start h-12 rounded-xl"
                     onClick={() => setActiveTab('marketing')}
                 >
-                    <MailQuestion className="mr-3 h-4 w-4" /> Newsletter
+                    <MailQuestion className="mr-3 h-4 w-4" /> {t('tab_marketing')}
                 </Button>
             </div>
         </div>
@@ -200,26 +204,26 @@ export default function StoreManagementPage() {
                     {activeTab === 'general' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
                             <div className="grid gap-2">
-                                <Label className="text-xs font-bold uppercase text-muted-foreground">Título Principal (Hero)</Label>
+                                <Label className="text-xs font-bold uppercase text-muted-foreground">{t('hero_title_label')}</Label>
                                 <Input 
                                     value={formData.heroTitle} 
                                     onChange={(e) => setFormData(prev => ({...prev, heroTitle: e.target.value}))}
-                                    placeholder="Ej: Tu mercado fresco a la puerta de casa"
+                                    placeholder={t('hero_title_placeholder')}
                                     className="h-12 bg-slate-50 border-slate-200 text-lg font-bold"
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <Label className="text-xs font-bold uppercase text-muted-foreground">Subtítulo Descriptivo</Label>
+                                <Label className="text-xs font-bold uppercase text-muted-foreground">{t('hero_subtitle_label')}</Label>
                                 <Textarea 
                                     value={formData.heroSubtitle} 
                                     onChange={(e) => setFormData(prev => ({...prev, heroSubtitle: e.target.value}))}
-                                    placeholder="Describe brevemente tu servicio y calidad..."
+                                    placeholder={t('hero_subtitle_placeholder')}
                                     className="bg-slate-50 border-slate-200 min-h-[100px]"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label className="text-xs font-bold uppercase text-muted-foreground">Compra Mínima ($)</Label>
+                                    <Label className="text-xs font-bold uppercase text-muted-foreground">{t('min_order_label')}</Label>
                                     <Input 
                                         type="number" 
                                         value={formData.minOrderAmount} 
@@ -234,10 +238,10 @@ export default function StoreManagementPage() {
                     {activeTab === 'images' && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
                             <div className="space-y-4">
-                                <h3 className="font-bold flex items-center gap-2 text-primary border-b pb-2"><ImageIcon className="h-4 w-4"/> Imágenes Principales</h3>
+                                <h3 className="font-bold flex items-center gap-2 text-primary border-b pb-2"><ImageIcon className="h-4 w-4"/> {t('main_images_title')}</h3>
                                 <div className="grid gap-4">
                                     <div className="grid gap-2">
-                                        <Label className="text-xs font-semibold">URL Foto del Hero (Portada)</Label>
+                                        <Label className="text-xs font-semibold">{t('hero_image_label')}</Label>
                                         <Input 
                                             value={formData.heroImage} 
                                             onChange={(e) => setFormData(prev => ({...prev, heroImage: e.target.value}))}
@@ -249,32 +253,32 @@ export default function StoreManagementPage() {
                             </div>
 
                             <div className="space-y-4">
-                                <h3 className="font-bold flex items-center gap-2 text-primary border-b pb-2"><ShoppingBag className="h-4 w-4"/> Imágenes de Categorías</h3>
+                                <h3 className="font-bold flex items-center gap-2 text-primary border-b pb-2"><ShoppingBag className="h-4 w-4"/> {t('category_images_title')}</h3>
                                 <div className="grid md:grid-cols-3 gap-4">
                                     <div className="grid gap-2">
-                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Frutas</Label>
+                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('fruits_label')}</Label>
                                         <Input 
                                             value={formData.fruitsImage} 
                                             onChange={(e) => setFormData(prev => ({...prev, fruitsImage: e.target.value}))}
-                                            placeholder="URL..."
+                                            placeholder={t('url_placeholder')}
                                             className="bg-slate-50"
                                         />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Verduras</Label>
+                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('vegetables_label')}</Label>
                                         <Input 
                                             value={formData.veggiesImage} 
                                             onChange={(e) => setFormData(prev => ({...prev, veggiesImage: e.target.value}))}
-                                            placeholder="URL..."
+                                            placeholder={t('url_placeholder')}
                                             className="bg-slate-50"
                                         />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Abarrotes</Label>
+                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('groceries_label')}</Label>
                                         <Input 
                                             value={formData.groceriesImage} 
                                             onChange={(e) => setFormData(prev => ({...prev, groceriesImage: e.target.value}))}
-                                            placeholder="URL..."
+                                            placeholder={t('url_placeholder')}
                                             className="bg-slate-50"
                                         />
                                     </div>
@@ -287,7 +291,7 @@ export default function StoreManagementPage() {
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="grid gap-2">
-                                    <Label className="text-xs font-bold uppercase text-muted-foreground">Teléfono Público</Label>
+                                    <Label className="text-xs font-bold uppercase text-muted-foreground">{t('public_phone_label')}</Label>
                                     <Input 
                                         value={formData.contactPhone} 
                                         onChange={(e) => setFormData(prev => ({...prev, contactPhone: e.target.value}))}
@@ -296,27 +300,27 @@ export default function StoreManagementPage() {
                                     />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label className="text-xs font-bold uppercase text-muted-foreground">WhatsApp Directo</Label>
+                                    <Label className="text-xs font-bold uppercase text-muted-foreground">{t('direct_whatsapp_label')}</Label>
                                     <Input 
                                         value={formData.contactWhatsapp} 
                                         onChange={(e) => setFormData(prev => ({...prev, contactWhatsapp: e.target.value}))}
-                                        placeholder="Número sin espacios..."
+                                        placeholder={t('whatsapp_placeholder')}
                                         className="h-12 bg-slate-50"
                                     />
                                 </div>
                             </div>
                             <div className="grid gap-2">
-                                <Label className="text-xs font-bold uppercase text-muted-foreground">Dirección Local</Label>
+                                <Label className="text-xs font-bold uppercase text-muted-foreground">{t('local_address_label')}</Label>
                                 <Input 
                                     value={formData.contactAddress} 
                                     onChange={(e) => setFormData(prev => ({...prev, contactAddress: e.target.value}))}
-                                    placeholder="Calle, Ciudad, Estado..."
+                                    placeholder={t('address_placeholder')}
                                     className="h-12 bg-slate-50"
                                 />
                             </div>
                             <div className="grid md:grid-cols-2 gap-6 pt-4 border-t">
                                 <div className="grid gap-2">
-                                    <Label className="text-xs font-bold uppercase text-muted-foreground">Link Facebook</Label>
+                                    <Label className="text-xs font-bold uppercase text-muted-foreground">{t('facebook_link_label')}</Label>
                                     <Input 
                                         value={formData.fbLink} 
                                         onChange={(e) => setFormData(prev => ({...prev, fbLink: e.target.value}))}
@@ -325,7 +329,7 @@ export default function StoreManagementPage() {
                                     />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label className="text-xs font-bold uppercase text-muted-foreground">Link Instagram</Label>
+                                    <Label className="text-xs font-bold uppercase text-muted-foreground">{t('instagram_link_label')}</Label>
                                     <Input 
                                         value={formData.igLink} 
                                         onChange={(e) => setFormData(prev => ({...prev, igLink: e.target.value}))}
@@ -343,11 +347,11 @@ export default function StoreManagementPage() {
                                 <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center">
                                     <MailQuestion className="h-8 w-8" />
                                 </div>
-                                <h3 className="text-xl font-bold">Gestión de Suscriptores</h3>
+                                <h3 className="text-xl font-bold">{t('marketing_title')}</h3>
                                 <p className="text-muted-foreground max-w-md text-sm">
-                                    Próximamente podrás ver y descargar la lista de correos de clientes que se inscribieron a tu newsletter desde la web pública.
+                                    {t('marketing_desc')}
                                 </p>
-                                <Badge variant="secondary" className="px-4 py-1">Función en Desarrollo</Badge>
+                                <Badge variant="secondary" className="px-4 py-1">{t('marketing_badge')}</Badge>
                             </div>
                         </div>
                     )}

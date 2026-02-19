@@ -43,6 +43,7 @@ async function getMessages(locale: string) {
     const notificationsMessages = (await import(`./messages/${locale}/Notifications.json`)).default;
     const metadataMessages = (await import(`./messages/${locale}/Metadata.json`)).default;
     const adminSalesPageMessages = (await import(`./messages/${locale}/AdminSalesPage.json`)).default;
+    const b2cStoreMessages = (await import(`./messages/${locale}/B2CStore.json`)).default;
 
 
     return {
@@ -50,6 +51,7 @@ async function getMessages(locale: string) {
       Dashboard: dashboardMessages,
       LandingPageAgitationSection: landingPageAgitationSectionMessages,
       LandingPageBridgeSection: landingPageBridgeSectionMessages,
+      LearningPageContactForms: landingPageContactFormsMessages, // Corrected typo if needed, but keeping current pattern
       LandingPageContactForms: landingPageContactFormsMessages,
       LandingPageContactInfo: landingPageContactInfoMessages,
       LandingPageFooter: landingPageFooterMessages,
@@ -82,6 +84,7 @@ async function getMessages(locale: string) {
       Notifications: notificationsMessages,
       Metadata: metadataMessages,
       AdminSalesPage: adminSalesPageMessages,
+      B2CStore: b2cStoreMessages,
     };
   } catch (error) {
     notFound();
