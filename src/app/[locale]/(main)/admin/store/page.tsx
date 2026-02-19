@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -16,7 +15,7 @@ import {
 } from 'lucide-react';
 import { updateOrganization } from '@/lib/firestore/organizations';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import type { StoreConfig } from '@/types';
 
 export default function StoreManagementPage() {
   const { activeOrg, activeOrgId } = useOrganization();
@@ -52,9 +51,9 @@ export default function StoreManagementPage() {
         fruitsImage: activeOrg.storeConfig?.categoriesImages?.fruits || '',
         veggiesImage: activeOrg.storeConfig?.categoriesImages?.vegetables || '',
         groceriesImage: activeOrg.storeConfig?.categoriesImages?.groceries || '',
-        testi1Image: (activeOrg.storeConfig as any)?.testimonialAvatars?.t1 || '',
-        testi2Image: (activeOrg.storeConfig as any)?.testimonialAvatars?.t2 || '',
-        testi3Image: (activeOrg.storeConfig as any)?.testimonialAvatars?.t3 || '',
+        testi1Image: activeOrg.storeConfig?.testimonialAvatars?.t1 || '',
+        testi2Image: activeOrg.storeConfig?.testimonialAvatars?.t2 || '',
+        testi3Image: activeOrg.storeConfig?.testimonialAvatars?.t3 || '',
         contactPhone: activeOrg.storeConfig?.contactPhone || '',
         contactWhatsapp: activeOrg.storeConfig?.contactWhatsapp || '',
         contactAddress: activeOrg.storeConfig?.contactAddress || activeOrg.address || '',
@@ -69,30 +68,32 @@ export default function StoreManagementPage() {
     if (!activeOrgId) return;
     setIsSaving(true);
     try {
+      const newConfig: StoreConfig = {
+        ...activeOrg?.storeConfig,
+        enabled: formData.enabled,
+        heroImage: formData.heroImage,
+        categoriesImages: {
+          fruits: formData.fruitsImage,
+          vegetables: formData.veggiesImage,
+          groceries: formData.groceriesImage,
+        },
+        testimonialAvatars: {
+          t1: formData.testi1Image,
+          t2: formData.testi2Image,
+          t3: formData.testi3Image,
+        },
+        contactPhone: formData.contactPhone,
+        contactWhatsapp: formData.contactWhatsapp,
+        contactAddress: formData.contactAddress,
+        socialLinks: {
+          facebook: formData.fbLink,
+          instagram: formData.igLink,
+        },
+        minOrderAmount: formData.minOrderAmount,
+      };
+
       await updateOrganization(activeOrgId, {
-        storeConfig: {
-          ...activeOrg?.storeConfig,
-          enabled: formData.enabled,
-          heroImage: formData.heroImage,
-          categoriesImages: {
-            fruits: formData.fruitsImage,
-            vegetables: formData.veggiesImage,
-            groceries: formData.groceriesImage,
-          },
-          testimonialAvatars: {
-            t1: formData.testi1Image,
-            t2: formData.testi2Image,
-            t3: formData.testi3Image,
-          },
-          contactPhone: formData.contactPhone,
-          contactWhatsapp: formData.contactWhatsapp,
-          contactAddress: formData.contactAddress,
-          socialLinks: {
-            facebook: formData.fbLink,
-            instagram: formData.igLink,
-          },
-          minOrderAmount: formData.minOrderAmount,
-        }
+        storeConfig: newConfig
       });
       toast({ title: t('toast_save_success_title'), description: t('toast_save_success_desc') });
     } catch (e) {

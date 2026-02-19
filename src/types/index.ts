@@ -37,6 +37,11 @@ export interface StoreConfig {
     groceries?: string;
   };
   testimonials?: StoreTestimonial[];
+  testimonialAvatars?: {
+    t1?: string;
+    t2?: string;
+    t3?: string;
+  };
   contactPhone?: string;
   contactWhatsapp?: string;
   contactEmail?: string;
@@ -65,7 +70,7 @@ export interface Organization {
   phone?: string;
   address?: string;
   storeConfig?: StoreConfig;
-  isTest?: boolean; // Nuevo campo para distinguir edificios de prueba
+  isTest?: boolean; 
 }
 
 export interface OrganizationConnection {

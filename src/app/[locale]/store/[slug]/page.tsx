@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -75,7 +74,7 @@ export default function PublicStorePage() {
 
   const testimonials = useMemo(() => {
     const config = org?.storeConfig;
-    const avatars = (config as any)?.testimonialAvatars;
+    const avatars = config?.testimonialAvatars;
 
     return [
       { 
@@ -117,7 +116,7 @@ export default function PublicStorePage() {
     </div>
   );
 
-  const config = org.storeConfig;
+  const config = org.storeConfig!;
 
   const defaultImages = {
     hero: placeholders.store.hero,
@@ -167,14 +166,12 @@ export default function PublicStorePage() {
         
         <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center relative z-10">
           <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }}>
-            {/* BADGE CON PULSO INTENSIFICADO */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
               className="relative inline-block mb-6"
             >
-              {/* HALO RADIante */}
               <motion.div
                 animate={{ scale: [1, 1.4, 1.8], opacity: [0.4, 0.2, 0] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
@@ -213,7 +210,6 @@ export default function PublicStorePage() {
                 data-ai-hint="supermarket products"
               />
             </div>
-            {/* CARDS FLOTANTES CON REBOTE */}
             <div className="absolute -top-10 -left-10 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3 text-slate-800 animate-bounce">
               <div className="bg-[#2d8a5e] text-white p-2 rounded-lg"><Clock className="h-5 w-5"/></div>
               <div><div className="font-bold text-sm">{t('store_hero_stat_time')}</div><div className="text-[10px] opacity-60">{t('store_hero_stat_time_label')}</div></div>
