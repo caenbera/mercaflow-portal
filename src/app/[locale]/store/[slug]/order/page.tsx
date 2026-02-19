@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import { useTranslations, useLocale } from 'next-intl';
-import { collection, query, where, getDocs, limit, doc, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link, useRouter } from '@/navigation';
 import type { Product, Organization, OrderItem } from '@/types';
+import { LanguageSwitcher } from '@/components/landing/language-switcher';
 
 const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
@@ -60,7 +61,6 @@ export default function StoreOrderPage() {
     async function loadStoreData() {
       if (!slug) return;
       try {
-        // 1. Obtener la organización por slug
         const orgQuery = query(collection(db, 'organizations'), where('slug', '==', slug), limit(1));
         const orgSnap = await getDocs(orgQuery);
         
@@ -68,7 +68,6 @@ export default function StoreOrderPage() {
           const orgData = { id: orgSnap.docs[0].id, ...orgSnap.docs[0].data() } as Organization;
           setOrg(orgData);
 
-          // 2. Obtener los productos de esa organización
           const prodQuery = query(collection(db, 'products'), where('organizationId', '==', orgData.id), where('active', '==', true));
           const prodSnap = await getDocs(prodQuery);
           const productsList = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
@@ -83,7 +82,6 @@ export default function StoreOrderPage() {
     loadStoreData();
   }, [slug]);
 
-  // Filtrado de productos
   const categories = useMemo(() => {
     const cats = new Set(products.map(p => p.category.es));
     return ['all', ...Array.from(cats)];
@@ -97,7 +95,6 @@ export default function StoreOrderPage() {
     }).sort((a, b) => a.name[locale].localeCompare(b.name[locale]));
   }, [products, activeCategory, searchTerm, locale]);
 
-  // Gestión del carrito
   const addToCart = (productId: string, delta: number) => {
     setCart(prev => {
       const newQty = (prev[productId] || 0) + delta;
@@ -188,20 +185,23 @@ export default function StoreOrderPage() {
             <h1 className="font-bold text-lg leading-none">{org?.name}</h1>
             <p className="text-xs text-muted-foreground mt-1">Hacer pedido online</p>
           </div>
-          <div className="relative">
-            <ShoppingBasket className="h-6 w-6 text-primary" />
-            {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-accent text-dark font-bold text-[10px] h-4 w-4 rounded-full flex items-center justify-center shadow-md">
-                {cartCount}
-              </span>
-            )}
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <div className="relative">
+                <ShoppingBasket className="h-6 w-6 text-primary" />
+                {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-accent text-white font-bold text-[10px] h-4 w-4 rounded-full flex items-center justify-center shadow-md">
+                    {cartCount}
+                </span>
+                )}
+            </div>
           </div>
         </div>
 
         <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="¿Qué buscas hoy?" 
+            placeholder={t('searchPlaceholder')} 
             className="pl-10 h-11 bg-gray-100 border-none rounded-xl"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -229,12 +229,12 @@ export default function StoreOrderPage() {
           const qty = cart[p.id] || 0;
           return (
             <Card key={p.id} className="p-3 flex items-center gap-3 border-none shadow-sm rounded-2xl overflow-hidden">
-              <div className="h-20 w-20 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+              <div className="relative h-20 w-20 rounded-xl overflow-hidden bg-gray-100 shrink-0">
                 <Image 
                   src={p.photoUrl || '/placeholder.svg'} 
                   alt={p.name[locale]} 
-                  width={80} height={80} 
-                  className="h-full w-full object-cover"
+                  fill
+                  className="object-cover"
                 />
               </div>
               <div className="flex-grow min-w-0">
