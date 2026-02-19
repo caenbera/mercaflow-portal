@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from 'react';
@@ -154,9 +155,10 @@ export function AppSidebar() {
       modules.catalog = [];
     }
     
-    // REQUISITO: Desaparecer Ventas si el convenio está en OFF
+    // REQUISITO REFINADO: Solo desaparece "Prospectos y Rutas" si el convenio de ventas está en OFF.
+    // "Red de Suministro" es necesaria y permanece visible.
     if (!agreements.sales) {
-      modules.sales = [];
+      modules.sales = modules.sales.filter((m: any) => m.href !== '/admin/sales');
     }
 
     if (org.type === 'retailer') {
