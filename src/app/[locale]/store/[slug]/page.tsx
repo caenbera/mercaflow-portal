@@ -155,7 +155,7 @@ export default function PublicStorePage() {
               <Button className="rounded-full bg-[#e8b931] text-[#1a1a1a] hover:bg-[#d4a628] h-14 px-8 text-lg font-bold shadow-xl transition-all hover:-translate-y-1" asChild>
                 <Link href={`/store/${org.slug}/order`}>{t('store_hero_order_button')}</Link>
               </Button>
-              <Button variant="outline" className="rounded-full text-white border-white/50 hover:bg-white hover:text-[#1a5f3f] h-14 px-8 text-lg font-bold transition-all" asChild>
+              <Button variant="outline" className="rounded-full bg-transparent text-white border-2 border-white hover:bg-white hover:text-[#1a5f3f] h-14 px-8 text-lg font-bold transition-all" asChild>
                 <a href="#beneficios">{t('store_hero_how_button')}</a>
               </Button>
             </div>
@@ -175,7 +175,7 @@ export default function PublicStorePage() {
               <div className="bg-[#2d8a5e] text-white p-2 rounded-lg"><Clock className="h-5 w-5"/></div>
               <div><div className="font-bold text-sm">{t('store_hero_stat_time')}</div><div className="text-[10px] opacity-60">{t('store_hero_stat_time_label')}</div></div>
             </div>
-            <div className="absolute -bottom-10 -right-5 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3 text-slate-800">
+            <div className="absolute -bottom-10 -right-5 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3 text-slate-800 animate-bounce">
               <div className="bg-[#e8b931] text-white p-2 rounded-lg"><Star className="h-5 w-5"/></div>
               <div><div className="font-bold text-sm">{t('store_hero_stat_rating')}</div><div className="text-[10px] opacity-60">{t('store_hero_stat_clients')}</div></div>
             </div>
