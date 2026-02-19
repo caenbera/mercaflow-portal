@@ -4,6 +4,7 @@ import { CalendarDays, Filter, MapPin } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { Prospect } from '@/types';
 import { subDays, startOfDay, isAfter } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface SalesStatsViewProps {
   prospects: Prospect[];
