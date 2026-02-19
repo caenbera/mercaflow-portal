@@ -1,3 +1,4 @@
+
 // src/components/admin/support/SortableTicketItem.tsx
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -20,7 +21,7 @@ export function SortableTicketItem({ ticket, onClick }: SortableTicketItemProps)
     data: { status: ticket.status },
   });
 
-  const t = useTranslations('SupportPage');
+  const t = useTranslations('AdminSupportPage');
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -28,15 +29,11 @@ export function SortableTicketItem({ ticket, onClick }: SortableTicketItemProps)
     opacity: isDragging ? 0.5 : 1,
   };
   
-  const issueTypeMap: Record<string, string> = {
-    bad_product: t('issue_option_bad_product'),
-    missing_product: t('issue_option_missing_product'),
-    late_order: t('issue_option_late_order'),
-    invoice_problem: t('issue_option_invoice_problem'),
-  };
-
-  const translatedIssueType = issueTypeMap[ticket.issueType] || ticket.issueType;
-
+  const getTranslatedIssueType = (issueType: string) => {
+      const key = `issue_option_${issueType}` as any;
+      const translated = t(key);
+      return translated === key ? issueType : translated;
+  }
 
   return (
     <div ref={setNodeRef} style={style} className="mb-3">
@@ -44,35 +41,44 @@ export function SortableTicketItem({ ticket, onClick }: SortableTicketItemProps)
             className="hover:shadow-md transition-shadow cursor-pointer"
             onClick={onClick}
         >
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-2 p-3">
             <div className="flex justify-between items-start gap-2">
-            <CardTitle className="text-sm font-medium line-clamp-1 pt-1">{translatedIssueType}</CardTitle>
+            <CardTitle className="text-sm font-bold line-clamp-1 pt-1">
+                {getTranslatedIssueType(ticket.issueType)}
+            </CardTitle>
             <div className="flex items-center gap-1 shrink-0">
-                {ticket.photoUrl && <Paperclip className="h-4 w-4 text-muted-foreground" />}
-                <Badge className={`border ${STATUS_CONFIG[ticket.status].color}`}>
-                {STATUS_CONFIG[ticket.status].icon}
+                {ticket.photoUrl && <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />}
+                <Badge className={`border px-1.5 h-5 text-[10px] uppercase font-bold ${STATUS_CONFIG[ticket.status as keyof typeof STATUS_CONFIG].color}`}>
+                    {STATUS_CONFIG[ticket.status as keyof typeof STATUS_CONFIG].icon}
                 </Badge>
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 cursor-grab active:cursor-grabbing"
+                    className="h-7 w-7 cursor-grab active:cursor-grabbing"
                     {...attributes}
                     {...listeners}
-                    onClick={(e) => e.stopPropagation()} // Prevent card's onClick when dragging
-                    onMouseDown={(e) => e.stopPropagation()} // Also stop mousedown to be safe
+                    onClick={(e) => e.stopPropagation()} 
+                    onMouseDown={(e) => e.stopPropagation()} 
                 >
                     <GripVertical className="h-4 w-4 text-muted-foreground" />
                 </Button>
             </div>
             </div>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="p-3 pt-0">
             <p className="text-xs text-muted-foreground line-clamp-2">
-            {ticket.details || 'Sin detalles'}
+            {ticket.details || '—'}
             </p>
-            <p className="text-xs text-gray-500 mt-1">
-            {ticket.userName}
-            </p>
+            <div className="flex items-center justify-between mt-2 border-t pt-2">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                    {ticket.userName}
+                </p>
+                {ticket.orderId && (
+                    <Badge variant="outline" className="text-[9px] h-4 py-0 px-1 font-mono">
+                        #{ticket.orderId.substring(0,6).toUpperCase()}
+                    </Badge>
+                )}
+            </div>
         </CardContent>
         </Card>
     </div>

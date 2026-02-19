@@ -1,3 +1,4 @@
+
 // src/components/admin/support/ticket-board.tsx
 "use client";
 
@@ -17,7 +18,6 @@ import {
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -26,7 +26,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { updateSupportTicket } from '@/lib/firestore/tickets';
 import { SupportTicket } from '@/types';
@@ -37,19 +36,16 @@ import { useTranslations } from 'next-intl';
 const VALID_STATUSES = ['new', 'in_progress', 'resolved'] as const;
 type TicketStatus = (typeof VALID_STATUSES)[number];
 
-export const STATUS_CONFIG: Record<TicketStatus, { label: string; color: string; icon: React.ReactNode }> = {
+export const STATUS_CONFIG: Record<TicketStatus, { color: string; icon: React.ReactNode }> = {
   new: {
-    label: 'Nuevo',
     color: 'bg-blue-100 text-blue-800 border-blue-300',
     icon: <Clock className="h-4 w-4" />,
   },
   in_progress: {
-    label: 'En progreso',
     color: 'bg-yellow-100 text-yellow-800 border-yellow-300',
     icon: <CircleAlert className="h-4 w-4" />,
   },
   resolved: {
-    label: 'Resuelto',
     color: 'bg-green-100 text-green-800 border-green-300',
     icon: <CheckCircle2 className="h-4 w-4" />,
   },
@@ -60,6 +56,7 @@ interface TicketBoardProps {
 }
 
 export function TicketBoard({ tickets }: TicketBoardProps) {
+  const t = useTranslations('AdminSupportPage');
   const [columns, setColumns] = useState<Record<TicketStatus, SupportTicket[]>>({
     new: [],
     in_progress: [],
@@ -69,7 +66,6 @@ export function TicketBoard({ tickets }: TicketBoardProps) {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const t = useTranslations('SupportPage');
 
   useEffect(() => {
     const newCols: Record<TicketStatus, SupportTicket[]> = {
@@ -143,15 +139,18 @@ export function TicketBoard({ tickets }: TicketBoardProps) {
 
   const activeTicket = tickets.find((t) => t.id === activeId) || null;
   
-  const issueTypeMap: Record<string, string> = {
-    bad_product: t('issue_option_bad_product'),
-    missing_product: t('issue_option_missing_product'),
-    late_order: t('issue_option_late_order'),
-    invoice_problem: t('issue_option_invoice_problem'),
-  };
-  
   const getTranslatedIssueType = (issueType: string) => {
-      return issueTypeMap[issueType] || issueType;
+      const key = `issue_option_${issueType}` as any;
+      const translated = t(key);
+      return translated === key ? issueType : translated;
+  }
+
+  const getStatusLabel = (status: TicketStatus) => {
+      return t(`status_${status}` as any);
+  }
+
+  const getColumnLabel = (status: TicketStatus) => {
+      return t(`${status}_column` as any);
   }
 
   return (
@@ -163,10 +162,10 @@ export function TicketBoard({ tickets }: TicketBoardProps) {
     >
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold">Soporte Técnico</h2>
+          <h2 className="text-xl font-bold">{t('page_title')}</h2>
           <div className="w-64">
             <Input
-              placeholder="Buscar por tipo o detalles..."
+              placeholder={t('search_placeholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full"
@@ -180,7 +179,7 @@ export function TicketBoard({ tickets }: TicketBoardProps) {
               <div className="flex items-center mb-3">
                 <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
                   {STATUS_CONFIG[status].icon}
-                  <span className="ml-2">{STATUS_CONFIG[status].label}</span>
+                  <span className="ml-2">{getColumnLabel(status)}</span>
                   <span className="ml-2 bg-white text-gray-700 rounded-full px-2 py-0.5">
                     {columns[status].length}
                   </span>
@@ -201,7 +200,7 @@ export function TicketBoard({ tickets }: TicketBoardProps) {
                 </SortableContext>
                 {columns[status].length === 0 && (
                   <p className="text-center text-muted-foreground text-sm py-8">
-                    Arrastra tickets aquí
+                    {t('column_empty_hint')}
                   </p>
                 )}
               </div>
@@ -220,15 +219,15 @@ export function TicketBoard({ tickets }: TicketBoardProps) {
                   <div className="flex items-center gap-2">
                     {activeTicket.photoUrl && <Paperclip className="h-4 w-4 text-muted-foreground" />}
                     <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab"/>
-                    <Badge className={`border ${STATUS_CONFIG[activeTicket.status].color}`}>
-                      {STATUS_CONFIG[activeTicket.status].icon}
+                    <Badge className={`border ${STATUS_CONFIG[activeTicket.status as TicketStatus].color}`}>
+                      {STATUS_CONFIG[activeTicket.status as TicketStatus].icon}
                     </Badge>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
                 <p className="text-xs text-muted-foreground line-clamp-2">
-                  {activeTicket.details || 'Sin detalles'}
+                  {activeTicket.details || '—'}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {activeTicket.userName}
@@ -247,32 +246,32 @@ export function TicketBoard({ tickets }: TicketBoardProps) {
               <div className="overflow-y-auto flex-grow py-4">
                 <div className="space-y-4">
                   <div>
-                    <h3 className="font-semibold text-sm text-muted-foreground">Detalles</h3>
+                    <h3 className="font-semibold text-sm text-muted-foreground">{t('dialog_details_label')}</h3>
                     <p>{selectedTicket.details || '—'}</p>
                   </div>
                   <div>
-                    <p className="text-xs"><strong>Usuario:</strong> {selectedTicket.userName}</p>
+                    <p className="text-xs"><strong>{t('details_user_label')}:</strong> {selectedTicket.userName}</p>
                     {selectedTicket.orderId && (
-                      <p className="text-xs"><strong>Orden:</strong> {selectedTicket.orderId}</p>
+                      <p className="text-xs"><strong>{t('details_order_label')}:</strong> {selectedTicket.orderId}</p>
                     )}
                   </div>
                   <Separator />
                   {selectedTicket.photoUrl && (
                     <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">Evidencia Fotográfica</h3>
-                      <a href={selectedTicket.photoUrl} target="_blank" rel="noopener noreferrer">
-                          <Image src={selectedTicket.photoUrl} alt="Support Ticket Evidence" width={500} height={300} className="rounded-lg border object-cover" />
+                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">{t('dialog_photo_evidence')}</h3>
+                      <a href={selectedTicket.photoUrl} target="_blank" rel="noopener noreferrer" className="relative block aspect-video w-full">
+                          <Image src={selectedTicket.photoUrl} alt="Support Ticket Evidence" fill className="rounded-lg border object-contain bg-black" />
                       </a>
                     </div>
                   )}
                   <Separator />
                   <div className="flex justify-between items-center">
-                    <Badge className={`border ${STATUS_CONFIG[selectedTicket.status].color}`}>
-                      {STATUS_CONFIG[selectedTicket.status].icon}
-                      <span className='ml-2'>{STATUS_CONFIG[selectedTicket.status].label}</span>
+                    <Badge className={`border ${STATUS_CONFIG[selectedTicket.status as TicketStatus].color}`}>
+                      {STATUS_CONFIG[selectedTicket.status as TicketStatus].icon}
+                      <span className='ml-2'>{getStatusLabel(selectedTicket.status as TicketStatus)}</span>
                     </Badge>
                     <div className="text-xs text-gray-500">
-                      Creado:{" "}
+                      {t('details_created_label')}:{" "}
                       {selectedTicket.createdAt instanceof Date
                         ? selectedTicket.createdAt.toLocaleString()
                         : new Date(selectedTicket.createdAt.seconds * 1000).toLocaleString()}
@@ -291,7 +290,7 @@ export function TicketBoard({ tickets }: TicketBoardProps) {
                     }}
                     disabled={isUpdating}
                   >
-                    {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Marcar como En Progreso'}
+                    {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : t('action_mark_in_progress')}
                   </Button>
                 )}
                 {selectedTicket.status === 'in_progress' && (
@@ -305,11 +304,11 @@ export function TicketBoard({ tickets }: TicketBoardProps) {
                     }}
                     disabled={isUpdating}
                   >
-                    {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Marcar como Resuelto'}
+                    {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : t('action_mark_resolved')}
                   </Button>
                 )}
                 <Button variant="outline" size="sm" onClick={handleCloseDetails}>
-                  Cerrar
+                  {t('dialog_close')}
                 </Button>
               </DialogFooter>
             </DialogContent>
