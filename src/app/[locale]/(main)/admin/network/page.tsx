@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useOrganization } from '@/context/organization-context';
 import { useOrganizations } from '@/hooks/use-organizations';
 import { useConnections } from '@/hooks/use-connections';
@@ -20,18 +19,19 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { 
-  Users, Link as LinkIcon, Link2Off, 
-  Check, X, Loader2, Truck, ShoppingBag, Store,
-  RefreshCw, Info, Zap, Flame, ArrowUp, ArrowDown,
-  ArrowRight, Calculator
+  Users, Link as LinkIcon, 
+  Check, Loader2, Store,
+  RefreshCw, Zap, ArrowUp, ArrowDown,
+  Calculator, Search
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import type { Product, Supplier } from '@/types';
+import type { Product } from '@/types';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 
 interface SyncItem {
   id: string; 
@@ -51,6 +51,7 @@ interface SyncItem {
 }
 
 export default function SupplyNetworkPage() {
+  const t = useTranslations('AdminSalesPage');
   const { activeOrg, activeOrgId } = useOrganization();
   const { organizations, loading: orgsLoading } = useOrganizations();
   const { connections, loading: connLoading } = useConnections(activeOrgId);
@@ -89,14 +90,11 @@ export default function SupplyNetworkPage() {
           const local = localProducts.find(lp => lp.sku === remote.sku);
           
           if (!local) {
-            // Producto Nuevo (Omitido de la sincronización de precios masiva por ahora)
             continue;
           } else {
-            // Verificar cambio de precio
             const supplierInfo = local.suppliers?.find(s => s.supplierId === supplier.id);
             if (supplierInfo && supplierInfo.cost !== remote.salePrice) {
               
-              // Calcular Sugerido basándonos en la regla guardada
               let marginOrMarkup = 0;
               let suggestedPrice = local.salePrice;
               const method = local.pricingMethod || 'margin';
@@ -133,11 +131,11 @@ export default function SupplyNetworkPage() {
       }
       setSyncItems(allUpdates);
       if (allUpdates.length === 0) {
-        toast({ title: "Catálogo al día", description: "No se encontraron cambios de costo en tus proveedores vinculados." });
+        toast({ title: t('toast_no_updates_title'), description: t('toast_no_updates_desc') });
       }
     } catch (e) {
       console.error(e);
-      toast({ variant: 'destructive', title: "Error", description: "No se pudo consultar la red de suministros." });
+      toast({ variant: 'destructive', title: "Error", description: t('toast_check_error') });
     } finally {
       setIsSyncing(false);
     }
@@ -162,7 +160,6 @@ export default function SupplyNetworkPage() {
 
         const updatePayload: any = { suppliers: updatedSuppliers };
         
-        // Si el usuario marcó mantener márgenes, actualizamos también el precio de venta
         if (maintainMargins) {
           updatePayload.salePrice = parseFloat(item.suggestedSalePrice.toFixed(2));
         }
@@ -170,10 +167,10 @@ export default function SupplyNetworkPage() {
         await updateProduct(item.localProduct.id, updatePayload);
         count++;
       }
-      toast({ title: "Sincronización Exitosa", description: `Se actualizaron ${count} productos en tu catálogo.` });
+      toast({ title: t('toast_sync_success_title'), description: t('toast_sync_success_desc', { count }) });
       handleCheckForUpdates();
     } catch (e) {
-      toast({ variant: 'destructive', title: "Error", description: "Ocurrió un problema al aplicar los cambios." });
+      toast({ variant: 'destructive', title: "Error", description: t('toast_sync_error') });
     } finally {
       setIsProcessingSync(false);
     }
@@ -185,7 +182,7 @@ export default function SupplyNetworkPage() {
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
-  if (!activeOrg) return <div className="p-8 text-center text-muted-foreground">Selecciona un edificio para gestionar su red.</div>;
+  if (!activeOrg) return <div className="p-8 text-center text-muted-foreground">{t('select_org_message')}</div>;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 flex flex-col gap-8 max-w-7xl mx-auto">
@@ -193,13 +190,13 @@ export default function SupplyNetworkPage() {
         <div>
           <h1 className="text-3xl font-bold font-headline flex items-center gap-3 text-slate-900">
             <LinkIcon className="text-primary h-8 w-8" />
-            Red de Suministro Inteligente
+            {t('network_title')}
           </h1>
-          <p className="text-slate-500 mt-1">Sincroniza costos y protege tu rentabilidad automáticamente.</p>
+          <p className="text-slate-500 mt-1">{t('network_subtitle')}</p>
         </div>
         <div className="flex gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl border border-white/10 shadow-xl items-center">
           <div className="flex flex-col text-right">
-            <span className="text-[10px] uppercase font-bold text-slate-400">Tu Código de Red</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400">{t('network_code_label')}</span>
             <span className="font-mono text-sm font-bold text-primary">{activeOrg.slug}</span>
           </div>
           <div className="h-8 w-px bg-white/10 mx-2" />
@@ -210,10 +207,10 @@ export default function SupplyNetworkPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-white p-1 rounded-xl border shadow-sm mb-6">
           <TabsTrigger value="sync" className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-            <RefreshCw className="h-4 w-4" /> Sincronización de Precios
+            <RefreshCw className="h-4 w-4" /> {t('tab_sync')}
           </TabsTrigger>
           <TabsTrigger value="manage" className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-            <Users className="h-4 w-4" /> Socios y Vínculos
+            <Users className="h-4 w-4" /> {t('tab_manage')}
           </TabsTrigger>
         </TabsList>
 
@@ -223,12 +220,12 @@ export default function SupplyNetworkPage() {
               <CardHeader className="bg-slate-50/50 border-b pb-4">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
-                    <CardTitle className="text-lg">Detección de Cambios en la Red</CardTitle>
-                    <CardDescription>Compara tus costos con los precios vivos de tus proveedores.</CardDescription>
+                    <CardTitle className="text-lg">{t('sync_card_title')}</CardTitle>
+                    <CardDescription>{t('sync_card_desc')}</CardDescription>
                   </div>
                   <Button onClick={handleCheckForUpdates} disabled={isSyncing} className="bg-primary hover:bg-primary/90 rounded-full h-11 px-6 shadow-lg">
                     {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                    Buscar Cambios
+                    {t('search_changes_button')}
                   </Button>
                 </div>
               </CardHeader>
@@ -240,12 +237,12 @@ export default function SupplyNetworkPage() {
                         <TableHeader>
                           <TableRow className="bg-slate-50/30">
                             <TableHead className="w-[50px] pl-6"></TableHead>
-                            <TableHead>Producto / SKU</TableHead>
-                            <TableHead className="text-right">Costo Actual</TableHead>
-                            <TableHead className="text-right">Nuevo Costo</TableHead>
-                            <TableHead className="text-center">Diferencia</TableHead>
-                            <TableHead className="text-right">Precio Actual</TableHead>
-                            <TableHead className="text-right bg-primary/5">Precio Sugerido</TableHead>
+                            <TableHead>{t('table_product_sku')}</TableHead>
+                            <TableHead className="text-right">{t('table_current_cost')}</TableHead>
+                            <TableHead className="text-right">{t('table_new_cost')}</TableHead>
+                            <TableHead className="text-center">{t('table_difference')}</TableHead>
+                            <TableHead className="text-right">{t('table_current_price')}</TableHead>
+                            <TableHead className="text-right bg-primary/5">{t('table_suggested_price')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -264,7 +261,13 @@ export default function SupplyNetworkPage() {
                                 <TableCell>
                                   <div className="flex items-center gap-3">
                                     <div className="h-10 w-10 rounded-lg bg-slate-100 overflow-hidden shrink-0 border">
-                                      {item.photoUrl ? <Image src={item.photoUrl} alt={item.name} width={40} height={40} className="object-cover h-full w-full" /> : <ShoppingBag className="h-5 w-5 m-auto mt-2.5 text-slate-300" />}
+                                      {item.photoUrl ? (
+                                        <Image src={item.photoUrl} alt={item.name} width={40} height={40} className="object-cover h-full w-full" />
+                                      ) : (
+                                        <div className="h-full w-full flex items-center justify-center bg-muted text-slate-300">
+                                          <RefreshCw className="h-5 w-5" />
+                                        </div>
+                                      )}
                                     </div>
                                     <div>
                                       <p className="font-bold text-sm text-slate-800">{item.name}</p>
@@ -293,7 +296,7 @@ export default function SupplyNetworkPage() {
                                 <TableCell className="text-right font-black text-primary bg-primary/5">
                                   {formatCurrency(item.suggestedSalePrice)}
                                   <div className="text-[9px] text-primary/60 uppercase font-bold">
-                                    {item.pricingMethod === 'margin' ? 'Mantener Margen' : 'Mantener Recargo'}
+                                    {item.pricingMethod === 'margin' ? t('maintain_margin_method_margin') : t('maintain_margin_method_markup')}
                                   </div>
                                 </TableCell>
                               </TableRow>
@@ -309,14 +312,14 @@ export default function SupplyNetworkPage() {
                         </div>
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <Label htmlFor="maintain-margins" className="font-bold text-sm">Proteger Rentabilidad Automáticamente</Label>
+                            <Label htmlFor="maintain-margins" className="font-bold text-sm">{t('maintain_margin_label')}</Label>
                             <Switch 
                               id="maintain-margins" 
                               checked={maintainMargins} 
                               onCheckedChange={setMaintainMargins} 
                             />
                           </div>
-                          <p className="text-[10px] text-muted-foreground">Si está activo, ajustaremos tu precio de venta para mantener tus márgenes actuales.</p>
+                          <p className="text-[10px] text-muted-foreground">{t('maintain_margin_desc')}</p>
                         </div>
                       </div>
                       
@@ -326,7 +329,7 @@ export default function SupplyNetworkPage() {
                         className="bg-slate-900 hover:bg-slate-800 text-white px-10 rounded-xl font-bold h-14 shadow-xl shrink-0 w-full md:w-auto"
                       >
                         {isProcessingSync ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5" />}
-                        Actualizar {selectedSkus.length} Productos
+                        {t('update_products_button', { count: selectedSkus.length })}
                       </Button>
                     </div>
                   </div>
@@ -336,8 +339,8 @@ export default function SupplyNetworkPage() {
                       <RefreshCw className="h-8 w-8 text-slate-300" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-slate-800">Todo al día</h3>
-                      <p className="text-slate-500 max-w-sm mx-auto mt-1">No hay cambios de costo pendientes en tu red. Haz clic en "Buscar Cambios" para verificar.</p>
+                      <h3 className="text-xl font-bold text-slate-800">{t('sync_up_to_date_title')}</h3>
+                      <p className="text-slate-500 max-w-sm mx-auto mt-1">{t('sync_up_to_date_desc')}</p>
                     </div>
                   </div>
                 )}
@@ -348,18 +351,17 @@ export default function SupplyNetworkPage() {
 
         <TabsContent value="manage" className="mt-0">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* BUSCADOR DE EDIFICIOS */}
             <div className="lg:col-span-1 space-y-4">
               <Card className="border-none shadow-md">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-base">Vincular Nuevos Edificios</CardTitle>
-                  <CardDescription>Envía una solicitud formal de conexión comercial.</CardDescription>
+                  <CardTitle className="text-base">{t('manage_card_title')}</CardTitle>
+                  <CardDescription>{t('manage_card_desc')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
-                      placeholder="Nombre o slug..." 
+                      placeholder={t('search_org_placeholder')} 
                       className="pl-8 bg-slate-50" 
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -369,16 +371,18 @@ export default function SupplyNetworkPage() {
               </Card>
             </div>
 
-            {/* GESTIÓN DE CONEXIONES */}
             <div className="lg:col-span-2 space-y-6">
               <Card className="border-none shadow-md overflow-hidden">
                 <CardHeader className="bg-slate-50/50 border-b pb-4">
-                  <CardTitle className="text-base">Mi Red de Suministro Activa</CardTitle>
-                  <CardDescription>Empresas con las que compartes datos operativos.</CardDescription>
+                  <CardTitle className="text-base">{t('active_network_title')}</CardTitle>
+                  <CardDescription>{t('active_network_desc')}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
                   {loading ? (
-                    <div className="space-y-3"><Skeleton className="h-16 w-full rounded-xl" /><Skeleton className="h-16 w-full rounded-xl" /></div>
+                    <div className="space-y-3">
+                      <Skeleton className="h-16 w-full rounded-xl" />
+                      <Skeleton className="h-16 w-full rounded-xl" />
+                    </div>
                   ) : connections.some(c => c.status === 'accepted') ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {connections.filter(c => c.status === 'accepted').map(conn => {
@@ -396,14 +400,14 @@ export default function SupplyNetworkPage() {
                                 <div>
                                   <p className="font-bold text-sm text-slate-800">{org?.name}</p>
                                   <Badge variant="secondary" className="text-[10px] h-4 mt-0.5 px-1.5 font-bold uppercase tracking-tighter">
-                                    {isMySupplier ? "Proveedor" : "Cliente"}
+                                    {isMySupplier ? t('role_supplier') : t('role_client')}
                                   </Badge>
                                 </div>
                               </div>
                             </div>
                             <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 pt-3 border-t mt-2">
                               <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                              Flujo de datos bidireccional activo
+                              {t('data_flow_active')}
                             </div>
                           </div>
                         );
@@ -412,7 +416,7 @@ export default function SupplyNetworkPage() {
                   ) : (
                     <div className="text-center py-16 border-2 border-dashed rounded-3xl bg-slate-50/50">
                       <LinkIcon className="mx-auto h-10 w-10 text-slate-300 mb-3 opacity-50" />
-                      <p className="text-sm text-slate-500 max-w-xs mx-auto">Aún no tienes socios comerciales vinculados.</p>
+                      <p className="text-sm text-slate-500 max-w-xs mx-auto">{t('no_partners_message')}</p>
                     </div>
                   )}
                 </CardContent>
@@ -422,13 +426,5 @@ export default function SupplyNetworkPage() {
         </TabsContent>
       </Tabs>
     </div>
-  );
-}
-
-function Search({ className }: { className?: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-    </svg>
   );
 }
