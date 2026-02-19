@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useProspects } from '@/hooks/use-prospects';
 import { useAuth } from '@/context/auth-context';
 import { useTranslations } from 'next-intl';
@@ -9,7 +9,7 @@ import { TabNavigation } from '@/components/admin/sales/TabNavigation';
 import { MapView } from '@/components/admin/sales/map-view';
 import { ProspectCard } from '@/components/admin/sales/prospect-card';
 import { SalesStatsView } from '@/components/admin/sales/SalesStatsView';
-import { Loader2, Plus, Upload, Route, Trash, Check, X, Wand, Search } from 'lucide-react';
+import { Loader2, Plus, Upload, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { ProspectDialog } from '@/components/admin/sales/prospect-dialog';
 import { ProspectDetailsDialog } from '@/components/admin/sales/prospect-details-dialog';
@@ -61,7 +61,7 @@ export default function SalesPage() {
     setProspectForVisit(prospect);
   };
 
-  const handleSelectionChange = (prospectId: string, isSelected: boolean) => {
+  const handleSelectionChange = useCallback((prospectId: string, isSelected: boolean) => {
     setSelectedProspects(prev => {
       const newSet = new Set(prev);
       if (isSelected) {
@@ -71,7 +71,7 @@ export default function SalesPage() {
       }
       return Array.from(newSet);
     });
-  };
+  }, []);
 
   const handleBulkSelect = (prospectIds: string[], select: boolean) => {
     setSelectedProspects(prev => {
@@ -173,7 +173,15 @@ export default function SalesPage() {
           </div>
         );
       case 'map':
-        return <p>Map view coming soon!</p>
+        return (
+          <div className="w-full">
+            <MapView 
+              prospects={filteredProspects} 
+              selectedProspects={selectedProspects}
+              onToggleSelection={(id) => handleSelectionChange(id, !selectedProspects.includes(id))}
+            />
+          </div>
+        );
       case 'list': {
         const prospectList = (selectedProspects.length > 0)
           ? prospects.filter(p => selectedProspects.includes(p.id))
@@ -224,7 +232,7 @@ export default function SalesPage() {
         );
       }
       case 'stats':
-        return <SalesStatsView />;
+        return <SalesStatsView prospects={prospects} />;
       default:
         return null;
     }

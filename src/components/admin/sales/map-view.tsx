@@ -1,12 +1,12 @@
-
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 import type { Prospect } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Navigation, X, Loader2 } from 'lucide-react';
+import { MapPin, Navigation, X, Loader2, Phone, BotMessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GoogleMap, useJsApiLoader, Polygon, MarkerF } from '@react-google-maps/api';
 import { districts } from '@/lib/district-config';
@@ -56,7 +56,7 @@ export function MapView({
   });
 
   const mapOptions = useMemo(() => {
-    if (!isLoaded) return {}; // Return empty object if not loaded
+    if (!isLoaded) return {}; 
     return {
         mapTypeControl: false,
         streetViewControl: false,
@@ -64,7 +64,14 @@ export function MapView({
         zoomControl: true,
         zoomControlOptions: {
             position: google.maps.ControlPosition.RIGHT_BOTTOM
-        }
+        },
+        styles: [
+          {
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [{ visibility: "off" }]
+          }
+        ]
     };
   }, [isLoaded]);
 
@@ -109,16 +116,16 @@ export function MapView({
   const getMarkerIcon = useCallback((prospect: Prospect, isSelected: boolean) => {
     if (!isLoaded) return undefined;
     const color = STATUS_COLORS[prospect.status as keyof typeof STATUS_COLORS] || '#6b7280';
-    const scale = isSelected ? 1.5 : 1;
+    const scale = isSelected ? 1.4 : 1;
     const pinPath = "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5-2.5-1.12 2.5-2.5-2.5z";
 
     return {
       path: pinPath,
       fillColor: color,
-      fillOpacity: isSelected ? 1 : 0.8,
-      strokeWeight: 1.5,
-      strokeColor: '#ffffff',
-      scale: scale,
+      fillOpacity: 1,
+      strokeWeight: 2,
+      strokeColor: isSelected ? '#000000' : '#ffffff',
+      scale: scale * 1.5,
       anchor: new google.maps.Point(12, 24),
     };
   }, [isLoaded]);
@@ -145,16 +152,20 @@ export function MapView({
           paths={paths}
           options={{
             strokeColor: '#2E7D32',
-            strokeOpacity: 0.7,
-            strokeWeight: 2,
+            strokeOpacity: 0.5,
+            strokeWeight: 1,
             fillColor: '#4CAF50',
-            fillOpacity: 0.1,
+            fillOpacity: 0.05,
+            clickable: false
           }}
         />
       );
     });
   }, []);
 
+  const cleanPhoneNumber = (phone: string | undefined) => {
+    return phone?.replace(/\D/g, '') || '';
+  };
 
   if (!isLoaded) {
     return (
@@ -168,7 +179,7 @@ export function MapView({
   }
 
   return (
-    <div style={{ height: 'calc(100vh - 240px)', minHeight: '600px' }} className="relative rounded-xl overflow-hidden border">
+    <div style={{ height: 'calc(100vh - 240px)', minHeight: '600px' }} className="relative rounded-xl overflow-hidden border shadow-inner bg-slate-100">
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
@@ -182,14 +193,14 @@ export function MapView({
       {/* Overlay UI elements */}
        <div className="absolute top-4 left-4 right-4 z-10 flex justify-between items-start pointer-events-none">
         <div className="flex gap-2 pointer-events-auto flex-wrap">
-          <Badge variant="secondary" className="bg-white shadow-md px-3 py-1.5 text-sm border">
+          <Badge variant="secondary" className="bg-white/95 backdrop-blur shadow-md px-3 py-1.5 text-sm border font-bold">
             <MapPin className="h-3.5 w-3.5 mr-1.5 text-green-600" />
-            {prospects.length} prospectos
+            {prospects.length} {t('tab_list')}
           </Badge>
           {selectedProspects.length > 0 && (
-            <Badge className="bg-green-600 text-white shadow-md px-3 py-1.5 text-sm">
+            <Badge className="bg-green-600 text-white shadow-md px-3 py-1.5 text-sm font-bold animate-in zoom-in-90">
               <Navigation className="h-3.5 w-3.5 mr-1.5" />
-              {selectedProspects.length} en ruta
+              {selectedProspects.length} {t('selected_prospects_label')}
             </Badge>
           )}
         </div>
@@ -197,44 +208,74 @@ export function MapView({
 
       {selectedClient && (
         <div className="absolute bottom-4 left-4 right-4 z-10 max-w-md mx-auto animate-in slide-in-from-bottom-4 duration-200">
-          <div className="bg-white rounded-xl shadow-2xl p-4 border border-gray-200">
+          <div className="bg-white rounded-2xl shadow-2xl p-4 border border-gray-200 overflow-hidden">
             <div className="flex justify-between items-start mb-3">
               <div className="flex-1 pr-2">
-                <h3 className="font-bold text-lg text-gray-900 leading-tight">
-                  {selectedClient.name}
-                </h3>
-                <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-bold text-lg text-gray-900 leading-tight">
+                    {selectedClient.name}
+                  </h3>
+                  <Badge 
+                    style={{ backgroundColor: STATUS_COLORS[selectedClient.status as keyof typeof STATUS_COLORS], color: 'white' }}
+                    className="text-[10px] uppercase font-black px-1.5 h-5 border-none"
+                  >
+                    {t(`status_${selectedClient.status}` as any)}
+                  </Badge>
+                </div>
+                <p className="text-sm text-gray-600 line-clamp-2">
                   {selectedClient.address}
                 </p>
               </div>
               <button 
                 onClick={() => setSelectedClient(null)}
-                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors shrink-0"
               >
-                <X className="h-5 w-5 text-gray-500" />
+                <X className="h-5 w-5 text-gray-400" />
               </button>
             </div>
             
-            <div className="flex gap-2 mb-4 flex-wrap">
-              <Badge 
-                variant="outline" 
-                className="font-mono text-green-700 bg-green-50 border-green-200 px-2.5 py-1"
-              >
+            <div className="flex gap-1.5 mb-4 flex-wrap">
+              <Badge variant="outline" className="font-mono text-[10px] text-green-700 bg-green-50 border-green-200 px-2 py-0.5">
                 {selectedClient.zone || 'SIN-ZONA'}
               </Badge>
-              <Badge variant="secondary" className="capitalize px-2.5 py-1">
+              <Badge variant="secondary" className="text-[10px] font-bold capitalize bg-slate-100 text-slate-600 px-2 h-5">
                 {selectedClient.ethnic}
               </Badge>
-              <Badge variant="secondary" className="capitalize px-2.5 py-1">
+              <Badge variant="secondary" className="text-[10px] font-bold capitalize bg-slate-100 text-slate-600 px-2 h-5">
                 {selectedClient.category}
               </Badge>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <Button 
+                asChild 
+                variant="outline" 
+                className="h-10 justify-start border-green-200 hover:bg-green-50 text-xs font-bold"
+                disabled={!selectedClient.phone}
+              >
+                <a href={`tel:${cleanPhoneNumber(selectedClient.phone)}`}>
+                  <Phone className="mr-2 h-3.5 w-3.5 text-green-600" />
+                  {t('action_call_simple')}
+                </a>
+              </Button>
+              <Button 
+                asChild 
+                variant="outline" 
+                className="h-10 justify-start border-green-200 hover:bg-green-50 text-xs font-bold"
+                disabled={!selectedClient.phone}
+              >
+                <a href={`https://wa.me/1${cleanPhoneNumber(selectedClient.phone)}`} target="_blank">
+                  <BotMessageSquare className="mr-2 h-3.5 w-3.5 text-green-600" />
+                  WhatsApp
+                </a>
+              </Button>
             </div>
 
             <div className="flex gap-2">
               <Button 
                 size="sm" 
                 className={cn(
-                  "flex-1 h-11 font-semibold",
+                  "flex-1 h-11 font-black uppercase text-xs tracking-wider shadow-lg",
                   selectedProspects.includes(selectedClient.id)
                     ? "bg-red-600 hover:bg-red-700"
                     : "bg-green-600 hover:bg-green-700"
@@ -250,13 +291,13 @@ export function MapView({
               <Button 
                 variant="outline" 
                 size="sm"
-                className="h-11 px-4"
+                className="h-11 px-4 border-slate-300"
                 onClick={() => window.open(
                   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(selectedClient.address)}`, 
                   '_blank'
                 )}
               >
-                <Navigation className="h-4 w-4 mr-1.5" />
+                <Navigation className="h-4 w-4 mr-1.5 text-blue-600" />
                 Ir
               </Button>
             </div>
@@ -264,28 +305,27 @@ export function MapView({
         </div>
       )}
 
-      <div className="absolute bottom-4 right-4 z-10 bg-white/95 backdrop-blur rounded-xl shadow-lg p-4 hidden md:block border border-gray-200">
-        <div className="text-sm font-bold text-gray-800 mb-3">Estados</div>
-        <div className="space-y-2">
+      <div className="absolute bottom-4 right-4 z-10 bg-white/95 backdrop-blur rounded-xl shadow-lg p-4 hidden md:block border border-gray-200 w-48">
+        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 border-b pb-1">Estados de Prospectos</div>
+        <div className="space-y-2.5">
           {Object.entries(STATUS_COLORS).map(([status, color]) => (
-            <div key={status} className="flex items-center gap-3 text-sm">
+            <div key={status} className="flex items-center gap-2.5 text-xs">
               <div 
-                className="w-4 h-4 rounded-full shadow-sm ring-2 ring-white" 
+                className="w-3.5 h-3.5 rounded-full shadow-sm ring-2 ring-white shrink-0" 
                 style={{ backgroundColor: color }}
               />
-              <span className="capitalize text-gray-600 font-medium">
+              <span className="capitalize text-slate-600 font-bold">
                 {t(`status_${status}` as any)}
               </span>
             </div>
           ))}
         </div>
-        <div className="mt-4 pt-3 border-t border-gray-200">
-          <div className="text-xs text-gray-500 mb-2 font-semibold">Categorías</div>
-          <div className="space-y-1.5 text-xs text-gray-600">
-            <div className="flex items-center gap-2">🍽️ Restaurante</div>
-            <div className="flex items-center gap-2">🏪 Supermercado</div>
-            <div className="flex items-center gap-2">🥩 Carnicería</div>
-            <div className="flex items-center gap-2">📍 Otro</div>
+        <div className="mt-4 pt-3 border-t border-gray-100">
+          <div className="text-[9px] text-slate-400 mb-2 font-black uppercase tracking-widest">Densidad</div>
+          <div className="flex gap-1.5">
+            <div className="h-1.5 flex-1 rounded-full bg-red-500" title="Baja" />
+            <div className="h-1.5 flex-1 rounded-full bg-orange-500" title="Media" />
+            <div className="h-1.5 flex-1 rounded-full bg-green-500" title="Alta" />
           </div>
         </div>
       </div>
