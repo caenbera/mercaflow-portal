@@ -16,7 +16,7 @@ import {
   Image as ImageIcon, Check, Loader2, Layout, Share2, 
   MailQuestion, Users, Plus, Send, Calendar as CalendarIcon,
   Mail, MousePointer2, Clock, Trash2, FileDown, X, MailCheck, ShieldCheck, HelpCircle, AlertTriangle,
-  ChevronRight, Info
+  ChevronRight, Info, Lock
 } from 'lucide-react';
 import { updateOrganization } from '@/lib/firestore/organizations';
 import { useToast } from '@/hooks/use-toast';
