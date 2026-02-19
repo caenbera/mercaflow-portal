@@ -16,11 +16,11 @@ import {
   ShoppingBag, Globe, Copy, ExternalLink, 
   Image as ImageIcon, Check, Loader2, Layout, Share2, 
   MailQuestion, Users, Plus, Send, Calendar as CalendarIcon,
-  Mail, MousePointer2, Clock, Trash2, FileDown
+  Mail, MousePointer2, Clock, Trash2, FileDown, X, MailCheck, ShieldCheck, HelpCircle, AlertTriangle
 } from 'lucide-react';
 import { updateOrganization } from '@/lib/firestore/organizations';
 import { useToast } from '@/hooks/use-toast';
-import type { StoreConfig, Newsletter } from '@/types';
+import type { StoreConfig, Newsletter, EmailConfig } from '@/types';
 import { useNewsletterSubscribers } from '@/hooks/use-newsletter-subscribers';
 import { useNewsletters } from '@/hooks/use-newsletters';
 import { addNewsletter, deleteNewsletter } from '@/lib/firestore/newsletters';
@@ -28,10 +28,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Timestamp } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
 
 export default function StoreManagementPage() {
   const { activeOrg, activeOrgId } = useOrganization();
@@ -66,6 +68,15 @@ export default function StoreManagementPage() {
     minOrderAmount: 0,
   });
 
+  const [emailConfig, setEmailConfig] = useState<EmailConfig>({
+    provider: 'none',
+    apiKey: '',
+    senderName: '',
+    senderEmail: '',
+    replyTo: '',
+    verified: false,
+  });
+
   const [campaignForm, setCampaignForm] = useState({
     subject: '',
     message: '',
@@ -90,6 +101,10 @@ export default function StoreManagementPage() {
         igLink: activeOrg.storeConfig?.socialLinks?.instagram || '',
         minOrderAmount: activeOrg.storeConfig?.minOrderAmount || 0,
       });
+
+      if (activeOrg.storeConfig?.emailConfig) {
+        setEmailConfig(activeOrg.storeConfig.emailConfig);
+      }
     }
   }, [activeOrg]);
 
@@ -119,6 +134,7 @@ export default function StoreManagementPage() {
           instagram: formData.igLink,
         },
         minOrderAmount: formData.minOrderAmount,
+        emailConfig: emailConfig,
       };
 
       await updateOrganization(activeOrgId, {
@@ -312,6 +328,13 @@ export default function StoreManagementPage() {
                     onClick={() => setActiveTab('marketing')}
                 >
                     <MailQuestion className="mr-3 h-4 w-4" /> {t('tab_marketing')}
+                </Button>
+                <Button 
+                    variant={activeTab === 'email' ? 'secondary' : 'ghost'} 
+                    className="w-full justify-start h-12 rounded-xl"
+                    onClick={() => setActiveTab('email')}
+                >
+                    <MailCheck className="mr-3 h-4 w-4" /> Conexión de Email
                 </Button>
             </div>
         </div>
@@ -580,6 +603,108 @@ export default function StoreManagementPage() {
                                 <Button variant="outline" disabled={subscribers.length === 0} className="rounded-xl">
                                   <FileDown className="mr-2 h-4 w-4" /> Exportar suscriptores (CSV)
                                 </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'email' && (
+                        <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+                            <div className="flex justify-between items-start">
+                                <div className="space-y-1">
+                                    <h3 className="text-xl font-bold flex items-center gap-2">
+                                        <MailCheck className="text-primary h-6 w-6" />
+                                        Conexión de Correo Profesional
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground">Configura tu propia identidad para que los clientes reconozcan tus correos.</p>
+                                </div>
+                                <Badge className={cn("px-3 py-1", emailConfig.verified ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                                    {emailConfig.verified ? <><ShieldCheck className="h-3 w-3 mr-1" /> Conectado</> : <><AlertTriangle className="h-3 w-3 mr-1" /> Sin Conexión</>}
+                                </Badge>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <Label className="font-bold">Proveedor de Correo</Label>
+                                        <Select 
+                                            value={emailConfig.provider} 
+                                            onValueChange={(val: any) => setEmailConfig(prev => ({...prev, provider: val}))}
+                                        >
+                                            <SelectTrigger className="h-12 bg-slate-50 rounded-xl">
+                                                <SelectValue placeholder="Elige un proveedor" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">No usar (Simulado)</SelectItem>
+                                                <SelectItem value="sendgrid">SendGrid (Recomendado)</SelectItem>
+                                                <SelectItem value="mailgun">Mailgun</SelectItem>
+                                                <SelectItem value="smtp">Servidor SMTP Propio</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="font-bold">API Key / Llave Secreta</Label>
+                                        <div className="relative">
+                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                            <Input 
+                                                type="password"
+                                                placeholder="Pega tu llave aquí..."
+                                                className="h-12 pl-10 bg-slate-50 rounded-xl"
+                                                value={emailConfig.apiKey}
+                                                onChange={(e) => setEmailConfig(prev => ({...prev, apiKey: e.target.value}))}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="font-bold">Nombre del Remitente</Label>
+                                            <Input 
+                                                placeholder="Ej: Mercado Fresh"
+                                                className="h-12 bg-slate-50 rounded-xl"
+                                                value={emailConfig.senderName}
+                                                onChange={(e) => setEmailConfig(prev => ({...prev, senderName: e.target.value}))}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="font-bold">Email de Respuesta</Label>
+                                            <Input 
+                                                placeholder="hola@negocio.com"
+                                                className="h-12 bg-slate-50 rounded-xl"
+                                                value={emailConfig.replyTo}
+                                                onChange={(e) => setEmailConfig(prev => ({...prev, replyTo: e.target.value}))}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="p-6 bg-slate-900 text-white rounded-3xl border shadow-xl">
+                                        <h4 className="font-bold flex items-center gap-2 mb-4">
+                                            <HelpCircle className="h-4 w-4 text-primary" />
+                                            ¿Cómo conectar?
+                                        </h4>
+                                        <ol className="space-y-4 text-sm text-slate-300 list-decimal pl-4">
+                                            <li>Ve a <strong>sendgrid.com</strong> y crea una cuenta gratuita.</li>
+                                            <li>En el panel de configuración, busca <strong>API Keys</strong> y crea una nueva con acceso completo.</li>
+                                            <li>Pega la llave generada en el cuadro de la izquierda.</li>
+                                            <li>Verifica tu <strong>Dominio</strong> en la sección de 'Sender Authentication' de SendGrid para evitar el SPAM.</li>
+                                        </ol>
+                                        <Button variant="link" className="text-primary p-0 h-auto mt-4 font-bold">
+                                            Ver guía detallada <ChevronRight className="h-4 w-4 ml-1" />
+                                        </Button>
+                                    </div>
+
+                                    <Card className="border-primary/20 bg-primary/5">
+                                        <CardContent className="p-4 flex gap-3 items-start">
+                                            <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                                            <p className="text-xs text-slate-600 leading-relaxed">
+                                                Al usar tu propia conexión, MercaFlow no te cobrará por los correos enviados. 
+                                                Tus clientes recibirán mensajes desde <strong>tu propio dominio</strong>, aumentando la confianza.
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+                                </div>
                             </div>
                         </div>
                     )}

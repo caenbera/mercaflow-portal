@@ -24,6 +24,19 @@ export interface StoreTestimonial {
   avatarUrl?: string;
 }
 
+export interface EmailConfig {
+  provider: 'sendgrid' | 'mailgun' | 'smtp' | 'none';
+  apiKey?: string;
+  senderName?: string;
+  senderEmail?: string;
+  replyTo?: string;
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUser?: string;
+  smtpPass?: string;
+  verified: boolean;
+}
+
 export interface StoreConfig {
   enabled: boolean;
   themeColor?: string;
@@ -54,6 +67,7 @@ export interface StoreConfig {
   };
   minOrderAmount?: number;
   newsletterEnabled?: boolean;
+  emailConfig?: EmailConfig;
 }
 
 export interface Organization {
