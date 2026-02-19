@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Organization": {
@@ -23,7 +24,15 @@
             "welcomeMessage": { "type": "string" },
             "logoUrl": { "type": "string" },
             "allowDelivery": { "type": "boolean" },
-            "minOrderAmount": { "type": "number" }
+            "minOrderAmount": { "type": "number" },
+            "testimonialAvatars": {
+              "type": "object",
+              "properties": {
+                "t1": { "type": "string" },
+                "t2": { "type": "string" },
+                "t3": { "type": "string" }
+              }
+            }
           }
         }
       },
@@ -80,6 +89,23 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["organizationId", "question", "answer"]
+    },
+    "Newsletter": {
+      "title": "Newsletter",
+      "description": "Campaña de correo enviada a suscriptores.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "pdfUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "scheduled", "sent"] },
+        "scheduledAt": { "type": "string", "format": "date-time" },
+        "opens": { "type": "number", "default": 0 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["organizationId", "subject", "message", "status", "scheduledAt"]
     }
   },
   "auth": {
@@ -98,13 +124,13 @@
       "schema": { "$ref": "#/entities/UserProfile" },
       "description": "Colección de usuarios."
     },
-    "/products/{prodId}": {
-      "schema": { "$ref": "#/entities/Product" },
-      "description": "Catálogo de productos segregado por organización."
-    },
     "/faqs/{faqId}": {
       "schema": { "$ref": "#/entities/FAQ" },
       "description": "Preguntas frecuentes del portal de soporte."
+    },
+    "/newsletters/{newsletterId}": {
+      "schema": { "$ref": "#/entities/Newsletter" },
+      "description": "Campañas de boletines informativos."
     }
   }
 }

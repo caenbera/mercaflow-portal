@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useOrganization } from '@/context/organization-context';
 import { useTranslations, useLocale } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,13 +10,28 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   ShoppingBag, Globe, Copy, ExternalLink, 
-  Image as ImageIcon, Check, Loader2, Layout, Share2, MailQuestion, Users
+  Image as ImageIcon, Check, Loader2, Layout, Share2, 
+  MailQuestion, Users, Plus, Send, Calendar as CalendarIcon,
+  Mail, MousePointer2, Clock, Trash2, FileDown
 } from 'lucide-react';
 import { updateOrganization } from '@/lib/firestore/organizations';
 import { useToast } from '@/hooks/use-toast';
-import type { StoreConfig } from '@/types';
+import type { StoreConfig, Newsletter } from '@/types';
+import { useNewsletterSubscribers } from '@/hooks/use-newsletter-subscribers';
+import { useNewsletters } from '@/hooks/use-newsletters';
+import { addNewsletter, deleteNewsletter } from '@/lib/firestore/newsletters';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Timestamp } from 'firebase/firestore';
 
 export default function StoreManagementPage() {
   const { activeOrg, activeOrgId } = useOrganization();
@@ -26,6 +42,13 @@ export default function StoreManagementPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('images'); 
   
+  // Newsletter Logic
+  const { subscribers, loading: subsLoading } = useNewsletterSubscribers(activeOrgId);
+  const { newsletters, loading: newsLoading } = useNewsletters(activeOrgId);
+  const [isNewCampaignOpen, setIsNewCampaignOpen] = useState(false);
+  const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState<Date | undefined>(new Date());
+
   const [formData, setFormData] = useState({
     enabled: false,
     heroImage: '',
@@ -41,6 +64,12 @@ export default function StoreManagementPage() {
     fbLink: '',
     igLink: '',
     minOrderAmount: 0,
+  });
+
+  const [campaignForm, setCampaignForm] = useState({
+    subject: '',
+    message: '',
+    pdfUrl: '',
   });
 
   useEffect(() => {
@@ -103,6 +132,39 @@ export default function StoreManagementPage() {
     }
   };
 
+  const handleCreateCampaign = async () => {
+    if (!activeOrgId || !scheduledDate) return;
+    setIsCreatingCampaign(true);
+    try {
+      await addNewsletter({
+        organizationId: activeOrgId,
+        subject: campaignForm.subject,
+        message: campaignForm.message,
+        pdfUrl: campaignForm.pdfUrl,
+        status: 'scheduled',
+        scheduledAt: Timestamp.fromDate(scheduledDate),
+      });
+      toast({ title: "Campaña Programada", description: "Se enviará a tus suscriptores en la fecha elegida." });
+      setIsNewCampaignOpen(false);
+      setCampaignForm({ subject: '', message: '', pdfUrl: '' });
+    } catch (e) {
+      toast({ variant: 'destructive', title: "Error al crear campaña" });
+    } finally {
+      setIsCreatingCampaign(false);
+    }
+  };
+
+  const handleDeleteCampaign = async (id: string) => {
+    if (confirm("¿Eliminar esta campaña?")) {
+      try {
+        await deleteNewsletter(id);
+        toast({ title: "Campaña eliminada" });
+      } catch (e) {
+        toast({ variant: 'destructive', title: "Error al eliminar" });
+      }
+    }
+  };
+
   const storeUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/${locale}/store/${activeOrg?.slug}` 
     : '';
@@ -124,6 +186,67 @@ export default function StoreManagementPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 flex flex-col gap-8 max-w-6xl mx-auto">
+      <Dialog open={isNewCampaignOpen} onOpenChange={setIsNewCampaignOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Nueva Campaña de Newsletter</DialogTitle>
+            <DialogDescription>Redacta el mensaje y adjunta tu catálogo PDF para los suscriptores.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Asunto del Correo</Label>
+              <Input 
+                placeholder="Ej: ¡Ofertas de la semana en Frutas Frescas!" 
+                value={campaignForm.subject}
+                onChange={(e) => setCampaignForm(prev => ({...prev, subject: e.target.value}))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Mensaje</Label>
+              <Textarea 
+                placeholder="Hola! Te compartimos nuestras mejores promociones..." 
+                className="min-h-[120px]"
+                value={campaignForm.message}
+                onChange={(e) => setCampaignForm(prev => ({...prev, message: e.target.value}))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Enlace al PDF del Catálogo</Label>
+              <div className="relative">
+                <FileDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input 
+                  placeholder="https://drive.google.com/..." 
+                  className="pl-9"
+                  value={campaignForm.pdfUrl}
+                  onChange={(e) => setCampaignForm(prev => ({...prev, pdfUrl: e.target.value}))}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Fecha de Envío</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal h-11">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {scheduledDate ? format(scheduledDate, "PPP", { locale: es }) : "Elegir fecha"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar mode="single" selected={scheduledDate} onSelect={setScheduledDate} initialFocus />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsNewCampaignOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCreateCampaign} disabled={isCreatingCampaign || !campaignForm.subject || !campaignForm.message}>
+              {isCreatingCampaign ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              Programar Envío
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="flex justify-between items-end flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold font-headline flex items-center gap-3">
@@ -343,7 +466,7 @@ export default function StoreManagementPage() {
                     )}
 
                     {activeTab === 'marketing' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                        <div className="space-y-10 animate-in fade-in slide-in-from-right-4">
                             <div className="grid gap-4 max-w-sm mb-8">
                                 <Label className="text-xs font-bold uppercase text-muted-foreground">{t('min_order_label')}</Label>
                                 <Input 
@@ -353,16 +476,110 @@ export default function StoreManagementPage() {
                                     className="h-12 bg-slate-50"
                                 />
                             </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <Card className="bg-primary/5 border-primary/20">
+                                <CardContent className="p-4 text-center">
+                                  <Users className="mx-auto h-6 w-6 text-primary mb-2" />
+                                  <p className="text-2xl font-black text-slate-900">{subsLoading ? '...' : subscribers.length}</p>
+                                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Suscriptores Totales</p>
+                                </CardContent>
+                              </Card>
+                              <Card className="bg-blue-50 border-blue-200">
+                                <CardContent className="p-4 text-center">
+                                  <Mail className="mx-auto h-6 w-6 text-blue-600 mb-2" />
+                                  <p className="text-2xl font-black text-slate-900">{newsLoading ? '...' : newsletters.length}</p>
+                                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Campañas Enviadas</p>
+                                </CardContent>
+                              </Card>
+                              <Card className="bg-orange-50 border-orange-200">
+                                <CardContent className="p-4 text-center">
+                                  <MousePointer2 className="mx-auto h-6 w-6 text-orange-600 mb-2" />
+                                  <p className="text-2xl font-black text-slate-900">
+                                    {newsLoading ? '...' : newsletters.reduce((acc, curr) => acc + (curr.opens || 0), 0)}
+                                  </p>
+                                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Total Aperturas</p>
+                                </CardContent>
+                              </Card>
+                            </div>
+
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-center">
+                                <h3 className="font-bold flex items-center gap-2 text-slate-800">
+                                  <Mail className="h-5 w-5 text-primary" /> Historial de Campañas
+                                </h3>
+                                <Button onClick={() => setIsNewCampaignOpen(true)} size="sm" className="rounded-full shadow-md bg-slate-900 hover:bg-slate-800">
+                                  <Plus className="mr-2 h-4 w-4" /> Crear Newsletter
+                                </Button>
+                              </div>
+
+                              <div className="border rounded-2xl overflow-hidden bg-white">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow className="bg-slate-50/50">
+                                      <TableHead className="text-[10px] uppercase font-bold">Asunto / Estado</TableHead>
+                                      <TableHead className="text-[10px] uppercase font-bold text-center">Aperturas</TableHead>
+                                      <TableHead className="text-[10px] uppercase font-bold text-right">Programado</TableHead>
+                                      <TableHead className="w-[50px]"></TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {newsLoading ? (
+                                      <TableRow><TableCell colSpan={4}><Skeleton className="h-12 w-full" /></TableCell></TableRow>
+                                    ) : newsletters.length > 0 ? (
+                                      newsletters.map((news) => (
+                                        <TableRow key={news.id}>
+                                          <TableCell>
+                                            <p className="text-sm font-bold text-slate-800">{news.subject}</p>
+                                            <Badge variant="outline" className={cn(
+                                              "text-[9px] uppercase h-4 px-1 border-none",
+                                              news.status === 'sent' ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                                            )}>
+                                              {news.status === 'sent' ? "Enviado" : "Programado"}
+                                            </Badge>
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            <div className="flex flex-col items-center">
+                                              <span className="font-black text-slate-900">{news.opens || 0}</span>
+                                              <span className="text-[9px] text-muted-foreground uppercase font-bold">Lectores</span>
+                                            </div>
+                                          </TableCell>
+                                          <TableCell className="text-right">
+                                            <div className="flex flex-col items-end">
+                                              <span className="text-xs font-medium text-slate-600">{format(news.scheduledAt.toDate(), 'dd MMM, HH:mm')}</span>
+                                              <Clock className="h-3 w-3 text-slate-300" />
+                                            </div>
+                                          </TableCell>
+                                          <TableCell>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteCampaign(news.id)}>
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </TableCell>
+                                        </TableRow>
+                                      ))
+                                    ) : (
+                                      <TableRow>
+                                        <TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic text-sm">
+                                          No has creado campañas todavía.
+                                        </TableCell>
+                                      </TableRow>
+                                    )}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            </div>
                             
                             <div className="p-8 border-2 border-dashed rounded-[30px] flex flex-col items-center text-center gap-4 bg-slate-50">
                                 <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center">
-                                    <MailQuestion className="h-8 w-8" />
+                                    <Users className="h-8 w-8" />
                                 </div>
-                                <h3 className="text-xl font-bold">{t('marketing_title')}</h3>
+                                <h3 className="text-xl font-bold">Lista de Suscriptores</h3>
                                 <p className="text-muted-foreground max-w-md text-sm">
-                                    {t('marketing_desc')}
+                                    Tienes {subscribers.length} personas esperando tus novedades. Pronto podrás descargar esta lista para usarla en WhatsApp o Email externo.
                                 </p>
-                                <Badge variant="secondary" className="px-4 py-1">{t('marketing_badge')}</Badge>
+                                <Button variant="outline" disabled={subscribers.length === 0} className="rounded-xl">
+                                  <FileDown className="mr-2 h-4 w-4" /> Exportar suscriptores (CSV)
+                                </Button>
                             </div>
                         </div>
                     )}

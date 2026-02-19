@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 
@@ -419,6 +420,27 @@ export interface Branch {
   address: string;
   city: string;
   manager: string;
+}
+
+export type NewsletterStatus = 'draft' | 'scheduled' | 'sent';
+
+export interface Newsletter {
+  id: string;
+  organizationId: string;
+  subject: string;
+  message: string;
+  pdfUrl?: string;
+  status: NewsletterStatus;
+  scheduledAt: Timestamp;
+  opens: number;
+  createdAt: Timestamp;
+}
+
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  organizationId: string;
+  createdAt: Timestamp;
 }
 
 export type { User };

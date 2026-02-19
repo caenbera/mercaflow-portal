@@ -1,14 +1,16 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { collection, query, where, getDocs, limit, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import type { Organization } from '@/types';
+import type { Organization, Newsletter } from '@/types';
 import { 
   ShoppingBag, Star, MapPin, Phone, Info, Loader2, Leaf, 
   ChevronRight, Facebook, Instagram, MessageCircle, Send,
-  Truck, Clock, Tags, Headset, CheckCircle, Zap
+  Truck, Clock, Tags, Headset, CheckCircle, Zap, FileDown,
+  X
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,10 +18,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from '@/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations, useLocale } from 'next-intl';
 import { LanguageSwitcher } from '@/components/landing/language-switcher';
 import placeholders from '@/app/lib/placeholder-images.json';
+import { trackNewsletterOpen } from '@/lib/firestore/newsletters';
 
 export default function PublicStorePage() {
   const params = useParams();
@@ -32,6 +35,8 @@ export default function PublicStorePage() {
   const [loading, setLoading] = useState(true);
   const [subscriberEmail, setSubscriberEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [activeNewsletter, setActiveNewsletter] = useState<Newsletter | null>(null);
+  const [showNewsletterPopup, setShowNewsletterPopup] = useState(false);
 
   useEffect(() => {
     async function fetchStoreData() {
@@ -43,6 +48,20 @@ export default function PublicStorePage() {
         if (!orgSnap.empty) {
           const orgData = { id: orgSnap.docs[0].id, ...orgSnap.docs[0].data() } as Organization;
           setOrg(orgData);
+
+          // Fetch latest active newsletter
+          const newsQuery = query(
+            collection(db, 'newsletters'), 
+            where('organizationId', '==', orgData.id),
+            where('status', '==', 'scheduled'), // Emulated: showing scheduled as active
+            limit(1)
+          );
+          const newsSnap = await getDocs(newsQuery);
+          if (!newsSnap.empty) {
+            setActiveNewsletter({ id: newsSnap.docs[0].id, ...newsSnap.docs[0].data() } as Newsletter);
+            // Mostrar popup después de 3 segundos
+            setTimeout(() => setShowNewsletterPopup(true), 3000);
+          }
         }
       } catch (e) {
         console.error("Error loading store:", e);
@@ -69,6 +88,13 @@ export default function PublicStorePage() {
       toast({ variant: "destructive", title: "Error", description: "No se pudo completar la suscripción." });
     } finally {
       setIsSubscribing(false);
+    }
+  };
+
+  const handleOpenPdf = (newsletter: Newsletter) => {
+    if (newsletter.pdfUrl) {
+      trackNewsletterOpen(newsletter.id);
+      window.open(newsletter.pdfUrl, '_blank');
     }
   };
 
@@ -127,6 +153,56 @@ export default function PublicStorePage() {
 
   return (
     <div className="min-h-screen bg-[#f8faf8] font-sans overflow-x-hidden">
+      {/* Newsletter Popup */}
+      <AnimatePresence>
+        {showNewsletterPopup && activeNewsletter && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative max-w-md w-full bg-white rounded-[32px] shadow-2xl overflow-hidden"
+            >
+              <button 
+                onClick={() => setShowNewsletterPopup(false)}
+                className="absolute top-4 right-4 z-10 p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors"
+              >
+                <X className="h-5 w-5 text-slate-500" />
+              </button>
+              
+              <div className="bg-gradient-to-br from-[#1a5f3f] to-[#2d8a5e] p-8 text-white text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Mail className="h-8 w-8 text-yellow-300" />
+                </div>
+                <h2 className="text-2xl font-black mb-2">{activeNewsletter.subject}</h2>
+                <p className="text-sm opacity-90 leading-relaxed">
+                  {activeNewsletter.message}
+                </p>
+              </div>
+              
+              <div className="p-8 space-y-4">
+                {activeNewsletter.pdfUrl && (
+                  <Button 
+                    className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-lg shadow-xl group"
+                    onClick={() => handleOpenPdf(activeNewsletter)}
+                  >
+                    <FileDown className="mr-2 h-5 w-5 group-hover:animate-bounce" />
+                    Descargar Catálogo PDF
+                  </Button>
+                )}
+                <Button 
+                  variant="ghost" 
+                  className="w-full text-slate-400 font-medium"
+                  onClick={() => setShowNewsletterPopup(false)}
+                >
+                  Cerrar por ahora
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <nav className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-md shadow-sm">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2 text-[#1a5f3f] font-extrabold text-xl">
@@ -172,13 +248,19 @@ export default function PublicStorePage() {
               transition={{ delay: 0.2 }}
               className="relative inline-block mb-6"
             >
+              {/* HALO RADIANTE INTENSIFICADO */}
               <motion.div
-                animate={{ scale: [1, 1.4, 1.8], opacity: [0.4, 0.2, 0] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+                animate={{ scale: [1, 1.6, 2.2], opacity: [0.6, 0.3, 0] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeOut" }}
                 className="absolute inset-0 bg-[#e8b931] rounded-full -z-10"
               />
-              <Badge className="bg-gradient-to-r from-[#e8b931] to-[#f3d060] text-[#1a1a1a] border-none px-5 py-2 rounded-full font-black text-xs uppercase tracking-wider shadow-[0_4px_20px_rgba(232,185,49,0.5)] relative">
-                <Zap className="h-3.5 w-3.5 mr-2 fill-current animate-pulse" /> 
+              <motion.div
+                animate={{ scale: [1, 1.3, 1.8], opacity: [0.4, 0.1, 0] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeOut", delay: 0.8 }}
+                className="absolute inset-0 bg-[#e8b931] rounded-full -z-10"
+              />
+              <Badge className="bg-gradient-to-r from-[#e8b931] to-[#f3d060] text-[#1a1a1a] border-none px-5 py-2 rounded-full font-black text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(232,185,49,0.6)] relative">
+                <Zap className="h-3.5 w-3.5 mr-2 fill-current animate-pulse text-[#1a1a1a]" /> 
                 {t('store_hero_delivery_badge')}
               </Badge>
             </motion.div>
