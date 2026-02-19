@@ -685,10 +685,10 @@ export default function StoreManagementPage() {
                                             {t('email_how_to_title')}
                                         </h4>
                                         <ol className="space-y-4 text-sm text-slate-300 list-decimal pl-4">
-                                            <li dangerouslySetInnerHTML={{ __html: t('email_step_1') }}></li>
-                                            <li dangerouslySetInnerHTML={{ __html: t('email_step_2') }}></li>
-                                            <li dangerouslySetInnerHTML={{ __html: t('email_step_3') }}></li>
-                                            <li dangerouslySetInnerHTML={{ __html: t('email_step_4') }}></li>
+                                            <li dangerouslySetInnerHTML={{ __html: t.raw('email_step_1') }}></li>
+                                            <li dangerouslySetInnerHTML={{ __html: t.raw('email_step_2') }}></li>
+                                            <li dangerouslySetInnerHTML={{ __html: t.raw('email_step_3') }}></li>
+                                            <li dangerouslySetInnerHTML={{ __html: t.raw('email_step_4') }}></li>
                                         </ol>
                                         <Button variant="link" className="text-primary p-0 h-auto mt-4 font-bold">
                                             {t('email_guide_button')} <ChevronRight className="h-4 w-4 ml-1" />
@@ -698,7 +698,7 @@ export default function StoreManagementPage() {
                                     <Card className="border-primary/20 bg-primary/5">
                                         <CardContent className="p-4 flex gap-3 items-start">
                                             <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                                            <p className="text-xs text-slate-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: t('email_info_card') }}></p>
+                                            <p className="text-xs text-slate-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: t.raw('email_info_card') }}></p>
                                         </CardContent>
                                     </Card>
                                 </div>
