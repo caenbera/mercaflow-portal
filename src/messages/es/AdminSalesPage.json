@@ -1,3 +1,4 @@
+
 {
     "title": "Mis Prospectos",
     "new_prospect_button": "Nuevo Prospecto",
@@ -153,6 +154,7 @@
     "toast_check_error": "No se pudo consultar la red de suministros.",
     "manage_card_title": "Vincular Nuevos Edificios",
     "manage_card_desc": "Envía una solicitud formal de conexión comercial.",
+    "search_org_placeholder": "Buscar por nombre o código de edificio...",
     "active_network_title": "Mi Red de Suministro Activa",
     "active_network_desc": "Empresas con las que compartes datos operativos.",
     "role_supplier": "Proveedor",

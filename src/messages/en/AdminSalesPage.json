@@ -1,3 +1,4 @@
+
 {
     "title": "My Prospects",
     "new_prospect_button": "New Prospect",
@@ -153,6 +154,7 @@
     "toast_check_error": "Could not check the supply network.",
     "manage_card_title": "Link New Buildings",
     "manage_card_desc": "Send a formal commercial connection request.",
+    "search_org_placeholder": "Search by building name or code...",
     "active_network_title": "My Active Supply Network",
     "active_network_desc": "Companies you share operational data with.",
     "role_supplier": "Supplier",
