@@ -6,7 +6,6 @@ import { useParams } from 'next/navigation';
 import { collection, query, where, getDocs, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { Organization } from '@/types';
-import Image from 'next/image';
 import { 
   ShoppingBag, Star, MapPin, Phone, Info, Loader2, Leaf, 
   ChevronRight, Facebook, Instagram, MessageCircle, Send,
@@ -21,6 +20,7 @@ import { Link } from '@/navigation';
 import { motion } from 'framer-motion';
 import { useTranslations, useLocale } from 'next-intl';
 import { LanguageSwitcher } from '@/components/landing/language-switcher';
+import placeholders from '@/app/lib/placeholder-images.json';
 
 export default function PublicStorePage() {
   const params = useParams();
@@ -93,12 +93,12 @@ export default function PublicStorePage() {
 
   const config = org.storeConfig;
 
-  // IMAGENES POR DEFECTO (FALLBACKS)
+  // IMAGENES POR DEFECTO USANDO EL ARCHIVO DE REFERENCIA
   const defaultImages = {
-    hero: "https://i.postimg.cc/pVkYwqGR/hero_products.jpg",
-    fruits: "https://i.postimg.cc/FFGgMDP6/categorias_frutas.jpg",
-    vegetables: "https://i.postimg.cc/dQnmb4WX/categorias_verduras.jpg",
-    groceries: "https://i.postimg.cc/Df5d9BCH/categorias_abarrotes.jpg"
+    hero: placeholders.store.hero,
+    fruits: placeholders.store.fruits,
+    vegetables: placeholders.store.vegetables,
+    groceries: placeholders.store.groceries
   };
 
   return (
@@ -109,7 +109,7 @@ export default function PublicStorePage() {
           <div className="flex items-center gap-2 text-[#1a5f3f] font-extrabold text-xl">
             {config.logoUrl ? (
               <div className="relative h-10 w-10 overflow-hidden rounded-lg">
-                <Image src={config.logoUrl} alt={org.name} fill className="object-contain" />
+                <img src={config.logoUrl} alt={org.name} className="h-full w-full object-contain" />
               </div>
             ) : (
               <Leaf className="text-[#e8b931]" />
@@ -167,11 +167,11 @@ export default function PublicStorePage() {
 
           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="relative hidden md:block">
             <div className="relative aspect-[4/3] w-full rounded-[40px] overflow-hidden rotate-3 shadow-2xl transition-transform hover:rotate-0">
-              <Image 
+              <img 
                 src={config.heroImage || defaultImages.hero} 
                 alt="Store Hero" 
-                fill
-                className="object-cover"
+                className="w-full h-full object-cover" 
+                data-ai-hint="supermarket products"
               />
             </div>
             {/* Floating Cards */}
@@ -221,12 +221,12 @@ export default function PublicStorePage() {
           <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-16">{t('store_categories_title')}</h2>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { name: t('store_category_fruits'), img: config.categoriesImages?.fruits || defaultImages.fruits, count: t('store_category_count', { count: 50 }) },
-              { name: t('store_category_veggies'), img: config.categoriesImages?.vegetables || defaultImages.vegetables, count: t('store_category_count', { count: 80 }) },
-              { name: t('store_category_groceries'), img: config.categoriesImages?.groceries || defaultImages.groceries, count: t('store_category_count', { count: 200 }) }
+              { name: t('store_category_fruits'), img: config.categoriesImages?.fruits || defaultImages.fruits, count: t('store_category_count', { count: 50 }), hint: "fruits" },
+              { name: t('store_category_veggies'), img: config.categoriesImages?.vegetables || defaultImages.vegetables, count: t('store_category_count', { count: 80 }), hint: "vegetables" },
+              { name: t('store_category_groceries'), img: config.categoriesImages?.groceries || defaultImages.groceries, count: t('store_category_count', { count: 200 }), hint: "groceries" }
             ].map((cat, i) => (
               <div key={i} className="group relative h-80 rounded-3xl overflow-hidden cursor-pointer shadow-lg">
-                <Image src={cat.img} alt={cat.name} fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
+                <img src={cat.img} alt={cat.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-ai-hint={cat.hint} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-8 text-left text-white">
                   <h3 className="text-2xl font-bold">{cat.name}</h3>
                   <p className="text-sm opacity-80">{cat.count}</p>
@@ -253,19 +253,19 @@ export default function PublicStorePage() {
                 name: "María González", 
                 role: "Cliente habitual", 
                 text: "Increíble la frescura de las verduras. Llegaron en 45 minutos y todo estaba perfectamente seleccionado. Mi familia notó la diferencia.",
-                avatar: "https://randomuser.me/api/portraits/women/44.jpg"
+                avatar: placeholders.store.avatars.maria
               },
               { 
                 name: "Carlos Mendoza", 
                 role: "Restaurante El Sabor", 
                 text: "Como dueño de restaurante, necesito calidad constante. Supermercado Fresco nunca me ha fallado. El servicio al cliente es excepcional.",
-                avatar: "https://randomuser.me/api/portraits/men/32.jpg"
+                avatar: placeholders.store.avatars.carlos
               },
               { 
                 name: "Laura Jiménez", 
                 role: "Profesional ocupada", 
                 text: "La app es súper fácil de usar. Puedo hacer el pedido desde el trabajo y llego a casa justo cuando llegan los productos. ¡Genial!",
-                avatar: "https://randomuser.me/api/portraits/women/68.jpg"
+                avatar: placeholders.store.avatars.laura
               }
             ].map((test, i) => (
               <div key={i} className="bg-white/10 backdrop-blur-md p-10 rounded-3xl border border-white/20 hover:-translate-y-2 transition-transform duration-300">
@@ -277,7 +277,7 @@ export default function PublicStorePage() {
                 <p className="italic text-lg mb-8 opacity-90">"{test.text}"</p>
                 <div className="flex items-center gap-4">
                   <div className="relative w-14 h-14 rounded-full border-2 border-[#e8b931] overflow-hidden bg-slate-200 shrink-0">
-                    <Image src={test.avatar} alt={test.name} fill className="object-cover" />
+                    <img src={test.avatar} alt={test.name} className="w-full h-full object-cover" />
                   </div>
                   <div>
                     <div className="font-bold">{test.name}</div>

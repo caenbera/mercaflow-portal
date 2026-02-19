@@ -1,0 +1,14 @@
+
+{
+  "store": {
+    "hero": "https://i.postimg.cc/pVkYwqGR/hero_products.jpg",
+    "fruits": "https://i.postimg.cc/FFGgMDP6/categorias_frutas.jpg",
+    "vegetables": "https://i.postimg.cc/dQnmb4WX/categorias_verduras.jpg",
+    "groceries": "https://i.postimg.cc/Df5d9BCH/categorias_abarrotes.jpg",
+    "avatars": {
+      "maria": "https://randomuser.me/api/portraits/women/44.jpg",
+      "carlos": "https://randomuser.me/api/portraits/men/32.jpg",
+      "laura": "https://randomuser.me/api/portraits/women/68.jpg"
+    }
+  }
+}
