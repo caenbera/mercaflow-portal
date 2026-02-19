@@ -11,10 +11,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { MoreHorizontal, UserPlus, Search, Crown, Star, Pencil, History, CheckCircle, XCircle, Trash2, Shield, Award } from 'lucide-react';
+import { MoreHorizontal, UserPlus, Search, Crown, Star, Pencil, History, CheckCircle, XCircle, Trash2, Shield, Award, Share2, Globe } from 'lucide-react';
 import type { UserProfile, UserStatus, ClientTier } from '@/types';
 import { ClientFormDialog } from './new-client-dialog';
 import { useUsers } from '@/hooks/use-users';
+import { useOrganizations } from '@/hooks/use-organizations';
+import { useConnections } from '@/hooks/use-connections';
+import { useOrganization } from '@/context/organization-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from '@/navigation';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -37,7 +40,6 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 };
 
-
 const getTierIcon = (tier?: ClientTier) => {
   switch (tier) {
       case 'gold':
@@ -55,18 +57,63 @@ const getTierIcon = (tier?: ClientTier) => {
 
 export function ClientsPageClient() {
   const t = useTranslations('ClientsPage');
-  const { users, loading } = useUsers();
+  const { activeOrgId } = useOrganization();
+  const { users, loading: usersLoading } = useUsers();
+  const { organizations, loading: orgsLoading } = useOrganizations();
+  const { connections, loading: connLoading } = useConnections(activeOrgId);
   const { toast } = useToast();
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<UserProfile | null>(null);
   const [clientToDelete, setClientToDelete] = useState<UserProfile | null>(null);
 
-  const clientUsers = useMemo(() => {
-    return users.filter(user => user.role === 'client');
-  }, [users]);
+  const loading = usersLoading || orgsLoading || connLoading;
+
+  // Combinar Clientes Locales y Clientes de Red
+  const allClients = useMemo(() => {
+    if (loading) return [];
+
+    // 1. Clientes Locales (Usuarios registrados con rol 'client')
+    const localClients = users.filter(user => user.role === 'client').map(u => ({
+        ...u,
+        isNetwork: false,
+    }));
+
+    // 2. Clientes de Red (Edificios que nos han agregado como proveedores)
+    const networkClients = connections
+        .filter(c => c.toOrgId === activeOrgId && c.status === 'accepted')
+        .map(conn => {
+            const org = organizations.find(o => o.id === conn.fromOrgId);
+            if (!org) return null;
+            
+            // Adaptamos el objeto Organization al formato de UserProfile para la tabla
+            return {
+                uid: org.id,
+                businessName: org.name,
+                contactPerson: org.name,
+                email: org.contactEmail || org.ownerEmail || 'N/A',
+                phone: org.phone || 'N/A',
+                address: org.address || '',
+                status: 'active' as UserStatus,
+                tier: 'standard' as ClientTier,
+                creditLimit: 0,
+                createdAt: org.createdAt,
+                role: 'client' as any,
+                isNetwork: true,
+                orgType: org.type
+            };
+        })
+        .filter(Boolean) as (UserProfile & { isNetwork: boolean, orgType?: string })[];
+
+    return [...localClients, ...networkClients];
+  }, [users, connections, organizations, activeOrgId, loading]);
   
 
-  const handleEdit = (client: UserProfile) => {
+  const handleEdit = (client: any) => {
+    if (client.isNetwork) {
+        toast({ title: "Acceso Directo", description: "Este cliente es un edificio vinculado. Puedes editar sus condiciones desde el menú de Red." });
+        return;
+    }
     setSelectedClient(client);
     setIsDialogOpen(true);
   };
@@ -180,10 +227,10 @@ export function ClientsPageClient() {
                                     <TableCell colSpan={5}><Skeleton className="h-10 w-full"/></TableCell>
                                 </TableRow>
                              ))
-                         ) : clientUsers.length > 0 ? (
-                            clientUsers.map(client => {
+                         ) : allClients.length > 0 ? (
+                            allClients.map((client: any) => {
                                 const creditLimit = client.creditLimit || 0;
-                                const creditUsed = 0; // TODO: Calculate this from orders/invoices
+                                const creditUsed = 0; 
                                 const creditUsage = creditLimit > 0 ? Math.round((creditUsed / creditLimit) * 100) : 0;
                                 let creditColorClass = 'bg-green-500';
                                 if (creditUsage > 85) {
@@ -193,16 +240,32 @@ export function ClientsPageClient() {
                                 }
                                 
                                 return (
-                                    <TableRow key={client.uid}>
+                                    <TableRow key={client.uid} className={cn(client.isNetwork && "bg-primary/5")}>
                                         <TableCell>
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="h-10 w-10 rounded-lg">
-                                                    <AvatarFallback className="bg-primary/10 text-primary font-bold">{client.businessName.substring(0,2).toUpperCase()}</AvatarFallback>
+                                                    <AvatarFallback className={cn("font-bold", client.isNetwork ? "bg-slate-900 text-primary" : "bg-primary/10 text-primary")}>
+                                                        {client.businessName.substring(0,2).toUpperCase()}
+                                                    </AvatarFallback>
                                                 </Avatar>
                                                 <div>
-                                                    <Link href={`/admin/clients/${client.uid}`}>
-                                                      <span className="font-bold hover:underline cursor-pointer">{client.businessName}</span>
-                                                    </Link>
+                                                    <div className="flex items-center gap-2">
+                                                        <Link href={client.isNetwork ? `/admin/network` : `/admin/clients/${client.uid}`}>
+                                                            <span className="font-bold hover:underline cursor-pointer">{client.businessName}</span>
+                                                        </Link>
+                                                        {client.isNetwork && (
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Globe className="h-3.5 w-3.5 text-primary" />
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>{t('client_type_network')}</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        )}
+                                                    </div>
                                                     <div className="text-xs text-muted-foreground flex items-center gap-2">
                                                       <TooltipProvider>
                                                         <Tooltip>
@@ -214,13 +277,14 @@ export function ClientsPageClient() {
                                                           </TooltipContent>
                                                         </Tooltip>
                                                       </TooltipProvider>
-                                                      {getTierIcon(client.tier)}
+                                                      {!client.isNetwork && getTierIcon(client.tier)}
+                                                      {client.isNetwork && <span className="text-[10px] font-bold text-slate-400 uppercase">{client.orgType}</span>}
                                                     </div>
                                                 </div>
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="font-semibold">{client.contactPerson || '-'}</div>
+                                            <div className="font-semibold text-sm">{client.contactPerson || '-'}</div>
                                             <div className="text-xs text-muted-foreground">{client.email}</div>
                                         </TableCell>
                                         <TableCell>
@@ -233,9 +297,12 @@ export function ClientsPageClient() {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            {client.status === 'active' && <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">{t('status_active')}</Badge>}
-                                            {client.status === 'pending_approval' && <Badge variant="outline" className="bg-yellow-100 text-yellow-600 border-yellow-200">{t('status_pending_approval')}</Badge>}
-                                            {client.status === 'blocked' && <Badge variant="destructive">{t('status_blocked')}</Badge>}
+                                            <div className="flex flex-col gap-1">
+                                                {client.status === 'active' && <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">{t('status_active')}</Badge>}
+                                                {client.status === 'pending_approval' && <Badge variant="outline" className="bg-yellow-100 text-yellow-600 border-yellow-200">{t('status_pending_approval')}</Badge>}
+                                                {client.status === 'blocked' && <Badge variant="destructive">{t('status_blocked')}</Badge>}
+                                                {client.isNetwork && <span className="text-[9px] font-bold text-primary uppercase ml-1">{t('client_type_network')}</span>}
+                                            </div>
                                         </TableCell>
                                         <TableCell className="text-right">
                                              <DropdownMenu>
@@ -243,24 +310,32 @@ export function ClientsPageClient() {
                                                     <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2 h-4 w-4"/>{t('action_edit')}</DropdownMenuItem>
-                                                    <DropdownMenuItem><History className="mr-2 h-4 w-4"/>{t('action_view_orders')}</DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuLabel>{t('change_status_label')}</DropdownMenuLabel>
-                                                    {client.status === 'pending_approval' && (
-                                                        <DropdownMenuItem onSelect={() => handleStatusChange(client, 'active')}><CheckCircle className="mr-2 h-4 w-4" />{t('action_activate')}</DropdownMenuItem>
+                                                    {!client.isNetwork ? (
+                                                        <>
+                                                            <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2 h-4 w-4"/>{t('action_edit')}</DropdownMenuItem>
+                                                            <DropdownMenuItem><History className="mr-2 h-4 w-4"/>{t('action_view_orders')}</DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuLabel>{t('change_status_label')}</DropdownMenuLabel>
+                                                            {client.status === 'pending_approval' && (
+                                                                <DropdownMenuItem onSelect={() => handleStatusChange(client, 'active')}><CheckCircle className="mr-2 h-4 w-4" />{t('action_activate')}</DropdownMenuItem>
+                                                            )}
+                                                            {client.status === 'active' && (
+                                                                <DropdownMenuItem onSelect={() => handleStatusChange(client, 'blocked')} className="text-destructive focus:text-destructive"><XCircle className="mr-2 h-4 w-4" />{t('action_block')}</DropdownMenuItem>
+                                                            )}
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem onSelect={() => setClientToDelete(client)} className="text-destructive focus:text-destructive">
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                {t('action_delete')}
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <DropdownMenuItem asChild>
+                                                                <Link href="/admin/network"><Share2 className="mr-2 h-4 w-4" /> Gestionar Red</Link>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem><History className="mr-2 h-4 w-4"/> Ver Historial</DropdownMenuItem>
+                                                        </>
                                                     )}
-                                                    {client.status === 'active' && (
-                                                        <DropdownMenuItem onSelect={() => handleStatusChange(client, 'blocked')} className="text-destructive focus:text-destructive"><XCircle className="mr-2 h-4 w-4" />{t('action_block')}</DropdownMenuItem>
-                                                    )}
-                                                     {client.status === 'blocked' && (
-                                                        <DropdownMenuItem onSelect={() => handleStatusChange(client, 'active')}><CheckCircle className="mr-2 h-4 w-4" />{t('action_unblock')}</DropdownMenuItem>
-                                                    )}
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onSelect={() => setClientToDelete(client)} className="text-destructive focus:text-destructive">
-                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                        {t('action_delete')}
-                                                    </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>

@@ -1,6 +1,7 @@
+
 {
-  "title": "Clientes",
-  "subtitle": "Administra cuentas, créditos y accesos.",
+  "title": "Cartera de Clientes",
+  "subtitle": "Gestiona cuentas, créditos y socios vinculados en red.",
   "new_client_button": "Nuevo Cliente",
   "search_placeholder": "Buscar por Nombre, ID o Email...",
   "status_label": "Estado: Todos",
@@ -99,7 +100,7 @@
   "existing_lists_title": "Listas Existentes",
   "no_tiers_desc": "Sin niveles definidos",
   "single_tier_desc": "{discount}% de descuento",
-  "multiple_tiers_desc": "Descuentos de {minDiscount}% a {maxDiscount}%",
+  "multiple_tiers_desc": "Discounts de {minDiscount}% a {maxDiscount}%",
   "from_label": "Desde ($)",
   "to_label": "Hasta ($)",
   "discount_label": "Descuento (%)",
@@ -108,5 +109,7 @@
   "save_changes_button": "Guardar Cambios",
   "create_new_list_button": "Crear Nueva Lista",
   "new_pricelist_name_placeholder": "Ej: Clientes VIP",
-  "pricing_tiers_label": "Niveles de Precios"
+  "pricing_tiers_label": "Niveles de Precios",
+  "client_type_local": "Cliente Local",
+  "client_type_network": "Empresa Vinculada"
 }

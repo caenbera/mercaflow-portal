@@ -6,14 +6,18 @@ import {
   deleteDoc,
   doc,
   getDocs,
-  writeBatch
+  writeBatch,
+  serverTimestamp,
+  query,
+  where,
+  limit
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { Supplier, SupplierInput } from '@/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
-export const addSupplier = (supplierData: SupplierInput) => {
+export const addSupplier = async (supplierData: SupplierInput) => {
   const suppliersCollection = collection(db, 'suppliers');
   
   const newSupplierData: Omit<Supplier, 'id'> = {
@@ -29,7 +33,38 @@ export const addSupplier = (supplierData: SupplierInput) => {
     },
   };
   
-  return addDoc(suppliersCollection, newSupplierData).catch(async (serverError) => {
+  try {
+    const docRef = await addDoc(suppliersCollection, newSupplierData);
+    
+    // RECIPROCIDAD AUTOMÁTICA
+    // Si el usuario está vinculando un edificio existente de la red usando un slug/linkedOrgId
+    if (supplierData.linkedOrgId && supplierData.organizationId) {
+      // Verificamos si ya existe una conexión para no duplicar
+      const connectionsRef = collection(db, 'connections');
+      const q = query(
+        connectionsRef, 
+        where('fromOrgId', '==', supplierData.organizationId),
+        where('toOrgId', '==', supplierData.linkedOrgId),
+        limit(1)
+      );
+      
+      const existingConn = await getDocs(q);
+      
+      if (existingConn.empty) {
+        // Creamos la conexión comercial formal. 
+        // Al ser por "Código de Red", se marca como aceptada automáticamente.
+        await addDoc(connectionsRef, {
+          fromOrgId: supplierData.organizationId,
+          toOrgId: supplierData.linkedOrgId,
+          status: 'accepted',
+          type: 'supplier-client',
+          createdAt: serverTimestamp(),
+        });
+      }
+    }
+    
+    return docRef;
+  } catch (serverError: any) {
     const permissionError = new FirestorePermissionError({
       path: suppliersCollection.path,
       operation: 'create',
@@ -37,7 +72,7 @@ export const addSupplier = (supplierData: SupplierInput) => {
     });
     errorEmitter.emit('permission-error', permissionError);
     throw serverError;
-  });
+  }
 };
 
 export const updateSupplier = (id: string, supplierData: Partial<Supplier>) => {

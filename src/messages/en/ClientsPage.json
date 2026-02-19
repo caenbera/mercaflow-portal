@@ -1,6 +1,7 @@
+
 {
-  "title": "Clients",
-  "subtitle": "Manage accounts, credits, and access.",
+  "title": "Customer Portfolio",
+  "subtitle": "Manage accounts, credits, and network-linked partners.",
   "new_client_button": "New Client",
   "search_placeholder": "Search by Name, ID, or Email...",
   "status_label": "Status: All",
@@ -108,5 +109,7 @@
   "save_changes_button": "Save Changes",
   "create_new_list_button": "Create New List",
   "new_pricelist_name_placeholder": "e.g., VIP Clients",
-  "pricing_tiers_label": "Pricing Tiers"
+  "pricing_tiers_label": "Pricing Tiers",
+  "client_type_local": "Local Client",
+  "client_type_network": "Linked Company"
 }
