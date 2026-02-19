@@ -1,4 +1,3 @@
-
 {
   "title": "Support Center",
   "subtitle": "Manage and resolve customer-submitted tickets.",
@@ -38,5 +37,21 @@
   "issue_option_bad_product": "Damaged Product",
   "issue_option_missing_product": "Missing Item",
   "issue_option_late_order": "Late Order",
-  "issue_option_invoice_problem": "Invoice Issue"
+  "issue_option_invoice_problem": "Invoice Issue",
+  "tab_tickets": "Support Tickets",
+  "tab_faqs": "Manage FAQs",
+  "faq_manager_title": "Frequently Asked Questions (FAQs)",
+  "faq_manager_desc": "Configure answers to common customer questions to reduce tickets.",
+  "add_faq_button": "Add FAQ",
+  "edit_faq_title": "Edit FAQ",
+  "new_faq_title": "Create New FAQ",
+  "faq_question_label_es": "Question (Spanish)",
+  "faq_question_label_en": "Question (English)",
+  "faq_answer_label_es": "Answer (Spanish)",
+  "faq_answer_label_en": "Answer (English)",
+  "toast_faq_saved": "FAQ saved successfully",
+  "toast_faq_deleted": "FAQ removed from portal",
+  "no_faqs_message": "You haven't configured any FAQs yet.",
+  "confirm_delete_faq": "Are you sure you want to delete this FAQ?",
+  "saving": "Saving..."
 }

@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Organization": {
@@ -56,6 +55,31 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "role", "createdAt"]
+    },
+    "FAQ": {
+      "title": "FAQ",
+      "description": "Pregunta frecuente gestionable por la organización.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "question": {
+          "type": "object",
+          "properties": {
+            "es": { "type": "string" },
+            "en": { "type": "string" }
+          }
+        },
+        "answer": {
+          "type": "object",
+          "properties": {
+            "es": { "type": "string" },
+            "en": { "type": "string" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["organizationId", "question", "answer"]
     }
   },
   "auth": {
@@ -77,6 +101,10 @@
     "/products/{prodId}": {
       "schema": { "$ref": "#/entities/Product" },
       "description": "Catálogo de productos segregado por organización."
+    },
+    "/faqs/{faqId}": {
+      "schema": { "$ref": "#/entities/FAQ" },
+      "description": "Preguntas frecuentes del portal de soporte."
     }
   }
 }

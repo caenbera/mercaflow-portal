@@ -1,4 +1,3 @@
-
 {
   "title": "Centro de Soporte",
   "subtitle": "Gestiona y resuelve los tickets enviados por los clientes.",
@@ -38,5 +37,21 @@
   "issue_option_bad_product": "Producto en mal estado",
   "issue_option_missing_product": "Producto faltante",
   "issue_option_late_order": "Pedido atrasado",
-  "issue_option_invoice_problem": "Problema de factura"
+  "issue_option_invoice_problem": "Problema de factura",
+  "tab_tickets": "Tickets de Soporte",
+  "tab_faqs": "Gestionar FAQs",
+  "faq_manager_title": "Preguntas Frecuentes (FAQs)",
+  "faq_manager_desc": "Configura las respuestas a las dudas más comunes de tus clientes para reducir tickets.",
+  "add_faq_button": "Nueva Pregunta",
+  "edit_faq_title": "Editar FAQ",
+  "new_faq_title": "Crear Nueva FAQ",
+  "faq_question_label_es": "Pregunta (Español)",
+  "faq_question_label_en": "Pregunta (Inglés)",
+  "faq_answer_label_es": "Respuesta (Español)",
+  "faq_answer_label_en": "Respuesta (Inglés)",
+  "toast_faq_saved": "FAQ guardada correctamente",
+  "toast_faq_deleted": "FAQ eliminada del portal",
+  "no_faqs_message": "Aún no has configurado preguntas frecuentes.",
+  "confirm_delete_faq": "¿Estás seguro de eliminar esta pregunta frecuente?",
+  "saving": "Guardando..."
 }

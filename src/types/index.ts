@@ -1,4 +1,3 @@
-
 import type { Timestamp } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 
@@ -392,6 +391,14 @@ export interface SupportTicket {
   details: string;
   photoUrl?: string;
   status: 'new' | 'in_progress' | 'resolved';
+  createdAt: Timestamp;
+}
+
+export interface FAQ {
+  id: string;
+  organizationId: string;
+  question: { es: string; en: string };
+  answer: { es: string; en: string };
   createdAt: Timestamp;
 }
 
