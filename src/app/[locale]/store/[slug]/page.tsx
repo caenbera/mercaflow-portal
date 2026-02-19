@@ -167,19 +167,20 @@ export default function PublicStorePage() {
         
         <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center relative z-10">
           <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }}>
-            {/* ETIQUETA VIVA CON EFECTO DE PULSO */}
+            {/* BADGE CON PULSO INTENSIFICADO */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
               className="relative inline-block mb-6"
             >
-              <Badge className="bg-gradient-to-r from-[#e8b931] to-[#f3d060] text-[#1a1a1a] border-none px-5 py-2 rounded-full font-black text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(232,185,49,0.4)] relative overflow-hidden group">
-                <motion.span
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.2, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute inset-0 bg-white rounded-full -z-10"
-                />
+              {/* HALO RADIante */}
+              <motion.div
+                animate={{ scale: [1, 1.4, 1.8], opacity: [0.4, 0.2, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+                className="absolute inset-0 bg-[#e8b931] rounded-full -z-10"
+              />
+              <Badge className="bg-gradient-to-r from-[#e8b931] to-[#f3d060] text-[#1a1a1a] border-none px-5 py-2 rounded-full font-black text-xs uppercase tracking-wider shadow-[0_4px_20px_rgba(232,185,49,0.5)] relative">
                 <Zap className="h-3.5 w-3.5 mr-2 fill-current animate-pulse" /> 
                 {t('store_hero_delivery_badge')}
               </Badge>
@@ -212,6 +213,7 @@ export default function PublicStorePage() {
                 data-ai-hint="supermarket products"
               />
             </div>
+            {/* CARDS FLOTANTES CON REBOTE */}
             <div className="absolute -top-10 -left-10 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3 text-slate-800 animate-bounce">
               <div className="bg-[#2d8a5e] text-white p-2 rounded-lg"><Clock className="h-5 w-5"/></div>
               <div><div className="font-bold text-sm">{t('store_hero_stat_time')}</div><div className="text-[10px] opacity-60">{t('store_hero_stat_time_label')}</div></div>
