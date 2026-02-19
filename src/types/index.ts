@@ -13,6 +13,7 @@ export interface AdminAgreements {
   catalog: boolean;
   operations: boolean;
   finance: boolean;
+  sales: boolean;
 }
 
 export interface StoreTestimonial {

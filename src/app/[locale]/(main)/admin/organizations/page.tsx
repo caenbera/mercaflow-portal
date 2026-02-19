@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -11,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   PlusCircle, Building2, Globe, Truck, ShoppingBag, 
   Store, MoreVertical, Pencil, Trash2, ShieldCheck,
-  Info, MessageSquare, Mail, Lock, Unlock, DatabaseZap, Loader2
+  Info, MessageSquare, Mail, Lock, Unlock, DatabaseZap, Loader2,
+  Target
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OrganizationDialog } from '@/components/admin/organizations/organization-dialog';
@@ -167,7 +167,7 @@ export default function OrganizationsManagementPage() {
                     <span className="font-medium truncate max-w-[150px] text-xs text-slate-700">{org.ownerEmail || "Sin asignar"}</span>
                   </div>
                   
-                  <div className="flex gap-1.5 mt-3">
+                  <div className="flex flex-wrap gap-1.5 mt-3">
                     <Badge variant={org.adminAgreements?.catalog ? "default" : "outline"} className={cn("text-[8px] h-5 px-1.5 gap-1", !org.adminAgreements?.catalog && "opacity-40")}>
                       {org.adminAgreements?.catalog ? <Unlock className="h-2 w-2" /> : <Lock className="h-2 w-2" />} Catálogo
                     </Badge>
@@ -176,6 +176,9 @@ export default function OrganizationsManagementPage() {
                     </Badge>
                     <Badge variant={org.adminAgreements?.finance ? "default" : "outline"} className={cn("text-[8px] h-5 px-1.5 gap-1", !org.adminAgreements?.finance && "opacity-40")}>
                       {org.adminAgreements?.finance ? <Unlock className="h-2 w-2" /> : <Lock className="h-2 w-2" />} Finanzas
+                    </Badge>
+                    <Badge variant={org.adminAgreements?.sales ? "default" : "outline"} className={cn("text-[8px] h-5 px-1.5 gap-1 border-primary/30", org.adminAgreements?.sales ? "bg-primary/10 text-primary" : "opacity-40")}>
+                      <Target className="h-2 w-2" /> Ventas Plus
                     </Badge>
                   </div>
                 </div>

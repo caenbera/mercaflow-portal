@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -95,7 +94,7 @@ export function AppSidebar() {
 
   const getModuleItems = (org: Organization) => {
     const isMyTestOrg = org.ownerId === user?.uid;
-    const agreements = org.adminAgreements || { catalog: false, operations: false, finance: false };
+    const agreements = org.adminAgreements || { catalog: false, operations: false, finance: false, sales: false };
 
     const modules: any = {
       management: [
@@ -145,13 +144,16 @@ export function AppSidebar() {
     if (!isMyTestOrg) {
       if (!agreements.operations) {
         modules.management = modules.management.filter((m: any) => m.href !== '/admin/orders');
-        modules.sales = [];
         modules.administration = [];
         modules.procurement = [];
         modules.warehouse = [];
       }
       if (!agreements.catalog) {
         modules.catalog = [];
+      }
+      // REQUISITO ESPECIAL: Ventas solo si el convenio de sales está activo
+      if (!agreements.sales) {
+        modules.sales = [];
       }
     }
 
@@ -255,7 +257,7 @@ export function AppSidebar() {
                               {hasSomeAccess ? (
                                 <>
                                   <CollapsibleSidebarGroup title={t('group_management')} items={modules.management} icon={LayoutGrid} />
-                                  <CollapsibleSidebarGroup title={t('group_sales')} items={modules.sales} icon={Target} />
+                                  <CollapsibleSidebarGroup title={t('group_sales')} items={modules.sales} icon={Target} activeColor="text-primary" />
                                   <CollapsibleSidebarGroup title={t('group_catalog')} items={modules.catalog} icon={Package} />
                                   <CollapsibleSidebarGroup title={t('group_procurement')} items={modules.procurement} icon={ShoppingBag} />
                                   <CollapsibleSidebarGroup title={t('group_warehouse')} items={modules.warehouse} icon={Boxes} />
