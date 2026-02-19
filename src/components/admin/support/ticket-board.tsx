@@ -1,4 +1,3 @@
-
 // src/components/admin/support/ticket-board.tsx
 "use client";
 
@@ -26,6 +25,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { updateSupportTicket } from '@/lib/firestore/tickets';
 import { SupportTicket } from '@/types';
