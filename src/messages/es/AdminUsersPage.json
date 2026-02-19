@@ -1,7 +1,13 @@
+
 {
   "title": "Gestionar Usuarios",
+  "title_with_org": "Personal de {orgName}",
+  "desc_with_org": "Gestiona quién tiene acceso a las operaciones de este edificio.",
+  "desc_global": "Vista global de todos los usuarios registrados en la plataforma MercaFlow.",
+  "local_access_label": "Control de Acceso Local",
   "invite_title": "Pre-Aprobar Admin / Personal",
   "invite_desc": "Invita a un nuevo administrador o miembro del personal. Se les pedirá que creen una cuenta con el rol que asignes.",
+  "invite_desc_with_org": "Envía una invitación para unir personal a {orgName}.",
   "all_users_title": "Todos los Usuarios",
   "all_users_desc": "Asigna y remueve roles de administrador para los usuarios.",
   "invite_email_label": "Correo Electrónico",
@@ -14,12 +20,22 @@
   "invite_role_salesperson": "Vendedor",
   "invite_button_text": "Pre-Aprobar",
   "invite_button_loading_text": "Pre-Aprobando...",
+  "table_header_user_contact": "Usuario / Contacto",
   "table_header_business": "Nombre del Negocio",
   "table_header_email": "Correo Electrónico",
   "table_header_role": "Rol",
   "table_header_actions": "Acciones",
+  "table_header_org": "Edificio / Negocio",
   "table_action_change_role": "Cambiar Rol",
   "table_action_make_admin": "Hacer Admin",
   "table_action_make_client": "Hacer Cliente",
-  "table_no_users": "No se encontraron otros usuarios."
+  "table_no_users": "No se encontraron otros usuarios.",
+  "table_no_results": "No se encontraron usuarios con estos criterios.",
+  "role_superadmin": "Super Admin",
+  "role_owner": "Propietario",
+  "role_picker": "Picker",
+  "role_purchaser": "Comprador",
+  "role_salesperson": "Vendedor",
+  "menu_access_control": "Control de Acceso",
+  "menu_delete_account": "Eliminar Cuenta"
 }

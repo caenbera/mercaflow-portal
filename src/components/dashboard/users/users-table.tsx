@@ -46,15 +46,15 @@ export function UsersTable({
   const getRoleBadge = (role: UserRole) => {
     switch (role) {
       case 'superadmin': 
-        return <Badge className="bg-slate-900 text-white border-none">Super Admin</Badge>;
+        return <Badge className="bg-slate-900 text-white border-none">{t('role_superadmin')}</Badge>;
       case 'client': 
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Propietario</Badge>;
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">{t('role_owner')}</Badge>;
       case 'picker':
-        return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">Picker</Badge>;
+        return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">{t('role_picker')}</Badge>;
       case 'purchaser':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Comprador</Badge>;
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">{t('role_purchaser')}</Badge>;
       case 'salesperson':
-        return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">Vendedor</Badge>;
+        return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">{t('role_salesperson')}</Badge>;
       default:
         return <Badge variant="secondary">{role}</Badge>;
     }
@@ -65,11 +65,11 @@ export function UsersTable({
       <Table>
         <TableHeader>
           <TableRow className="bg-slate-50/50">
-            <TableHead className="font-bold py-4">Usuario / Contacto</TableHead>
-            <TableHead className="font-bold">Email</TableHead>
-            {isGlobalView && <TableHead className="font-bold">Edificio / Negocio</TableHead>}
-            <TableHead className="font-bold">Rol</TableHead>
-            <TableHead className="text-right pr-6 font-bold">Acciones</TableHead>
+            <TableHead className="font-bold py-4">{t('table_header_user_contact')}</TableHead>
+            <TableHead className="font-bold">{t('table_header_email')}</TableHead>
+            {isGlobalView && <TableHead className="font-bold">{t('table_header_org')}</TableHead>}
+            <TableHead className="font-bold">{t('table_header_role')}</TableHead>
+            <TableHead className="text-right pr-6 font-bold">{t('table_header_actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -95,7 +95,7 @@ export function UsersTable({
                             "text-sm font-medium",
                             user.organizationId ? "text-slate-700" : "text-slate-400 italic"
                         )}>
-                            {user.organizationId ? (orgMap?.[user.organizationId] || 'Cargando...') : 'Sin asignar'}
+                            {user.organizationId ? (orgMap?.[user.organizationId] || '...') : '-'}
                         </span>
                     </div>
                   </TableCell>
@@ -113,17 +113,17 @@ export function UsersTable({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuLabel>Control de Acceso</DropdownMenuLabel>
+                        <DropdownMenuLabel>{t('menu_access_control')}</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         
                         <DropdownMenuItem onSelect={() => onRoleChange(user, 'client')}>
-                          Convertir en Propietario (Admin)
+                          {t('table_action_make_client')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => onRoleChange(user, 'picker')}>
-                          Cambiar a Picker
+                          {t('invite_role_picker')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => onRoleChange(user, 'salesperson')}>
-                          Cambiar a Vendedor
+                          {t('invite_role_salesperson')}
                         </DropdownMenuItem>
                         
                         <DropdownMenuSeparator />
@@ -132,7 +132,7 @@ export function UsersTable({
                             onSelect={() => onDeleteUser?.(user)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Eliminar Cuenta
+                          {t('menu_delete_account')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -145,7 +145,7 @@ export function UsersTable({
               <TableCell colSpan={isGlobalView ? 5 : 4} className="h-32 text-center text-muted-foreground">
                 <div className="flex flex-col items-center gap-2">
                     <ShieldAlert className="h-8 w-8 opacity-20" />
-                    <p>No se encontraron usuarios con estos criterios.</p>
+                    <p>{t('table_no_results')}</p>
                 </div>
               </TableCell>
             </TableRow>

@@ -65,18 +65,18 @@ export default function ManageUsersPage() {
             <div>
                 <h1 className="text-3xl font-bold font-headline flex items-center gap-3 text-slate-900">
                     <Users className="text-primary h-8 w-8" />
-                    {activeOrg ? `Personal de ${activeOrg.name}` : t('title')}
+                    {activeOrg ? t('title_with_org', { orgName: activeOrg.name }) : t('title')}
                 </h1>
                 <p className="text-slate-500 mt-1">
                     {activeOrg 
-                        ? `Gestiona quién tiene acceso a las operaciones de este edificio.` 
-                        : "Vista global de todos los usuarios registrados en la plataforma MercaFlow."}
+                        ? t('desc_with_org') 
+                        : t('desc_global')}
                 </p>
             </div>
             {activeOrg && (
                 <div className="hidden md:flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl border border-blue-100 shadow-sm">
                     <ShieldCheck className="h-5 w-5" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Control de Acceso Local</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">{t('local_access_label')}</span>
                 </div>
             )}
         </div>
@@ -89,7 +89,7 @@ export default function ManageUsersPage() {
                 </CardTitle>
                 <CardDescription className="text-slate-500">
                     {activeOrg 
-                        ? `Envía una invitación para unir personal a ${activeOrg.name}.`
+                        ? t('invite_desc_with_org', { orgName: activeOrg.name })
                         : t('invite_desc')}
                 </CardDescription>
             </CardHeader>

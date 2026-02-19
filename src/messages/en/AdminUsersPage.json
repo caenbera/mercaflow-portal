@@ -1,7 +1,13 @@
+
 {
   "title": "Manage Users",
+  "title_with_org": "Staff of {orgName}",
+  "desc_with_org": "Manage who has access to the operations of this building.",
+  "desc_global": "Global view of all users registered on the MercaFlow platform.",
+  "local_access_label": "Local Access Control",
   "invite_title": "Pre-Approve Admin / Staff",
   "invite_desc": "Invite a new admin or staff member. They will be prompted to create an account with the role you assign.",
+  "invite_desc_with_org": "Send an invitation to join staff at {orgName}.",
   "all_users_title": "All Users",
   "all_users_desc": "Assign and remove admin roles for users.",
   "invite_email_label": "Email Address",
@@ -14,12 +20,22 @@
   "invite_role_salesperson": "Salesperson",
   "invite_button_text": "Pre-Approve",
   "invite_button_loading_text": "Pre-Approving...",
+  "table_header_user_contact": "User / Contact",
   "table_header_business": "Business Name",
   "table_header_email": "Email",
   "table_header_role": "Role",
   "table_header_actions": "Actions",
+  "table_header_org": "Building / Business",
   "table_action_change_role": "Change Role",
   "table_action_make_admin": "Make Admin",
   "table_action_make_client": "Make Client",
-  "table_no_users": "No other users found."
+  "table_no_users": "No other users found.",
+  "table_no_results": "No users found with these criteria.",
+  "role_superadmin": "Super Admin",
+  "role_owner": "Owner",
+  "role_picker": "Picker",
+  "role_purchaser": "Purchaser",
+  "role_salesperson": "Salesperson",
+  "menu_access_control": "Access Control",
+  "menu_delete_account": "Delete Account"
 }
