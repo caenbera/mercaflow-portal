@@ -167,9 +167,24 @@ export default function PublicStorePage() {
         
         <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center relative z-10">
           <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }}>
-            <Badge className="bg-[#e8b931] text-[#1a1a1a] border-none mb-6 px-4 py-2 rounded-full font-bold">
-              <Zap className="h-4 w-4 mr-2" /> {t('store_hero_delivery_badge')}
-            </Badge>
+            {/* ETIQUETA VIVA CON EFECTO DE PULSO */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="relative inline-block mb-6"
+            >
+              <Badge className="bg-gradient-to-r from-[#e8b931] to-[#f3d060] text-[#1a1a1a] border-none px-5 py-2 rounded-full font-black text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(232,185,49,0.4)] relative overflow-hidden group">
+                <motion.span
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.2, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute inset-0 bg-white rounded-full -z-10"
+                />
+                <Zap className="h-3.5 w-3.5 mr-2 fill-current animate-pulse" /> 
+                {t('store_hero_delivery_badge')}
+              </Badge>
+            </motion.div>
+
             <h1 className="text-4xl md:text-6xl font-black leading-tight mb-6">
               {t.rich('store_hero_title_fallback', {
                 yellow: (chunks) => <span className="text-[#e8b931]">{chunks}</span>
