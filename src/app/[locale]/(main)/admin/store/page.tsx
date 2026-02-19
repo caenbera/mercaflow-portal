@@ -24,7 +24,7 @@ import type { StoreConfig, Newsletter } from '@/types';
 import { useNewsletterSubscribers } from '@/hooks/use-newsletter-subscribers';
 import { useNewsletters } from '@/hooks/use-newsletters';
 import { addNewsletter, deleteNewsletter } from '@/lib/firestore/newsletters';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
