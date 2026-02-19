@@ -3,14 +3,14 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { collection, query, where, getDocs, limit, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { Organization, Newsletter } from '@/types';
 import { 
   ShoppingBag, Star, MapPin, Phone, Info, Loader2, Leaf, 
   ChevronRight, Facebook, Instagram, MessageCircle, Send,
   Truck, Clock, Tags, Headset, CheckCircle, Zap, FileDown,
-  X
+  X, Mail
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -248,7 +248,6 @@ export default function PublicStorePage() {
               transition={{ delay: 0.2 }}
               className="relative inline-block mb-6"
             >
-              {/* HALO RADIANTE INTENSIFICADO */}
               <motion.div
                 animate={{ scale: [1, 1.6, 2.2], opacity: [0.6, 0.3, 0] }}
                 transition={{ duration: 2.5, repeat: Infinity, ease: "easeOut" }}
