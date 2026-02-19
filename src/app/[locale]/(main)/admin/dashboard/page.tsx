@@ -40,7 +40,6 @@ import {
   Tag,
   Share2,
   Copy,
-  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -53,6 +52,7 @@ import { useUsers } from '@/hooks/use-users';
 import { useProducts } from '@/hooks/use-products';
 import { usePurchaseOrders } from '@/hooks/use-purchase-orders';
 import { useOrganization } from '@/context/organization-context';
+import { useAuth } from '@/context/auth-context';
 
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -82,9 +82,10 @@ export default function DashboardPage() {
   const t = useTranslations('Dashboard');
   const { toast } = useToast();
   const { activeOrg } = useOrganization();
+  const { userProfile } = useAuth();
 
   const [period, setPeriod] = useState('month');
-  const [currentDate, setCurrentDate] = useState('');
+  const [formattedActivityDate, setFormattedActivityDate] = useState('');
 
   const { orders, loading: ordersLoading } = useAllOrders();
   const { users, loading: usersLoading } = useUsers();
@@ -94,13 +95,17 @@ export default function DashboardPage() {
   const loading = ordersLoading || usersLoading || productsLoading || poLoading;
   
   useEffect(() => {
-    setCurrentDate(new Date().toLocaleDateString(locale, { day: 'numeric', month: 'short' }));
+    const now = new Date();
+    setFormattedActivityDate(format(now, 'd MMM', { locale: locale === 'es' ? es : undefined }));
   }, [locale]);
 
   const copySlug = () => {
     if (!activeOrg?.slug) return;
     navigator.clipboard.writeText(activeOrg.slug);
-    toast({ title: "Código de Red Copiado", description: "Compártelo con tus socios para conectar catálogos." });
+    toast({ 
+      title: t('copy_success_title'), 
+      description: t('copy_success_desc') 
+    });
   };
 
 
@@ -227,10 +232,10 @@ export default function DashboardPage() {
 
    const getStatusBadge = (status: string) => {
     switch(status) {
-      case 'pending': return <Badge className="bg-[#e3f2fd] text-[#2196f3] hover:bg-[#e3f2fd]/80">Nuevo</Badge>;
-      case 'processing': return <Badge className="bg-orange-100 text-orange-600">En Proceso</Badge>;
-      case 'shipped': return <Badge className="bg-[#fff3e0] text-[#ff9800] hover:bg-[#fff3e0]/80">En Ruta</Badge>;
-      case 'delivered': return <Badge className="bg-[#e8f5e9] text-[#2ecc71] hover:bg-[#e8f5e9]/80">Entregado</Badge>;
+      case 'pending': return <Badge className="bg-[#e3f2fd] text-[#2196f3] hover:bg-[#e3f2fd]/80">{t('new_status')}</Badge>;
+      case 'processing': return <Badge className="bg-orange-100 text-orange-600">{t('processing_status')}</Badge>;
+      case 'shipped': return <Badge className="bg-[#fff3e0] text-[#ff9800] hover:bg-[#fff3e0]/80">{t('shipped_status')}</Badge>;
+      case 'delivered': return <Badge className="bg-[#e8f5e9] text-[#2ecc71] hover:bg-[#e8f5e9]/80">{t('delivered_status')}</Badge>;
       default: return <Badge variant="secondary">{status}</Badge>;
     }
   };
@@ -257,8 +262,12 @@ export default function DashboardPage() {
       {/* Welcome & Identity Card */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2">
-          <h1 className="text-3xl font-bold text-gray-800">Hola, Administrador 👋</h1>
-          <p className="text-muted-foreground mt-1">Resumen de actividad, <span id="currentDate">{currentDate}</span></p>
+          <h1 className="text-3xl font-bold text-gray-800">
+            {t('welcome_greeting', { name: userProfile?.contactPerson || 'Admin' })}
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            {t('activity_summary', { date: formattedActivityDate })}
+          </p>
         </div>
         
         {activeOrg && (
@@ -269,12 +278,12 @@ export default function DashboardPage() {
             <CardContent className="p-4 flex flex-col justify-between h-full min-h-[100px]">
                 <div className="flex items-center gap-2 mb-2">
                     <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Identidad en Red MercaFlow</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">{t('identity_card_title')}</span>
                 </div>
                 <div className="flex justify-between items-end">
                     <div className="flex flex-col">
                         <span className="text-2xl font-mono font-black text-primary tracking-tighter">{activeOrg.slug}</span>
-                        <span className="text-[9px] text-slate-500 font-medium">Comparte este código con tus socios</span>
+                        <span className="text-[9px] text-slate-500 font-medium">{t('identity_card_desc')}</span>
                     </div>
                     <Button 
                         size="sm" 
@@ -283,7 +292,7 @@ export default function DashboardPage() {
                         onClick={copySlug}
                     >
                         <Copy className="h-3 w-3" />
-                        Copiar
+                        {t('copy_button')}
                     </Button>
                 </div>
             </CardContent>
@@ -335,7 +344,7 @@ export default function DashboardPage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 shadow-sm rounded-2xl p-6 border-gray-100">
-          <h3 className="font-bold text-lg text-gray-800 mb-4">Rendimiento de Ventas (Últ. 7 días)</h3>
+          <h3 className="font-bold text-lg text-gray-800 mb-4">{t('sales_performance_title')}</h3>
           <div className="h-80">
             {loading ? <Skeleton className="h-full w-full" /> : 
             <ResponsiveContainer width="100%" height="100%">
@@ -344,7 +353,7 @@ export default function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" tickLine={false} axisLine={false} dy={10} stroke="#94a3b8" fontSize={12} />
                 <YAxis tickLine={false} axisLine={false} dx={-10} tickFormatter={(value) => formatCurrency(value)} stroke="#94a3b8" fontSize={12} />
-                <Tooltip contentStyle={{ borderRadius: '0.75rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0' }} itemStyle={{ fontWeight: '600' }} labelStyle={{ fontWeight: 'normal', color: '#64748b' }} formatter={(value: number) => [formatCurrency(value), 'Ventas']} />
+                <Tooltip contentStyle={{ borderRadius: '0.75rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0' }} itemStyle={{ fontWeight: '600' }} labelStyle={{ fontWeight: 'normal', color: '#64748b' }} formatter={(value: number) => [formatCurrency(value), t('sales_chart_label')]} />
                 <Area type="monotone" dataKey="sales" stroke="#27ae60" strokeWidth={3} fill="url(#colorSales)" />
               </AreaChart>
             </ResponsiveContainer>}
@@ -352,7 +361,7 @@ export default function DashboardPage() {
         </Card>
 
         <Card className="shadow-sm rounded-2xl p-6 border-gray-100">
-          <h3 className="font-bold text-lg text-gray-800 mb-4">Top Categorías</h3>
+          <h3 className="font-bold text-lg text-gray-800 mb-4">{t('top_categories_title')}</h3>
           <div className="h-80 flex items-center justify-center">
              {loading ? <Skeleton className="h-64 w-64 rounded-full" /> : 
              (categoryChartData && categoryChartData.length > 0) ? (
@@ -365,7 +374,7 @@ export default function DashboardPage() {
                     <Tooltip formatter={(value, name) => [`${value}%`, name]} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
                 </PieChart>
                 </ResponsiveContainer>
-              ) : <p className="text-sm text-muted-foreground">No hay datos de ventas para mostrar</p>
+              ) : <p className="text-sm text-muted-foreground">{t('no_sales_data')}</p>
             }
           </div>
         </Card>
@@ -374,8 +383,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <Card className="shadow-sm rounded-2xl p-6 border-gray-100 overflow-hidden">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-lg text-gray-800">Pedidos Recientes</h3>
-            <Button variant="link" size="sm" onClick={() => router.push('/admin/orders')}>Ver Todos</Button>
+            <h3 className="font-bold text-lg text-gray-800">{t('recent_orders_title')}</h3>
+            <Button variant="link" size="sm" onClick={() => router.push('/admin/orders')}>{t('view_all_button')}</Button>
           </div>
           {loading ? <Skeleton className="h-48 w-full" /> :
           <div className="overflow-x-auto">
@@ -390,14 +399,14 @@ export default function DashboardPage() {
                     <TableCell>{getStatusBadge(order.status)}</TableCell>
                     <TableCell className="text-right"><Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => router.push('/admin/orders')}><Eye className="h-4 w-4" /></Button></TableCell>
                     </TableRow>
-                )) : <TableRow><TableCell colSpan={5} className="text-center h-24">No hay pedidos recientes.</TableCell></TableRow>}
+                )) : <TableRow><TableCell colSpan={5} className="text-center h-24">{t('no_recent_orders')}</TableCell></TableRow>}
                 </TableBody>
             </Table>
           </div>}
         </Card>
 
          <Card className="shadow-sm rounded-2xl p-6 border-gray-100">
-            <h3 className="font-bold text-lg text-gray-800 mb-4 flex items-center gap-2"><AlertTriangle className="text-yellow-500 h-5 w-5" /> Alertas de Stock Bajo</h3>
+            <h3 className="font-bold text-lg text-gray-800 mb-4 flex items-center gap-2"><AlertTriangle className="text-yellow-500 h-5 w-5" /> {t('low_stock_alerts_title')}</h3>
             {loading ? <Skeleton className="h-48 w-full" /> :
             <div className="space-y-4">
               {lowStockProducts.length > 0 ? lowStockProducts.slice(0,3).map((product) => (
@@ -410,12 +419,12 @@ export default function DashboardPage() {
                         <small className="text-[10px] font-mono text-gray-400 uppercase">{product.sku}</small>
                     </div>
                     <div className="text-right shrink-0">
-                        <div className="font-bold text-red-600 text-sm">{product.stock} restantes</div>
-                        <div className="text-[9px] font-bold text-yellow-600 uppercase tracking-tighter">Mínimo: {product.minStock}</div>
+                        <div className="font-bold text-red-600 text-sm">{product.stock} {t('remaining')}</div>
+                        <div className="text-[9px] font-bold text-yellow-600 uppercase tracking-tighter">{t('minimum_stock')} {product.minStock}</div>
                     </div>
                 </div>
-              )) : <p className="text-sm text-muted-foreground text-center py-8">¡Todo el inventario está en orden!</p>}
-              {lowStockProducts.length > 0 && <Button className="w-full mt-2 rounded-xl h-11 bg-slate-100 text-slate-900 hover:bg-slate-200 border-none shadow-none font-bold" variant="secondary" onClick={() => router.push('/admin/purchasing')}>Ir a Compras</Button>}
+              )) : <p className="text-sm text-muted-foreground text-center py-8">{t('inventory_all_set')}</p>}
+              {lowStockProducts.length > 0 && <Button className="w-full mt-2 rounded-xl h-11 bg-slate-100 text-slate-900 hover:bg-slate-200 border-none shadow-none font-bold" variant="secondary" onClick={() => router.push('/admin/purchasing')}>{t('go_to_purchasing')}</Button>}
             </div>}
          </Card>
       </div>
