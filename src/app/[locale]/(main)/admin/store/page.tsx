@@ -16,11 +16,11 @@ import {
   Image as ImageIcon, Check, Loader2, Layout, Share2, 
   MailQuestion, Users, Plus, Send, Calendar as CalendarIcon,
   Mail, MousePointer2, Clock, Trash2, FileDown, X, MailCheck, ShieldCheck, HelpCircle, AlertTriangle,
-  ChevronRight, Info, Lock
+  ChevronRight, Info, Lock, CreditCard, Wallet, Zap
 } from 'lucide-react';
 import { updateOrganization } from '@/lib/firestore/organizations';
 import { useToast } from '@/hooks/use-toast';
-import type { StoreConfig, Newsletter, EmailConfig } from '@/types';
+import type { StoreConfig, Newsletter, EmailConfig, PaymentConfig } from '@/types';
 import { useNewsletterSubscribers } from '@/hooks/use-newsletter-subscribers';
 import { useNewsletters } from '@/hooks/use-newsletters';
 import { addNewsletter, deleteNewsletter } from '@/lib/firestore/newsletters';
@@ -77,6 +77,16 @@ export default function StoreManagementPage() {
     verified: false,
   });
 
+  const [paymentConfig, setPaymentConfig] = useState<PaymentConfig>({
+    provider: 'none',
+    publicKey: '',
+    secretKey: '',
+    webhookSecret: '',
+    currency: 'USD',
+    mode: 'test',
+    enabled: false,
+  });
+
   const [campaignForm, setCampaignForm] = useState({
     subject: '',
     message: '',
@@ -104,6 +114,10 @@ export default function StoreManagementPage() {
 
       if (activeOrg.storeConfig?.emailConfig) {
         setEmailConfig(activeOrg.storeConfig.emailConfig);
+      }
+
+      if (activeOrg.storeConfig?.paymentConfig) {
+        setPaymentConfig(activeOrg.storeConfig.paymentConfig);
       }
     }
   }, [activeOrg]);
@@ -135,6 +149,7 @@ export default function StoreManagementPage() {
         },
         minOrderAmount: formData.minOrderAmount,
         emailConfig: emailConfig,
+        paymentConfig: paymentConfig,
       };
 
       await updateOrganization(activeOrgId, {
@@ -335,6 +350,13 @@ export default function StoreManagementPage() {
                     onClick={() => setActiveTab('email')}
                 >
                     <MailCheck className="mr-3 h-4 w-4" /> {t('tab_email')}
+                </Button>
+                <Button 
+                    variant={activeTab === 'payments' ? 'secondary' : 'ghost'} 
+                    className="w-full justify-start h-12 rounded-xl"
+                    onClick={() => setActiveTab('payments')}
+                >
+                    <CreditCard className="mr-3 h-4 w-4" /> {t('tab_payments')}
                 </Button>
             </div>
         </div>
@@ -699,6 +721,146 @@ export default function StoreManagementPage() {
                                         <CardContent className="p-4 flex gap-3 items-start">
                                             <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                                             <p className="text-xs text-slate-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: t.raw('email_info_card') }}></p>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'payments' && (
+                        <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+                            <div className="flex justify-between items-start">
+                                <div className="space-y-1">
+                                    <h3 className="text-xl font-bold flex items-center gap-2">
+                                        <Wallet className="text-primary h-6 w-6" />
+                                        {t('payments_title')}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground">{t('payments_subtitle')}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-muted-foreground uppercase">{paymentConfig.enabled ? t('payments_status_enabled') : t('payments_status_disabled')}</span>
+                                    <Switch 
+                                        checked={paymentConfig.enabled} 
+                                        onCheckedChange={(val) => setPaymentConfig(prev => ({...prev, enabled: val}))} 
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="font-bold">{t('payments_provider_label')}</Label>
+                                            <Select 
+                                                value={paymentConfig.provider} 
+                                                onValueChange={(val: any) => setPaymentConfig(prev => ({...prev, provider: val}))}
+                                            >
+                                                <SelectTrigger className="h-12 bg-slate-50 rounded-xl">
+                                                    <SelectValue placeholder={t('payments_provider_placeholder')} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">None</SelectItem>
+                                                    <SelectItem value="stripe">{t('payments_provider_stripe')}</SelectItem>
+                                                    <SelectItem value="paypal">{t('payments_provider_paypal')}</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="font-bold">{t('payments_mode_label')}</Label>
+                                            <Select 
+                                                value={paymentConfig.mode} 
+                                                onValueChange={(val: any) => setPaymentConfig(prev => ({...prev, mode: val}))}
+                                            >
+                                                <SelectTrigger className="h-12 bg-slate-50 rounded-xl">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="test">{t('payments_mode_test')}</SelectItem>
+                                                    <SelectItem value="live">{t('payments_mode_live')}</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="font-bold">{t('payments_public_key_label')}</Label>
+                                        <div className="relative">
+                                            <Zap className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                            <Input 
+                                                placeholder="pk_test_..."
+                                                className="h-12 pl-10 bg-slate-50 rounded-xl"
+                                                value={paymentConfig.publicKey}
+                                                onChange={(e) => setPaymentConfig(prev => ({...prev, publicKey: e.target.value}))}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="font-bold">{t('payments_secret_key_label')}</Label>
+                                        <div className="relative">
+                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                            <Input 
+                                                type="password"
+                                                placeholder="sk_test_..."
+                                                className="h-12 pl-10 bg-slate-50 rounded-xl"
+                                                value={paymentConfig.secretKey}
+                                                onChange={(e) => setPaymentConfig(prev => ({...prev, secretKey: e.target.value}))}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="font-bold">{t('payments_webhook_label')}</Label>
+                                            <Input 
+                                                placeholder="whsec_..."
+                                                className="h-12 bg-slate-50 rounded-xl"
+                                                value={paymentConfig.webhookSecret}
+                                                onChange={(e) => setPaymentConfig(prev => ({...prev, webhookSecret: e.target.value}))}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="font-bold">{t('payments_currency_label')}</Label>
+                                            <Select 
+                                                value={paymentConfig.currency} 
+                                                onValueChange={(val) => setPaymentConfig(prev => ({...prev, currency: val}))}
+                                            >
+                                                <SelectTrigger className="h-12 bg-slate-50 rounded-xl">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="USD">USD</SelectItem>
+                                                    <SelectItem value="COP">COP</SelectItem>
+                                                    <SelectItem value="MXN">MXN</SelectItem>
+                                                    <SelectItem value="EUR">EUR</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="p-6 bg-slate-900 text-white rounded-3xl border shadow-xl">
+                                        <h4 className="font-bold flex items-center gap-2 mb-4">
+                                            <HelpCircle className="h-4 w-4 text-primary" />
+                                            {t('payments_how_to_title')}
+                                        </h4>
+                                        <ol className="space-y-4 text-sm text-slate-300 list-decimal pl-4">
+                                            <li dangerouslySetInnerHTML={{ __html: t.raw('payments_step_1') }}></li>
+                                            <li dangerouslySetInnerHTML={{ __html: t.raw('payments_step_2') }}></li>
+                                            <li dangerouslySetInnerHTML={{ __html: t.raw('payments_step_3') }}></li>
+                                            <li dangerouslySetInnerHTML={{ __html: t.raw('payments_step_4') }}></li>
+                                        </ol>
+                                        <Button variant="link" className="text-primary p-0 h-auto mt-4 font-bold">
+                                            {t('email_guide_button')} <ChevronRight className="h-4 w-4 ml-1" />
+                                        </Button>
+                                    </div>
+
+                                    <Card className="border-primary/20 bg-primary/5">
+                                        <CardContent className="p-4 flex gap-3 items-start">
+                                            <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                                            <p className="text-xs text-slate-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: t.raw('payments_info_card') }}></p>
                                         </CardContent>
                                     </Card>
                                 </div>

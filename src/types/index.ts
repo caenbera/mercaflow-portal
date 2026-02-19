@@ -37,6 +37,16 @@ export interface EmailConfig {
   verified: boolean;
 }
 
+export interface PaymentConfig {
+  provider: 'stripe' | 'paypal' | 'none';
+  publicKey?: string;
+  secretKey?: string;
+  webhookSecret?: string;
+  currency: string;
+  mode: 'test' | 'live';
+  enabled: boolean;
+}
+
 export interface StoreConfig {
   enabled: boolean;
   themeColor?: string;
@@ -68,6 +78,7 @@ export interface StoreConfig {
   minOrderAmount?: number;
   newsletterEnabled?: boolean;
   emailConfig?: EmailConfig;
+  paymentConfig?: PaymentConfig;
 }
 
 export interface Organization {
