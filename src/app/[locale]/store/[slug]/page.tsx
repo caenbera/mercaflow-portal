@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { collection, query, where, getDocs, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -73,6 +73,32 @@ export default function PublicStorePage() {
     }
   };
 
+  const testimonials = useMemo(() => {
+    const config = org?.storeConfig;
+    const avatars = (config as any)?.testimonialAvatars;
+
+    return [
+      { 
+        name: t('store_testi1_name'), 
+        role: t('store_testi1_role'), 
+        text: t('store_testi1_text'),
+        avatar: avatars?.t1 || placeholders.store.avatars.maria
+      },
+      { 
+        name: t('store_testi2_name'), 
+        role: t('store_testi2_role'), 
+        text: t('store_testi2_text'),
+        avatar: avatars?.t2 || placeholders.store.avatars.carlos
+      },
+      { 
+        name: t('store_testi3_name'), 
+        role: t('store_testi3_role'), 
+        text: t('store_testi3_text'),
+        avatar: avatars?.t3 || placeholders.store.avatars.laura
+      }
+    ];
+  }, [org, t]);
+
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-4">
       <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -93,7 +119,6 @@ export default function PublicStorePage() {
 
   const config = org.storeConfig;
 
-  // IMAGENES POR DEFECTO USANDO EL ARCHIVO DE REFERENCIA
   const defaultImages = {
     hero: placeholders.store.hero,
     fruits: placeholders.store.fruits,
@@ -103,7 +128,6 @@ export default function PublicStorePage() {
 
   return (
     <div className="min-h-screen bg-[#f8faf8] font-sans overflow-x-hidden">
-      {/* NAVBAR */}
       <nav className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-md shadow-sm">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2 text-[#1a5f3f] font-extrabold text-xl">
@@ -136,7 +160,6 @@ export default function PublicStorePage() {
         </div>
       </nav>
 
-      {/* HERO SECTION */}
       <section id="inicio" className="relative min-h-screen pt-20 flex items-center bg-gradient-to-br from-[#1a5f3f] to-[#2d8a5e] overflow-hidden text-white">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M 60 0 L 0 0 0 60" fill="none" stroke="white" strokeWidth="1"/></pattern></defs><rect width="100%" height="100%" fill="url(#grid)" /></svg>
@@ -174,7 +197,6 @@ export default function PublicStorePage() {
                 data-ai-hint="supermarket products"
               />
             </div>
-            {/* Floating Cards */}
             <div className="absolute -top-10 -left-10 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3 text-slate-800 animate-bounce">
               <div className="bg-[#2d8a5e] text-white p-2 rounded-lg"><Clock className="h-5 w-5"/></div>
               <div><div className="font-bold text-sm">{t('store_hero_stat_time')}</div><div className="text-[10px] opacity-60">{t('store_hero_stat_time_label')}</div></div>
@@ -187,7 +209,6 @@ export default function PublicStorePage() {
         </div>
       </section>
 
-      {/* BENEFITS */}
       <section id="beneficios" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
@@ -215,7 +236,6 @@ export default function PublicStorePage() {
         </div>
       </section>
 
-      {/* CATEGORIES */}
       <section id="categorias" className="py-24 bg-[#f8faf8]">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-16">{t('store_categories_title')}</h2>
@@ -240,7 +260,6 @@ export default function PublicStorePage() {
         </div>
       </section>
 
-      {/* TESTIMONIALS */}
       <section className="py-24 bg-gradient-to-br from-[#1a5f3f] to-[#2d8a5e] text-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
@@ -248,26 +267,7 @@ export default function PublicStorePage() {
             <h2 className="text-3xl md:text-4xl font-extrabold">{t('store_testimonials_title')}</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { 
-                name: "María González", 
-                role: "Cliente habitual", 
-                text: "Increíble la frescura de las verduras. Llegaron en 45 minutos y todo estaba perfectamente seleccionado. Mi familia notó la diferencia.",
-                avatar: placeholders.store.avatars.maria
-              },
-              { 
-                name: "Carlos Mendoza", 
-                role: "Restaurante El Sabor", 
-                text: "Como dueño de restaurante, necesito calidad constante. Supermercado Fresco nunca me ha fallado. El servicio al cliente es excepcional.",
-                avatar: placeholders.store.avatars.carlos
-              },
-              { 
-                name: "Laura Jiménez", 
-                role: "Profesional ocupada", 
-                text: "La app es súper fácil de usar. Puedo hacer el pedido desde el trabajo y llego a casa justo cuando llegan los productos. ¡Genial!",
-                avatar: placeholders.store.avatars.laura
-              }
-            ].map((test, i) => (
+            {testimonials.map((test, i) => (
               <div key={i} className="bg-white/10 backdrop-blur-md p-10 rounded-3xl border border-white/20 hover:-translate-y-2 transition-transform duration-300">
                 <div className="flex text-[#e8b931] mb-6 gap-1">
                   {[...Array(5)].map((_, s) => (
@@ -290,7 +290,6 @@ export default function PublicStorePage() {
         </div>
       </section>
 
-      {/* CTA BOX */}
       <section className="py-24 bg-white">
         <div className="max-w-5xl mx-auto px-4">
           <div className="bg-gradient-to-br from-[#1a5f3f] to-[#2d8a5e] rounded-[40px] p-12 md:p-20 text-center text-white relative overflow-hidden shadow-2xl">
@@ -311,7 +310,6 @@ export default function PublicStorePage() {
         </div>
       </section>
 
-      {/* FOOTER */}
       <footer className="bg-[#1a1a1a] text-white pt-20 pb-10">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-12 mb-16">

@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { 
   ShoppingBag, Globe, Copy, ExternalLink, 
-  Image as ImageIcon, Check, Loader2, Layout, Share2, MailQuestion
+  Image as ImageIcon, Check, Loader2, Layout, Share2, MailQuestion, Users
 } from 'lucide-react';
 import { updateOrganization } from '@/lib/firestore/organizations';
 import { useToast } from '@/hooks/use-toast';
@@ -25,7 +25,7 @@ export default function StoreManagementPage() {
   const t = useTranslations('B2CStore');
   
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('images'); // Default changed from general to images
+  const [activeTab, setActiveTab] = useState('images'); 
   
   const [formData, setFormData] = useState({
     enabled: false,
@@ -33,6 +33,9 @@ export default function StoreManagementPage() {
     fruitsImage: '',
     veggiesImage: '',
     groceriesImage: '',
+    testi1Image: '',
+    testi2Image: '',
+    testi3Image: '',
     contactPhone: '',
     contactWhatsapp: '',
     contactAddress: '',
@@ -49,6 +52,9 @@ export default function StoreManagementPage() {
         fruitsImage: activeOrg.storeConfig?.categoriesImages?.fruits || '',
         veggiesImage: activeOrg.storeConfig?.categoriesImages?.vegetables || '',
         groceriesImage: activeOrg.storeConfig?.categoriesImages?.groceries || '',
+        testi1Image: (activeOrg.storeConfig as any)?.testimonialAvatars?.t1 || '',
+        testi2Image: (activeOrg.storeConfig as any)?.testimonialAvatars?.t2 || '',
+        testi3Image: (activeOrg.storeConfig as any)?.testimonialAvatars?.t3 || '',
         contactPhone: activeOrg.storeConfig?.contactPhone || '',
         contactWhatsapp: activeOrg.storeConfig?.contactWhatsapp || '',
         contactAddress: activeOrg.storeConfig?.contactAddress || activeOrg.address || '',
@@ -67,12 +73,16 @@ export default function StoreManagementPage() {
         storeConfig: {
           ...activeOrg?.storeConfig,
           enabled: formData.enabled,
-          // We no longer save custom hero titles/subtitles from the UI
           heroImage: formData.heroImage,
           categoriesImages: {
             fruits: formData.fruitsImage,
             vegetables: formData.veggiesImage,
             groceries: formData.groceriesImage,
+          },
+          testimonialAvatars: {
+            t1: formData.testi1Image,
+            t2: formData.testi2Image,
+            t3: formData.testi3Image,
           },
           contactPhone: formData.contactPhone,
           contactWhatsapp: formData.contactWhatsapp,
@@ -134,7 +144,6 @@ export default function StoreManagementPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         
-        {/* SIDEBAR DE OPCIONES */}
         <div className="lg:col-span-1 space-y-4">
             <Card className="bg-slate-900 text-white overflow-hidden border-none shadow-xl">
                 <CardHeader className="pb-4">
@@ -178,12 +187,11 @@ export default function StoreManagementPage() {
                     className="w-full justify-start h-12 rounded-xl"
                     onClick={() => setActiveTab('marketing')}
                 >
-                    <MailQuestion className="mr-3 h-4 w-4" /> Configuración Pro
+                    <MailQuestion className="mr-3 h-4 w-4" /> {t('tab_marketing')}
                 </Button>
             </div>
         </div>
 
-        {/* AREA DE EDICIÓN */}
         <div className="lg:col-span-3">
             <Card className="border-none shadow-md overflow-hidden">
                 <CardContent className="p-6 md:p-8">
@@ -191,21 +199,25 @@ export default function StoreManagementPage() {
                         <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
                             <div className="space-y-4">
                                 <h3 className="font-bold flex items-center gap-2 text-primary border-b pb-2"><ImageIcon className="h-4 w-4"/> {t('main_images_title')}</h3>
-                                <div className="grid gap-4">
-                                    <div className="grid gap-2">
+                                <div className="grid gap-2">
+                                    <div className="flex justify-between items-center">
                                         <Label className="text-xs font-semibold">{t('hero_image_label')}</Label>
-                                        <Input 
-                                            value={formData.heroImage} 
-                                            onChange={(e) => setFormData(prev => ({...prev, heroImage: e.target.value}))}
-                                            placeholder="https://..."
-                                            className="bg-slate-50"
-                                        />
+                                        <span className="text-[10px] text-muted-foreground font-medium">{t('size_hint_hero')}</span>
                                     </div>
+                                    <Input 
+                                        value={formData.heroImage} 
+                                        onChange={(e) => setFormData(prev => ({...prev, heroImage: e.target.value}))}
+                                        placeholder="https://..."
+                                        className="bg-slate-50"
+                                    />
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                <h3 className="font-bold flex items-center gap-2 text-primary border-b pb-2"><ShoppingBag className="h-4 w-4"/> {t('category_images_title')}</h3>
+                                <div className="flex justify-between items-end border-b pb-2">
+                                    <h3 className="font-bold flex items-center gap-2 text-primary"><ShoppingBag className="h-4 w-4"/> {t('category_images_title')}</h3>
+                                    <span className="text-[10px] text-muted-foreground font-medium">{t('size_hint_category')}</span>
+                                </div>
                                 <div className="grid md:grid-cols-3 gap-4">
                                     <div className="grid gap-2">
                                         <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('fruits_label')}</Label>
@@ -230,6 +242,42 @@ export default function StoreManagementPage() {
                                         <Input 
                                             value={formData.groceriesImage} 
                                             onChange={(e) => setFormData(prev => ({...prev, groceriesImage: e.target.value}))}
+                                            placeholder={t('url_placeholder')}
+                                            className="bg-slate-50"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-end border-b pb-2">
+                                    <h3 className="font-bold flex items-center gap-2 text-primary"><Users className="h-4 w-4"/> {t('testimonial_images_title')}</h3>
+                                    <span className="text-[10px] text-muted-foreground font-medium">{t('size_hint_avatar')}</span>
+                                </div>
+                                <div className="grid md:grid-cols-3 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('avatar_label_1')}</Label>
+                                        <Input 
+                                            value={formData.testi1Image} 
+                                            onChange={(e) => setFormData(prev => ({...prev, testi1Image: e.target.value}))}
+                                            placeholder={t('url_placeholder')}
+                                            className="bg-slate-50"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('avatar_label_2')}</Label>
+                                        <Input 
+                                            value={formData.testi2Image} 
+                                            onChange={(e) => setFormData(prev => ({...prev, testi2Image: e.target.value}))}
+                                            placeholder={t('url_placeholder')}
+                                            className="bg-slate-50"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('avatar_label_3')}</Label>
+                                        <Input 
+                                            value={formData.testi3Image} 
+                                            onChange={(e) => setFormData(prev => ({...prev, testi3Image: e.target.value}))}
                                             placeholder={t('url_placeholder')}
                                             className="bg-slate-50"
                                         />
