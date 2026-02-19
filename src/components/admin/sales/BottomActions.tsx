@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -25,7 +26,7 @@ export function BottomActions({ prospects, onClear, onGenerate, onRemove }: Bott
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <div className="px-4 pt-3">
           <CollapsibleTrigger className="flex justify-between items-center w-full text-left -mx-1 px-1 py-1 rounded-md hover:bg-muted">
-            <h3 className="font-bold text-sm text-foreground">Prospectos Seleccionados ({prospects.length})</h3>
+            <h3 className="font-bold text-sm text-foreground">{t('selected_prospects_label')} ({prospects.length})</h3>
             <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", isOpen && "rotate-180")} />
           </CollapsibleTrigger>
         </div>
@@ -52,15 +53,15 @@ export function BottomActions({ prospects, onClear, onGenerate, onRemove }: Bott
       </Collapsible>
       
       <div className="p-3 mt-2 border-t bg-card/50 flex items-center justify-between gap-3">
-        <div className="text-sm font-semibold">
+        <div className="text-sm font-semibold truncate max-w-[150px]">
           {t('create_route_button', { count: prospects.length })}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="h-9" onClick={onClear}>
-            <Trash2 className="h-4 w-4 mr-2" /> Limpiar
+          <Button variant="ghost" size="sm" className="h-9 px-2" onClick={onClear}>
+            <Trash2 className="h-4 w-4 mr-1.5" /> {t('smart_cluster_clear')}
           </Button>
-          <Button className="h-9" onClick={onGenerate}>
-            <Route className="h-4 w-4 mr-2" /> {t('action_route')}
+          <Button className="h-9 font-bold px-4" onClick={onGenerate}>
+            <Route className="h-4 w-4 mr-1.5" /> {t('action_route')}
           </Button>
         </div>
       </div>

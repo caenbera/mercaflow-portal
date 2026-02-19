@@ -1,11 +1,12 @@
+
 'use client';
 import { useMemo } from 'react';
-import { Trophy, Handshake, DollarSign, Footprints, CheckCircle } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 import { useProspects } from '@/hooks/use-prospects';
 import { Skeleton } from '@/components/ui/skeleton';
 import { startOfToday, isSameDay, format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 const formatCurrency = (value: number) => {
   if (value >= 1000) {
@@ -16,6 +17,7 @@ const formatCurrency = (value: number) => {
 
 export function SalesDashboard() {
   const locale = useLocale();
+  const t = useTranslations('AdminSalesPage');
   const { prospects, loading } = useProspects();
 
   const today = new Date();
@@ -27,8 +29,6 @@ export function SalesDashboard() {
 
     const startOfTodayDate = startOfToday();
 
-    // Counts prospects whose status was updated to 'visited' today.
-    // This is a proxy for daily visits.
     const visitsToday = prospects.filter(p =>
       p.status === 'visited' && p.updatedAt && isSameDay(p.updatedAt.toDate(), startOfTodayDate)
     ).length;
@@ -68,17 +68,17 @@ export function SalesDashboard() {
     <div className="sales-dashboard">
       <div className="dashboard-header">
         <div className="dashboard-title">
-          <Trophy size={16} className="inline mr-1" /> Tu Rendimiento Hoy
+          <Trophy size={16} className="inline mr-1" /> {t('dashboard_performance_title')}
         </div>
         {loading ? <Skeleton className="h-5 w-24" /> : 
         <div className="dashboard-date">{format(today, 'dd MMM yyyy', { locale: locale === 'es' ? es : undefined })}</div>
         }
       </div>
       <div className="metrics-grid">
-        {renderMetric(stats.visits, "Visitas")}
-        {renderMetric(stats.negotiating, "Negociando")}
-        {renderMetric(stats.closed, "Cerrados")}
-        {renderMetric(formatCurrency(stats.pipeline), "Pipeline")}
+        {renderMetric(stats.visits, t('action_visit'))}
+        {renderMetric(stats.negotiating, t('metric_negotiating'))}
+        {renderMetric(stats.closed, t('metric_closed'))}
+        {renderMetric(formatCurrency(stats.pipeline), t('metric_pipeline'))}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-// src/components/admin/sales/prospect-card.tsx
+
 'use client';
 
 import { useState } from 'react';
@@ -9,16 +9,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { 
   MapPin, Phone, Check, Navigation, Plus, Minus, 
   Pencil, BotMessageSquare, Clock, CircleDot, UserX, 
-  Globe, ChevronDown, Route, Store, Utensils, Beef
+  Globe, Collapsible, CollapsibleContent, CollapsibleTrigger,
+  Store, Utensils, Beef
 } from 'lucide-react';
 import type { Prospect, ProspectStatus, ProspectVisit } from '@/types';
 import { useTranslations, useLocale } from 'next-intl';
 import { cn } from '@/lib/utils';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { useProspectVisits } from '@/hooks/useProspectVisits';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -131,154 +127,134 @@ export function ProspectCard({
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card 
         className={cn(
-          "overflow-hidden transition-all duration-200 border-l-4",
+          "w-full overflow-hidden transition-all duration-200 border-l-4",
           prospect.priority ? "border-l-orange-500" : statusInfo.borderColor,
-          isSelected ? "ring-2 ring-green-600 border-green-600 bg-green-50/30" : "hover:shadow-md",
+          isSelected ? "ring-2 ring-green-600 border-green-600 bg-green-50/30" : "hover:shadow-md shadow-sm",
           isSelectionMode && "cursor-pointer"
         )}
         onClick={handleCardClick}
       >
-        {/* Header Section - Diseño del prototipo */}
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            {/* Left: Selection + Info */}
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-              {isSelectionMode && (
-                <div className="pt-1">
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={(checked) => onSelectionChange(prospect.id, !!checked)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-5 w-5 border-2 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
-                  />
-                </div>
-              )}
-              
-              <div className="flex-1 min-w-0">
-                {/* Name + Status Badge */}
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <h3 className="font-bold text-lg text-gray-900 truncate">
-                    {prospect.name}
-                  </h3>
-                  <Badge 
-                    variant="outline" 
-                    className={cn("text-xs font-semibold px-2 py-0.5 border-0", statusInfo.className)}
-                  >
-                    {statusInfo.label}
-                  </Badge>
-                </div>
-
-                {/* Address with icon */}
-                <div className="flex items-center gap-2 text-gray-600 text-sm mb-2">
-                  <MapPin className="h-4 w-4 text-green-600 shrink-0" />
-                  <span className="truncate">{prospect.address}</span>
-                </div>
-
-                {/* Zone Code - Destacado como en el prototipo */}
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="font-mono text-sm font-bold text-green-700 bg-green-100 px-2 py-1 rounded">
-                    {prospect.zone || 'SIN-ZONA'}
-                  </div>
-                  <div className="flex gap-1">
-                    <Badge variant="secondary" className="text-xs capitalize bg-gray-100 text-gray-700">
-                      {prospect.ethnic}
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs capitalize bg-gray-100 text-gray-700 flex items-center gap-1">
-                      <CategoryIcon category={prospect.category} />
-                      {prospect.category}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Action Buttons - Estilo prototipo */}
-                <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    className="bg-green-600 hover:bg-green-700 text-white h-9"
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
-                      onCheckIn(prospect); 
-                    }}
-                  >
-                    <Check className="h-4 w-4 mr-1.5" />
-                    <span className="hidden sm:inline">{t('action_visit')}</span>
-                    <span className="sm:hidden">Visitar</span>
-                  </Button>
-                  
-                  {!isSelectionMode && (
-                    <CollapsibleTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-9 border-gray-300"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {isOpen ? (
-                          <>
-                            <Minus className="h-4 w-4 mr-1.5" />
-                            Menos
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="h-4 w-4 mr-1.5" />
-                            Más
-                          </>
-                        )}
-                      </Button>
-                    </CollapsibleTrigger>
-                  )}
-                </div>
-              </div>
+        <div className="relative p-3">
+          {!isSelectionMode && (
+            <div className="absolute top-2 right-2 z-10">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(prospect.address)}`, '_blank');
+                }}
+              >
+                <Navigation className="h-4 w-4" />
+              </Button>
             </div>
+          )}
 
-            {/* Right: Distance/Route - Solo si no está en modo selección */}
-            {!isSelectionMode && (
-              <div className="flex flex-col items-end gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(prospect.address)}`, '_blank');
-                  }}
-                >
-                  <Navigation className="h-5 w-5" />
-                </Button>
+          <div className="flex flex-row items-start gap-3">
+            {isSelectionMode && (
+              <div className="pt-1 flex-shrink-0">
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={(checked) => onSelectionChange(prospect.id, !!checked)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-5 w-5 border-2 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                />
               </div>
             )}
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h3 className="font-bold text-sm sm:text-base text-gray-900 truncate pr-6">
+                  {prospect.name}
+                </h3>
+                <Badge 
+                  variant="outline" 
+                  className={cn("text-[10px] font-bold px-1.5 py-0.5 border-0", statusInfo.className)}
+                >
+                  {statusInfo.label}
+                </Badge>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-gray-600 text-xs sm:text-sm mb-2">
+                <MapPin className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                <span className="truncate">{prospect.address}</span>
+              </div>
+
+              <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                <div className="font-mono text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded">
+                  {prospect.zone || 'SIN-ZONA'}
+                </div>
+                <Badge variant="secondary" className="text-[10px] capitalize bg-gray-100 text-gray-700 font-bold px-1.5 h-5">
+                  {prospect.ethnic}
+                </Badge>
+                <Badge variant="secondary" className="text-[10px] capitalize bg-gray-100 text-gray-700 flex items-center gap-1 font-bold px-1.5 h-5">
+                  <CategoryIcon category={prospect.category} />
+                  {prospect.category}
+                </Badge>
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  className="bg-green-600 hover:bg-green-700 text-white h-8 text-xs font-bold"
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    onCheckIn(prospect); 
+                  }}
+                >
+                  <Check className="h-3.5 w-3.5 mr-1" />
+                  {t('action_visit')}
+                </Button>
+                
+                {!isSelectionMode && (
+                  <CollapsibleTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8 border-gray-300 text-xs font-bold"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {isOpen ? (
+                        <><Minus className="h-3.5 w-3.5 mr-1" /> {t('action_less')}</>
+                      ) : (
+                        <><Plus className="h-3.5 w-3.5 mr-1" /> {t('action_more')}</>
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Collapsible Content - Detalles expandidos */}
         <CollapsibleContent>
-          <div className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50/50">
+          <div className="px-3 pb-3 pt-2 border-t border-gray-100 bg-gray-50/50">
             
-            {/* Contact Info Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 mt-2">
-              <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                  <Phone className="h-5 w-5" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3 mt-1">
+              <div className="flex items-center gap-2.5 p-2 bg-white rounded-lg border border-gray-200">
+                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
+                  <Phone className="h-4 w-4" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs text-gray-500 mb-0.5">Teléfono</div>
-                  <div className="font-medium text-sm truncate">
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase font-bold text-gray-400 leading-none mb-1">Teléfono</div>
+                  <div className="font-bold text-xs truncate">
                     {prospect.phone || t('no_phone')}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                  <Globe className="h-5 w-5" />
+              <div className="flex items-center gap-2.5 p-2 bg-white rounded-lg border border-gray-200">
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                  <Globe className="h-4 w-4" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs text-gray-500 mb-0.5">Web</div>
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase font-bold text-gray-400 leading-none mb-1">Web</div>
                   <a 
                     href={prospect.web} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="font-medium text-sm text-blue-600 hover:underline truncate block"
+                    className="font-bold text-xs text-blue-600 hover:underline truncate block"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {prospect.web ? 'Ver sitio' : 'N/A'}
@@ -287,24 +263,23 @@ export function ProspectCard({
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-2 gap-2 mb-4" onClick={(e) => e.stopPropagation()}>
+            <div className="grid grid-cols-2 gap-2 mb-3" onClick={(e) => e.stopPropagation()}>
               <Button 
                 asChild 
                 variant="outline" 
-                className="h-11 justify-start border-green-200 hover:bg-green-50 hover:border-green-300"
+                className="h-9 justify-start border-green-200 hover:bg-green-50 text-xs font-bold"
                 disabled={!prospect.phone}
               >
                 <a href={`tel:${cleanPhoneNumber(prospect.phone)}`}>
-                  <Phone className="mr-2 h-4 w-4 text-green-600" />
-                  <span className="text-green-700">Llamar</span>
+                  <Phone className="mr-2 h-3.5 w-3.5 text-green-600" />
+                  {t('action_call_simple')}
                 </a>
               </Button>
               
               <Button 
                 asChild 
                 variant="outline" 
-                className="h-11 justify-start border-green-200 hover:bg-green-50 hover:border-green-300"
+                className="h-9 justify-start border-green-200 hover:bg-green-50 text-xs font-bold"
                 disabled={!prospect.phone}
               >
                 <a 
@@ -312,38 +287,37 @@ export function ProspectCard({
                   target="_blank" 
                   rel="noopener noreferrer"
                 >
-                  <BotMessageSquare className="mr-2 h-4 w-4 text-green-600" />
-                  <span className="text-green-700">WhatsApp</span>
+                  <BotMessageSquare className="mr-2 h-3.5 w-3.5 text-green-600" />
+                  {t('action_whatsapp_simple')}
                 </a>
               </Button>
             </div>
 
-            {/* Visit History */}
             <div>
-              <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <Clock className="h-4 w-4 text-gray-500" />
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <Clock className="h-3 w-3" />
                 {t('visit_history_title')}
               </h4>
               
-              <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                 {visitsLoading ? (
-                  <Skeleton className="h-16 w-full rounded-lg"/>
+                  <Skeleton className="h-12 w-full rounded-lg"/>
                 ) : visits.length > 0 ? (
                   visits.map((visit, index) => (
                     <div 
                       key={visit.id} 
-                      className="flex gap-3 p-3 bg-white rounded-lg border border-gray-200"
+                      className="flex gap-2 p-2 bg-white rounded-lg border border-gray-200"
                     >
-                      <div className="flex flex-col items-center">
+                      <div className="flex flex-col items-center shrink-0">
                         <OutcomeIcon outcome={visit.outcome} />
                         {index !== visits.length - 1 && (
-                          <div className="w-px h-full bg-gray-200 mt-1"></div>
+                          <div className="w-px h-full bg-gray-100 mt-1"></div>
                         )}
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-800 leading-relaxed">{visit.notes}</p>
-                        <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1.5">
-                          <Clock className="h-3 w-3"/>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-700 leading-tight mb-1">{visit.notes}</p>
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-2.5 w-2.5"/>
                           {formatDistanceToNow(visit.date.toDate(), { 
                             addSuffix: true, 
                             locale: locale === 'es' ? es : undefined 
@@ -353,21 +327,20 @@ export function ProspectCard({
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-6 bg-white rounded-lg border border-dashed border-gray-300">
-                    <p className="text-sm text-gray-500">{t('no_visits_yet')}</p>
+                  <div className="text-center py-4 bg-white rounded-lg border border-dashed border-gray-200">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">{t('no_visits_yet')}</p>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Edit Button */}
-            <div className="mt-4 pt-3 border-t border-gray-200" onClick={(e) => e.stopPropagation()}>
+            <div className="mt-3 pt-2 border-t border-gray-200" onClick={(e) => e.stopPropagation()}>
               <Button 
                 variant="outline" 
-                className="w-full h-11 border-gray-300 hover:bg-gray-100"
+                className="w-full h-9 border-gray-300 text-xs font-bold"
                 onClick={() => onEdit(prospect)}
               >
-                <Pencil className="mr-2 h-4 w-4" />
+                <Pencil className="mr-2 h-3.5 w-3.5" />
                 {t('action_edit')}
               </Button>
             </div>
