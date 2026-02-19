@@ -93,6 +93,14 @@ export default function PublicStorePage() {
 
   const config = org.storeConfig;
 
+  // IMAGENES POR DEFECTO (FALLBACKS)
+  const defaultImages = {
+    hero: "https://i.postimg.cc/pVkYwqGR/hero_products.jpg",
+    fruits: "https://i.postimg.cc/FFGgMDP6/categorias_frutas.jpg",
+    vegetables: "https://i.postimg.cc/dQnmb4WX/categorias_verduras.jpg",
+    groceries: "https://i.postimg.cc/Df5d9BCH/categorias_abarrotes.jpg"
+  };
+
   return (
     <div className="min-h-screen bg-[#f8faf8] font-sans overflow-x-hidden">
       {/* NAVBAR */}
@@ -140,13 +148,11 @@ export default function PublicStorePage() {
               <Zap className="h-4 w-4 mr-2" /> {t('store_hero_delivery_badge')}
             </Badge>
             <h1 className="text-4xl md:text-6xl font-black leading-tight mb-6">
-              {/* ENFORCED BILINGUAL TITLE WITH YELLOW HIGHLIGHT */}
               {t.rich('store_hero_title_fallback', {
                 yellow: (chunks) => <span className="text-[#e8b931]">{chunks}</span>
               })}
             </h1>
             <p className="text-lg opacity-90 mb-8 max-w-lg font-light leading-relaxed">
-              {/* ENFORCED SUBTITLE */}
               {t('store_hero_subtitle_fallback')}
             </p>
             <div className="flex flex-wrap gap-4">
@@ -162,7 +168,7 @@ export default function PublicStorePage() {
           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="relative hidden md:block">
             <div className="relative aspect-[4/3] w-full rounded-[40px] overflow-hidden rotate-3 shadow-2xl transition-transform hover:rotate-0">
               <Image 
-                src={config.heroImage || "https://i.postimg.cc/pVkYwqGR/hero_products.jpg"} 
+                src={config.heroImage || defaultImages.hero} 
                 alt="Store Hero" 
                 fill
                 className="object-cover"
@@ -215,9 +221,9 @@ export default function PublicStorePage() {
           <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-16">{t('store_categories_title')}</h2>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { name: t('store_category_fruits'), img: config.categoriesImages?.fruits || "https://i.postimg.cc/FFGgMDP6/categorias_frutas.jpg", count: t('store_category_count', { count: 50 }) },
-              { name: t('store_category_veggies'), img: config.categoriesImages?.vegetables || "https://i.postimg.cc/dQnmb4WX/categorias_verduras.jpg", count: t('store_category_count', { count: 80 }) },
-              { name: t('store_category_groceries'), img: config.categoriesImages?.groceries || "https://i.postimg.cc/Df5d9BCH/categorias_abarrotes.jpg", count: t('store_category_count', { count: 200 }) }
+              { name: t('store_category_fruits'), img: config.categoriesImages?.fruits || defaultImages.fruits, count: t('store_category_count', { count: 50 }) },
+              { name: t('store_category_veggies'), img: config.categoriesImages?.vegetables || defaultImages.vegetables, count: t('store_category_count', { count: 80 }) },
+              { name: t('store_category_groceries'), img: config.categoriesImages?.groceries || defaultImages.groceries, count: t('store_category_count', { count: 200 }) }
             ].map((cat, i) => (
               <div key={i} className="group relative h-80 rounded-3xl overflow-hidden cursor-pointer shadow-lg">
                 <Image src={cat.img} alt={cat.name} fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
@@ -242,17 +248,36 @@ export default function PublicStorePage() {
             <h2 className="text-3xl md:text-4xl font-extrabold">{t('store_testimonials_title')}</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            {(config.testimonials || [
-              { name: "María González", role: "Cliente habitual", text: "Increíble la frescura de las verduras. Llegaron en 45 minutos y todo estaba perfectamente seleccionado." },
-              { name: "Carlos Mendoza", role: "Restaurante El Sabor", text: "Como dueño de restaurante, necesito calidad constante. Supermercado Fresco nunca me ha fallado." },
-              { name: "Laura Jiménez", role: "Profesional ocupada", text: "La app es súper fácil de usar. Puedo hacer el pedido desde el trabajo y llego a casa justo cuando llegan." }
-            ]).map((test, i) => (
-              <div key={i} className="bg-white/10 backdrop-blur-md p-10 rounded-3xl border border-white/20">
-                <div className="flex text-[#e8b931] mb-6 gap-1"><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/></div>
+            {[
+              { 
+                name: "María González", 
+                role: "Cliente habitual", 
+                text: "Increíble la frescura de las verduras. Llegaron en 45 minutos y todo estaba perfectamente seleccionado. Mi familia notó la diferencia.",
+                avatar: "https://randomuser.me/api/portraits/women/44.jpg"
+              },
+              { 
+                name: "Carlos Mendoza", 
+                role: "Restaurante El Sabor", 
+                text: "Como dueño de restaurante, necesito calidad constante. Supermercado Fresco nunca me ha fallado. El servicio al cliente es excepcional.",
+                avatar: "https://randomuser.me/api/portraits/men/32.jpg"
+              },
+              { 
+                name: "Laura Jiménez", 
+                role: "Profesional ocupada", 
+                text: "La app es súper fácil de usar. Puedo hacer el pedido desde el trabajo y llego a casa justo cuando llegan los productos. ¡Genial!",
+                avatar: "https://randomuser.me/api/portraits/women/68.jpg"
+              }
+            ].map((test, i) => (
+              <div key={i} className="bg-white/10 backdrop-blur-md p-10 rounded-3xl border border-white/20 hover:-translate-y-2 transition-transform duration-300">
+                <div className="flex text-[#e8b931] mb-6 gap-1">
+                  {[...Array(5)].map((_, s) => (
+                    <Star key={s} size={16} fill="currentColor" />
+                  ))}
+                </div>
                 <p className="italic text-lg mb-8 opacity-90">"{test.text}"</p>
                 <div className="flex items-center gap-4">
                   <div className="relative w-14 h-14 rounded-full border-2 border-[#e8b931] overflow-hidden bg-slate-200 shrink-0">
-                    <Image src={test.avatarUrl || `https://ui-avatars.com/api/?name=${test.name}&background=e8b931&color=fff`} alt={test.name} fill className="object-cover" />
+                    <Image src={test.avatar} alt={test.name} fill className="object-cover" />
                   </div>
                   <div>
                     <div className="font-bold">{test.name}</div>
