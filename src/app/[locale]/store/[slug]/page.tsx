@@ -140,16 +140,14 @@ export default function PublicStorePage() {
               <Zap className="h-4 w-4 mr-2" /> {t('store_hero_delivery_badge')}
             </Badge>
             <h1 className="text-4xl md:text-6xl font-black leading-tight mb-6">
-              {config.heroTitle?.[locale] || config.heroTitle?.es ? (
-                config.heroTitle?.[locale] || config.heroTitle?.es
-              ) : (
-                t.rich('store_hero_title_fallback', {
-                  yellow: (chunks) => <span className="text-[#e8b931]">{chunks}</span>
-                })
-              )}
+              {/* ENFORCED BILINGUAL TITLE WITH YELLOW HIGHLIGHT */}
+              {t.rich('store_hero_title_fallback', {
+                yellow: (chunks) => <span className="text-[#e8b931]">{chunks}</span>
+              })}
             </h1>
             <p className="text-lg opacity-90 mb-8 max-w-lg font-light leading-relaxed">
-              {config.heroSubtitle?.[locale] || config.heroSubtitle?.es || t('store_hero_subtitle_fallback')}
+              {/* ENFORCED SUBTITLE */}
+              {t('store_hero_subtitle_fallback')}
             </p>
             <div className="flex flex-wrap gap-4">
               <Button className="rounded-full bg-[#e8b931] text-[#1a1a1a] hover:bg-[#d4a628] h-14 px-8 text-lg font-bold shadow-xl transition-all hover:-translate-y-1" asChild>

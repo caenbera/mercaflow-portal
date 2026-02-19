@@ -8,13 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { 
   ShoppingBag, Globe, Copy, ExternalLink, 
-  Palette, MessageSquare, Image as ImageIcon, Check, Loader2,
-  Type, Layout, Users, Phone, Mail, Share2, MailQuestion, Search
+  Image as ImageIcon, Check, Loader2, Layout, Share2, MailQuestion
 } from 'lucide-react';
 import { updateOrganization } from '@/lib/firestore/organizations';
 import { useToast } from '@/hooks/use-toast';
@@ -27,12 +25,10 @@ export default function StoreManagementPage() {
   const t = useTranslations('B2CStore');
   
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState('images'); // Default changed from general to images
   
   const [formData, setFormData] = useState({
     enabled: false,
-    heroTitle: '',
-    heroSubtitle: '',
     heroImage: '',
     fruitsImage: '',
     veggiesImage: '',
@@ -49,8 +45,6 @@ export default function StoreManagementPage() {
     if (activeOrg) {
       setFormData({
         enabled: activeOrg.storeConfig?.enabled || false,
-        heroTitle: activeOrg.storeConfig?.heroTitle?.es || '',
-        heroSubtitle: activeOrg.storeConfig?.heroSubtitle?.es || '',
         heroImage: activeOrg.storeConfig?.heroImage || '',
         fruitsImage: activeOrg.storeConfig?.categoriesImages?.fruits || '',
         veggiesImage: activeOrg.storeConfig?.categoriesImages?.vegetables || '',
@@ -73,8 +67,7 @@ export default function StoreManagementPage() {
         storeConfig: {
           ...activeOrg?.storeConfig,
           enabled: formData.enabled,
-          heroTitle: { es: formData.heroTitle, en: formData.heroTitle },
-          heroSubtitle: { es: formData.heroSubtitle, en: formData.heroSubtitle },
+          // We no longer save custom hero titles/subtitles from the UI
           heroImage: formData.heroImage,
           categoriesImages: {
             fruits: formData.fruitsImage,
@@ -167,13 +160,6 @@ export default function StoreManagementPage() {
 
             <div className="space-y-1">
                 <Button 
-                    variant={activeTab === 'general' ? 'secondary' : 'ghost'} 
-                    className="w-full justify-start h-12 rounded-xl"
-                    onClick={() => setActiveTab('general')}
-                >
-                    <Type className="mr-3 h-4 w-4" /> {t('tab_general')}
-                </Button>
-                <Button 
                     variant={activeTab === 'images' ? 'secondary' : 'ghost'} 
                     className="w-full justify-start h-12 rounded-xl"
                     onClick={() => setActiveTab('images')}
@@ -192,7 +178,7 @@ export default function StoreManagementPage() {
                     className="w-full justify-start h-12 rounded-xl"
                     onClick={() => setActiveTab('marketing')}
                 >
-                    <MailQuestion className="mr-3 h-4 w-4" /> {t('tab_marketing')}
+                    <MailQuestion className="mr-3 h-4 w-4" /> Configuración Pro
                 </Button>
             </div>
         </div>
@@ -201,40 +187,6 @@ export default function StoreManagementPage() {
         <div className="lg:col-span-3">
             <Card className="border-none shadow-md overflow-hidden">
                 <CardContent className="p-6 md:p-8">
-                    {activeTab === 'general' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-bold uppercase text-muted-foreground">{t('hero_title_label')}</Label>
-                                <Input 
-                                    value={formData.heroTitle} 
-                                    onChange={(e) => setFormData(prev => ({...prev, heroTitle: e.target.value}))}
-                                    placeholder={t('hero_title_placeholder')}
-                                    className="h-12 bg-slate-50 border-slate-200 text-lg font-bold"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-bold uppercase text-muted-foreground">{t('hero_subtitle_label')}</Label>
-                                <Textarea 
-                                    value={formData.heroSubtitle} 
-                                    onChange={(e) => setFormData(prev => ({...prev, heroSubtitle: e.target.value}))}
-                                    placeholder={t('hero_subtitle_placeholder')}
-                                    className="bg-slate-50 border-slate-200 min-h-[100px]"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label className="text-xs font-bold uppercase text-muted-foreground">{t('min_order_label')}</Label>
-                                    <Input 
-                                        type="number" 
-                                        value={formData.minOrderAmount} 
-                                        onChange={(e) => setFormData(prev => ({...prev, minOrderAmount: parseFloat(e.target.value)}))}
-                                        className="h-12 bg-slate-50"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     {activeTab === 'images' && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
                             <div className="space-y-4">
@@ -343,6 +295,16 @@ export default function StoreManagementPage() {
 
                     {activeTab === 'marketing' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                            <div className="grid gap-4 max-w-sm mb-8">
+                                <Label className="text-xs font-bold uppercase text-muted-foreground">{t('min_order_label')}</Label>
+                                <Input 
+                                    type="number" 
+                                    value={formData.minOrderAmount} 
+                                    onChange={(e) => setFormData(prev => ({...prev, minOrderAmount: parseFloat(e.target.value)}))}
+                                    className="h-12 bg-slate-50"
+                                />
+                            </div>
+                            
                             <div className="p-8 border-2 border-dashed rounded-[30px] flex flex-col items-center text-center gap-4 bg-slate-50">
                                 <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center">
                                     <MailQuestion className="h-8 w-8" />
