@@ -9,9 +9,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { 
   MapPin, Phone, Check, Navigation, Plus, Minus, 
   Pencil, BotMessageSquare, Clock, CircleDot, UserX, 
-  Globe, Collapsible, CollapsibleContent, CollapsibleTrigger,
-  Store, Utensils, Beef
+  Globe, Store, Utensils, Beef
 } from 'lucide-react';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import type { Prospect, ProspectStatus, ProspectVisit } from '@/types';
 import { useTranslations, useLocale } from 'next-intl';
 import { cn } from '@/lib/utils';
