@@ -160,23 +160,23 @@ export default function StoreManagementPage() {
         status: 'scheduled',
         scheduledAt: Timestamp.fromDate(scheduledDate),
       });
-      toast({ title: "Campaña Programada", description: "Se enviará a tus suscriptores en la fecha elegida." });
+      toast({ title: t('dialog_campaign_title'), description: t('toast_save_success_desc') });
       setIsNewCampaignOpen(false);
       setCampaignForm({ subject: '', message: '', pdfUrl: '' });
     } catch (e) {
-      toast({ variant: 'destructive', title: "Error al crear campaña" });
+      toast({ variant: 'destructive', title: "Error" });
     } finally {
       setIsCreatingCampaign(false);
     }
   };
 
   const handleDeleteCampaign = async (id: string) => {
-    if (confirm("¿Eliminar esta campaña?")) {
+    if (confirm(t('confirm_delete_category', { category: '' }))) {
       try {
         await deleteNewsletter(id);
-        toast({ title: "Campaña eliminada" });
+        toast({ title: t('toast_category_deleted') });
       } catch (e) {
-        toast({ variant: 'destructive', title: "Error al eliminar" });
+        toast({ variant: 'destructive', title: "Error" });
       }
     }
   };
@@ -205,33 +205,33 @@ export default function StoreManagementPage() {
       <Dialog open={isNewCampaignOpen} onOpenChange={setIsNewCampaignOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Nueva Campaña de Newsletter</DialogTitle>
-            <DialogDescription>Redacta el mensaje y adjunta tu catálogo PDF para los suscriptores.</DialogDescription>
+            <DialogTitle>{t('dialog_campaign_title')}</DialogTitle>
+            <DialogDescription>{t('dialog_campaign_desc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Asunto del Correo</Label>
+              <Label>{t('dialog_campaign_subject_label')}</Label>
               <Input 
-                placeholder="Ej: ¡Ofertas de la semana en Frutas Frescas!" 
+                placeholder={t('dialog_campaign_subject_placeholder')} 
                 value={campaignForm.subject}
                 onChange={(e) => setCampaignForm(prev => ({...prev, subject: e.target.value}))}
               />
             </div>
             <div className="space-y-2">
-              <Label>Mensaje</Label>
+              <Label>{t('dialog_campaign_message_label')}</Label>
               <Textarea 
-                placeholder="Hola! Te compartimos nuestras mejores promociones..." 
+                placeholder={t('dialog_campaign_message_placeholder')} 
                 className="min-h-[120px]"
                 value={campaignForm.message}
                 onChange={(e) => setCampaignForm(prev => ({...prev, message: e.target.value}))}
               />
             </div>
             <div className="space-y-2">
-              <Label>Enlace al PDF del Catálogo</Label>
+              <Label>{t('dialog_campaign_pdf_label')}</Label>
               <div className="relative">
                 <FileDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input 
-                  placeholder="https://drive.google.com/..." 
+                  placeholder={t('dialog_campaign_pdf_placeholder')} 
                   className="pl-9"
                   value={campaignForm.pdfUrl}
                   onChange={(e) => setCampaignForm(prev => ({...prev, pdfUrl: e.target.value}))}
@@ -239,12 +239,12 @@ export default function StoreManagementPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Fecha de Envío</Label>
+              <Label>{t('dialog_campaign_date_label')}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-left font-normal h-11">
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {scheduledDate ? format(scheduledDate, "PPP", { locale: es }) : "Elegir fecha"}
+                    {scheduledDate ? format(scheduledDate, "PPP", { locale: locale === 'es' ? es : undefined }) : t('dialog_campaign_date_placeholder')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -254,10 +254,10 @@ export default function StoreManagementPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsNewCampaignOpen(false)}>Cancelar</Button>
+            <Button variant="ghost" onClick={() => setIsNewCampaignOpen(false)}>{t('cancel')}</Button>
             <Button onClick={handleCreateCampaign} disabled={isCreatingCampaign || !campaignForm.subject || !campaignForm.message}>
               {isCreatingCampaign ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-              Programar Envío
+              {t('dialog_campaign_submit_button')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -334,7 +334,7 @@ export default function StoreManagementPage() {
                     className="w-full justify-start h-12 rounded-xl"
                     onClick={() => setActiveTab('email')}
                 >
-                    <MailCheck className="mr-3 h-4 w-4" /> Conexión de Email
+                    <MailCheck className="mr-3 h-4 w-4" /> {t('tab_email')}
                 </Button>
             </div>
         </div>
@@ -505,14 +505,14 @@ export default function StoreManagementPage() {
                                 <CardContent className="p-4 text-center">
                                   <Users className="mx-auto h-6 w-6 text-primary mb-2" />
                                   <p className="text-2xl font-black text-slate-900">{subsLoading ? '...' : subscribers.length}</p>
-                                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Suscriptores Totales</p>
+                                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{t('subscribers_list_title')}</p>
                                 </CardContent>
                               </Card>
                               <Card className="bg-blue-50 border-blue-200">
                                 <CardContent className="p-4 text-center">
                                   <Mail className="mx-auto h-6 w-6 text-blue-600 mb-2" />
                                   <p className="text-2xl font-black text-slate-900">{newsLoading ? '...' : newsletters.length}</p>
-                                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Campañas Enviadas</p>
+                                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{t('campaign_history_title')}</p>
                                 </CardContent>
                               </Card>
                               <Card className="bg-orange-50 border-orange-200">
@@ -521,7 +521,7 @@ export default function StoreManagementPage() {
                                   <p className="text-2xl font-black text-slate-900">
                                     {newsLoading ? '...' : newsletters.reduce((acc, curr) => acc + (curr.opens || 0), 0)}
                                   </p>
-                                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Total Aperturas</p>
+                                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{t('table_opens')}</p>
                                 </CardContent>
                               </Card>
                             </div>
@@ -529,10 +529,10 @@ export default function StoreManagementPage() {
                             <div className="space-y-4">
                               <div className="flex justify-between items-center">
                                 <h3 className="font-bold flex items-center gap-2 text-slate-800">
-                                  <Mail className="h-5 w-5 text-primary" /> Historial de Campañas
+                                  <Mail className="h-5 w-5 text-primary" /> {t('campaign_history_title')}
                                 </h3>
                                 <Button onClick={() => setIsNewCampaignOpen(true)} size="sm" className="rounded-full shadow-md bg-slate-900 hover:bg-slate-800">
-                                  <Plus className="mr-2 h-4 w-4" /> Crear Newsletter
+                                  <Plus className="mr-2 h-4 w-4" /> {t('campaign_create_button')}
                                 </Button>
                               </div>
 
@@ -540,9 +540,9 @@ export default function StoreManagementPage() {
                                 <Table>
                                   <TableHeader>
                                     <TableRow className="bg-slate-50/50">
-                                      <TableHead className="text-[10px] uppercase font-bold">Asunto / Estado</TableHead>
-                                      <TableHead className="text-[10px] uppercase font-bold text-center">Aperturas</TableHead>
-                                      <TableHead className="text-[10px] uppercase font-bold text-right">Programado</TableHead>
+                                      <TableHead className="text-[10px] uppercase font-bold">{t('table_subject_status')}</TableHead>
+                                      <TableHead className="text-[10px] uppercase font-bold text-center">{t('table_opens')}</TableHead>
+                                      <TableHead className="text-[10px] uppercase font-bold text-right">{t('table_scheduled')}</TableHead>
                                       <TableHead className="w-[50px]"></TableHead>
                                     </TableRow>
                                   </TableHeader>
@@ -558,13 +558,13 @@ export default function StoreManagementPage() {
                                               "text-[9px] uppercase h-4 px-1 border-none",
                                               news.status === 'sent' ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
                                             )}>
-                                              {news.status === 'sent' ? "Enviado" : "Programado"}
+                                              {news.status === 'sent' ? t('status_sent') : t('status_scheduled')}
                                             </Badge>
                                           </TableCell>
                                           <TableCell className="text-center">
                                             <div className="flex flex-col items-center">
                                               <span className="font-black text-slate-900">{news.opens || 0}</span>
-                                              <span className="text-[9px] text-muted-foreground uppercase font-bold">Lectores</span>
+                                              <span className="text-[9px] text-muted-foreground uppercase font-bold">{t('label_readers')}</span>
                                             </div>
                                           </TableCell>
                                           <TableCell className="text-right">
@@ -583,7 +583,7 @@ export default function StoreManagementPage() {
                                     ) : (
                                       <TableRow>
                                         <TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic text-sm">
-                                          No has creado campañas todavía.
+                                          {t('no_campaigns_message')}
                                         </TableCell>
                                       </TableRow>
                                     )}
@@ -596,12 +596,12 @@ export default function StoreManagementPage() {
                                 <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center">
                                     <Users className="h-8 w-8" />
                                 </div>
-                                <h3 className="text-xl font-bold">Lista de Suscriptores</h3>
+                                <h3 className="text-xl font-bold">{t('subscribers_list_title')}</h3>
                                 <p className="text-muted-foreground max-w-md text-sm">
-                                    Tienes {subscribers.length} personas esperando tus novedades. Pronto podrás descargar esta lista para usarla en WhatsApp o Email externo.
+                                    {t('subscribers_list_desc', { count: subscribers.length })}
                                 </p>
                                 <Button variant="outline" disabled={subscribers.length === 0} className="rounded-xl">
-                                  <FileDown className="mr-2 h-4 w-4" /> Exportar suscriptores (CSV)
+                                  <FileDown className="mr-2 h-4 w-4" /> {t('export_csv_button')}
                                 </Button>
                             </div>
                         </div>
@@ -613,42 +613,42 @@ export default function StoreManagementPage() {
                                 <div className="space-y-1">
                                     <h3 className="text-xl font-bold flex items-center gap-2">
                                         <MailCheck className="text-primary h-6 w-6" />
-                                        Conexión de Correo Profesional
+                                        {t('email_title')}
                                     </h3>
-                                    <p className="text-sm text-muted-foreground">Configura tu propia identidad para que los clientes reconozcan tus correos.</p>
+                                    <p className="text-sm text-muted-foreground">{t('email_subtitle')}</p>
                                 </div>
                                 <Badge className={cn("px-3 py-1", emailConfig.verified ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
-                                    {emailConfig.verified ? <><ShieldCheck className="h-3 w-3 mr-1" /> Conectado</> : <><AlertTriangle className="h-3 w-3 mr-1" /> Sin Conexión</>}
+                                    {emailConfig.verified ? <><ShieldCheck className="h-3 w-3 mr-1" /> {t('email_status_connected')}</> : <><AlertTriangle className="h-3 w-3 mr-1" /> {t('email_status_disconnected')}</>}
                                 </Badge>
                             </div>
 
                             <div className="grid md:grid-cols-2 gap-8">
                                 <div className="space-y-6">
                                     <div className="space-y-2">
-                                        <Label className="font-bold">Proveedor de Correo</Label>
+                                        <Label className="font-bold">{t('email_provider_label')}</Label>
                                         <Select 
                                             value={emailConfig.provider} 
                                             onValueChange={(val: any) => setEmailConfig(prev => ({...prev, provider: val}))}
                                         >
                                             <SelectTrigger className="h-12 bg-slate-50 rounded-xl">
-                                                <SelectValue placeholder="Elige un proveedor" />
+                                                <SelectValue placeholder={t('email_provider_placeholder')} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="none">No usar (Simulado)</SelectItem>
-                                                <SelectItem value="sendgrid">SendGrid (Recomendado)</SelectItem>
-                                                <SelectItem value="mailgun">Mailgun</SelectItem>
-                                                <SelectItem value="smtp">Servidor SMTP Propio</SelectItem>
+                                                <SelectItem value="none">{t('email_provider_none')}</SelectItem>
+                                                <SelectItem value="sendgrid">{t('email_provider_sendgrid')}</SelectItem>
+                                                <SelectItem value="mailgun">{t('email_provider_mailgun')}</SelectItem>
+                                                <SelectItem value="smtp">{t('email_provider_smtp')}</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label className="font-bold">API Key / Llave Secreta</Label>
+                                        <Label className="font-bold">{t('email_apikey_label')}</Label>
                                         <div className="relative">
                                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                             <Input 
                                                 type="password"
-                                                placeholder="Pega tu llave aquí..."
+                                                placeholder={t('email_apikey_placeholder')}
                                                 className="h-12 pl-10 bg-slate-50 rounded-xl"
                                                 value={emailConfig.apiKey}
                                                 onChange={(e) => setEmailConfig(prev => ({...prev, apiKey: e.target.value}))}
@@ -658,18 +658,18 @@ export default function StoreManagementPage() {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label className="font-bold">Nombre del Remitente</Label>
+                                            <Label className="font-bold">{t('email_sender_name_label')}</Label>
                                             <Input 
-                                                placeholder="Ej: Mercado Fresh"
+                                                placeholder={t('email_sender_name_placeholder')}
                                                 className="h-12 bg-slate-50 rounded-xl"
                                                 value={emailConfig.senderName}
                                                 onChange={(e) => setEmailConfig(prev => ({...prev, senderName: e.target.value}))}
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label className="font-bold">Email de Respuesta</Label>
+                                            <Label className="font-bold">{t('email_reply_to_label')}</Label>
                                             <Input 
-                                                placeholder="hola@negocio.com"
+                                                placeholder={t('email_reply_to_placeholder')}
                                                 className="h-12 bg-slate-50 rounded-xl"
                                                 value={emailConfig.replyTo}
                                                 onChange={(e) => setEmailConfig(prev => ({...prev, replyTo: e.target.value}))}
@@ -682,26 +682,23 @@ export default function StoreManagementPage() {
                                     <div className="p-6 bg-slate-900 text-white rounded-3xl border shadow-xl">
                                         <h4 className="font-bold flex items-center gap-2 mb-4">
                                             <HelpCircle className="h-4 w-4 text-primary" />
-                                            ¿Cómo conectar?
+                                            {t('email_how_to_title')}
                                         </h4>
                                         <ol className="space-y-4 text-sm text-slate-300 list-decimal pl-4">
-                                            <li>Ve a <strong>sendgrid.com</strong> y crea una cuenta gratuita.</li>
-                                            <li>En el panel de configuración, busca <strong>API Keys</strong> y crea una nueva con acceso completo.</li>
-                                            <li>Pega la llave generada en el cuadro de la izquierda.</li>
-                                            <li>Verifica tu <strong>Dominio</strong> en la sección de 'Sender Authentication' de SendGrid para evitar el SPAM.</li>
+                                            <li dangerouslySetInnerHTML={{ __html: t('email_step_1') }}></li>
+                                            <li dangerouslySetInnerHTML={{ __html: t('email_step_2') }}></li>
+                                            <li dangerouslySetInnerHTML={{ __html: t('email_step_3') }}></li>
+                                            <li dangerouslySetInnerHTML={{ __html: t('email_step_4') }}></li>
                                         </ol>
                                         <Button variant="link" className="text-primary p-0 h-auto mt-4 font-bold">
-                                            Ver guía detallada <ChevronRight className="h-4 w-4 ml-1" />
+                                            {t('email_guide_button')} <ChevronRight className="h-4 w-4 ml-1" />
                                         </Button>
                                     </div>
 
                                     <Card className="border-primary/20 bg-primary/5">
                                         <CardContent className="p-4 flex gap-3 items-start">
                                             <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                                            <p className="text-xs text-slate-600 leading-relaxed">
-                                                Al usar tu propia conexión, MercaFlow no te cobrará por los correos enviados. 
-                                                Tus clientes recibirán mensajes desde <strong>tu propio dominio</strong>, aumentando la confianza.
-                                            </p>
+                                            <p className="text-xs text-slate-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: t('email_info_card') }}></p>
                                         </CardContent>
                                     </Card>
                                 </div>
