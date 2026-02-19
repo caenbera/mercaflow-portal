@@ -106,10 +106,10 @@ export function AppSidebar() {
       ],
       sales: [
           { href: `/admin/sales`, label: t('prospects'), icon: Target },
-          { href: `/admin/network`, label: "Red de Suministro", icon: Share2 },
+          { href: `/admin/network`, label: t('supplyNetwork'), icon: Share2 },
       ],
       administration: [
-          { href: `/admin/users`, label: "Personal y Accesos", icon: UserCog },
+          { href: `/admin/users`, label: t('manageUsers'), icon: UserCog },
       ],
       catalog: [
           { href: `/admin/products`, label: t('manageProducts'), icon: Package },
@@ -156,7 +156,7 @@ export function AppSidebar() {
     }
 
     if (org.type === 'retailer') {
-      modules.management.push({ href: `/admin/store`, label: "Tienda B2C", icon: Globe });
+      modules.management.push({ href: `/admin/store`, label: t('b2cStore'), icon: Globe });
     }
 
     return modules;
@@ -178,30 +178,30 @@ export function AppSidebar() {
     return (
       <div className="space-y-6">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Plataforma</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('platform')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   asChild 
-                  tooltip="Gestión de Edificios"
+                  tooltip={t('manageBuildings')}
                   onClick={() => setActiveOrgId(null)}
                 >
                   <Link href="/admin/organizations">
                     <Building2 />
-                    <span>Gestión de Edificios</span>
+                    <span>{t('manageBuildings')}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   asChild 
-                  tooltip="Gestión de Usuarios Global"
+                  tooltip={t('manageUsersGlobal')}
                   onClick={() => setActiveOrgId(null)}
                 >
                   <Link href="/admin/platform/users">
                     <Users />
-                    <span>Gestión de Usuarios Global</span>
+                    <span>{t('manageUsersGlobal')}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

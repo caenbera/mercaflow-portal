@@ -45,5 +45,10 @@
   "group_level_distributor": "Level 2: Distributors",
   "group_level_wholesaler": "Level 3: Wholesalers",
   "group_level_retailer": "Level 4: Retailers",
-  "loading": "Loading"
+  "loading": "Loading",
+  "platform": "Platform",
+  "supplyNetwork": "Supply Network",
+  "manageBuildings": "Building Management",
+  "manageUsersGlobal": "Global User Directory",
+  "b2cStore": "B2C Store"
 }

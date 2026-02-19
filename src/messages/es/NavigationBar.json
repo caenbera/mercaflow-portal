@@ -45,5 +45,10 @@
   "group_level_distributor": "Nivel 2: Distribuidores",
   "group_level_wholesaler": "Nivel 3: Mayoristas",
   "group_level_retailer": "Nivel 4: Minoristas",
-  "loading": "Cargando"
+  "loading": "Cargando",
+  "platform": "Plataforma",
+  "supplyNetwork": "Red de Suministro",
+  "manageBuildings": "Gestión de Edificios",
+  "manageUsersGlobal": "Directorio Global de Usuarios",
+  "b2cStore": "Tienda B2C"
 }

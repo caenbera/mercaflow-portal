@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -11,7 +12,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, UserCircle, MoreHorizontal, ChevronRight, LayoutGrid, Tag, Trophy, Headset, FileText, Bell, ShoppingCart, Package, Users, Truck, ShoppingBag, Boxes, ClipboardList, History } from 'lucide-react';
+import { LogOut, UserCircle, MoreHorizontal, ChevronRight, LayoutGrid, Tag, Trophy, Headset, FileText, Bell, ShoppingCart, Package, Users, Truck, ShoppingBag, Boxes, ClipboardList, History, Share2, Target, UserCog } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { NavDefinition, NavItem } from './app-sidebar'; 
 import { NotificationSheetContent } from './notification-sheet';
@@ -174,7 +175,10 @@ function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
       },
       sales: {
         label: t('group_sales'),
-        items: [{ href: '/admin/sales', label: t('prospects'), icon: Users }]
+        items: [
+          { href: '/admin/sales', label: t('prospects'), icon: Target },
+          { href: '/admin/network', label: t('supplyNetwork'), icon: Share2 }
+        ]
       },
       catalog: {
         label: t('group_catalog'),
@@ -197,7 +201,7 @@ function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
       },
       administration: {
         label: t('group_administration'),
-        items: [{ href: '/admin/users', label: t('manageUsers'), icon: Users }]
+        items: [{ href: '/admin/users', label: t('manageUsers'), icon: UserCog }]
       },
       client: {
         label: t('clientPortal'),
@@ -333,5 +337,3 @@ function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
         </div>
     );
 }
-
-    
