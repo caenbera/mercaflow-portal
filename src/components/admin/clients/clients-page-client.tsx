@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { MoreHorizontal, UserPlus, Search, Crown, Star, Pencil, History, CheckCircle, XCircle, Trash2, Shield, Award, Share2, Globe } from 'lucide-react';
+import { MoreHorizontal, Search, Crown, Star, Pencil, History, CheckCircle, XCircle, Trash2, Shield, Award, Share2, Globe } from 'lucide-react';
 import type { UserProfile, UserStatus, ClientTier } from '@/types';
 import { ClientFormDialog } from './new-client-dialog';
 import { useUsers } from '@/hooks/use-users';
@@ -67,10 +67,15 @@ export function ClientsPageClient() {
   const [selectedClient, setSelectedClient] = useState<UserProfile | null>(null);
   const [clientToDelete, setClientToDelete] = useState<UserProfile | null>(null);
 
+  // States for Filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('recent');
+
   const loading = usersLoading || orgsLoading || connLoading;
 
   // Combinar Clientes Locales y Clientes de Red
-  const allClients = useMemo(() => {
+  const allClientsRaw = useMemo(() => {
     if (loading) return [];
 
     // 1. Clientes Locales (Usuarios registrados con rol 'client')
@@ -86,7 +91,6 @@ export function ClientsPageClient() {
             const org = organizations.find(o => o.id === conn.fromOrgId);
             if (!org) return null;
             
-            // Adaptamos el objeto Organization al formato de UserProfile para la tabla
             return {
                 uid: org.id,
                 businessName: org.name,
@@ -107,6 +111,51 @@ export function ClientsPageClient() {
 
     return [...localClients, ...networkClients];
   }, [users, connections, organizations, activeOrgId, loading]);
+
+  // Aplicar Búsqueda, Filtrado y Ordenamiento
+  const filteredAndSortedClients = useMemo(() => {
+    let list = [...allClientsRaw];
+
+    // 1. Filtro por término de búsqueda
+    if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        list = list.filter(c => 
+            c.businessName.toLowerCase().includes(term) || 
+            c.email.toLowerCase().includes(term) || 
+            c.contactPerson?.toLowerCase().includes(term) ||
+            c.uid.toLowerCase().includes(term)
+        );
+    }
+
+    // 2. Filtro por estado
+    if (statusFilter !== 'all') {
+        list = list.filter(c => c.status === statusFilter);
+    }
+
+    // 3. Lógica de ordenamiento
+    list.sort((a: any, b: any) => {
+        if (sortBy === 'recent') {
+            const timeA = a.createdAt?.toMillis() || 0;
+            const timeB = b.createdAt?.toMillis() || 0;
+            return timeB - timeA;
+        }
+        if (sortBy === 'risk') {
+            // Ordenar por uso de cupo (Simulado ya que deuda actual es 0 por ahora)
+            const limitA = a.creditLimit || 0;
+            const limitB = b.creditLimit || 0;
+            return limitA - limitB; // Los que tienen menos límite aparecen primero como riesgo
+        }
+        if (sortBy === 'sales') {
+            // Simulación de ventas: Empresas vinculadas primero
+            if (a.isNetwork && !b.isNetwork) return -1;
+            if (!a.isNetwork && b.isNetwork) return 1;
+            return 0;
+        }
+        return 0;
+    });
+
+    return list;
+  }, [allClientsRaw, searchTerm, statusFilter, sortBy]);
   
 
   const handleEdit = (client: any) => {
@@ -179,20 +228,25 @@ export function ClientsPageClient() {
              <div className="flex flex-col sm:flex-row items-center gap-4">
                 <div className="relative flex-grow w-full">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder={t('search_placeholder')} className="pl-8" />
+                    <Input 
+                        placeholder={t('search_placeholder')} 
+                        className="pl-8" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
-                 <Select>
+                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-full sm:w-auto">
                         <SelectValue placeholder={t('status_label')} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="pending_approval">Pending Approval</SelectItem>
-                         <SelectItem value="blocked">Blocked</SelectItem>
+                        <SelectItem value="all">{t('filter_all')}</SelectItem>
+                        <SelectItem value="active">{t('status_active')}</SelectItem>
+                        <SelectItem value="pending_approval">{t('status_pending_approval')}</SelectItem>
+                         <SelectItem value="blocked">{t('status_blocked')}</SelectItem>
                     </SelectContent>
                 </Select>
-                 <Select>
+                 <Select value={sortBy} onValueChange={setSortBy}>
                     <SelectTrigger className="w-full sm:w-auto">
                         <SelectValue placeholder={t('sort_label')} />
                     </SelectTrigger>
@@ -227,8 +281,8 @@ export function ClientsPageClient() {
                                     <TableCell colSpan={5}><Skeleton className="h-10 w-full"/></TableCell>
                                 </TableRow>
                              ))
-                         ) : allClients.length > 0 ? (
-                            allClients.map((client: any) => {
+                         ) : filteredAndSortedClients.length > 0 ? (
+                            filteredAndSortedClients.map((client: any) => {
                                 const creditLimit = client.creditLimit || 0;
                                 const creditUsed = 0; 
                                 const creditUsage = creditLimit > 0 ? Math.round((creditUsed / creditLimit) * 100) : 0;
