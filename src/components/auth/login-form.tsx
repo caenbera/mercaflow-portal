@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Sprout, Eye, EyeOff } from 'lucide-react';
+import { Sprout, Eye, EyeOff, Loader2, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -13,10 +13,12 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/config';
-import { doc, getDoc } from 'firebase/firestore';
-import type { UserRole, UserProfile, User } from '@/types';
+import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import type { UserRole, UserProfile, User, Organization } from '@/types';
 import { Link, useRouter } from '@/navigation';
 import { useLocale, useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -28,6 +30,8 @@ const getRedirectPath = (role: UserRole): string => {
     case 'superadmin':
     case 'admin':
       return '/admin/dashboard';
+    case 'driver':
+      return '/driver';
     case 'client':
     default:
       return '/client/new-order';
@@ -36,12 +40,37 @@ const getRedirectPath = (role: UserRole): string => {
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const orgSlug = searchParams.get('org');
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [unverifiedUser, setUnverifiedUser] = useState<User | null>(null);
+  const [contextOrg, setContextOrg] = useState<Organization | null>(null);
+  const [isOrgLoading, setIsOrgLoading] = useState(false);
+  
   const t = useTranslations('Auth');
   const locale = useLocale();
+
+  // Carga dinámica de la marca del edificio
+  useEffect(() => {
+    async function fetchOrgContext() {
+      if (!orgSlug) return;
+      setIsOrgLoading(true);
+      try {
+        const q = query(collection(db, 'organizations'), where('slug', '==', orgSlug), limit(1));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          setContextOrg({ id: snap.docs[0].id, ...snap.docs[0].data() } as Organization);
+        }
+      } catch (e) {
+        console.error("Error fetching org context:", e);
+      } finally {
+        setIsOrgLoading(false);
+      }
+    }
+    fetchOrgContext();
+  }, [orgSlug]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -150,16 +179,34 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="mx-auto max-w-sm w-full border-none shadow-xl">
-      <CardHeader className="text-center">
-         <div className="flex justify-center items-center gap-2 mb-4">
-          <Sprout className="h-8 w-8 text-primary" />
-          <h1 className="text-2xl font-headline font-bold text-slate-800">MercaFlow Portal</h1>
+    <Card className="mx-auto max-w-sm w-full border-none shadow-2xl overflow-hidden rounded-3xl">
+      <CardHeader className="text-center pb-2">
+         <div className="flex flex-col items-center gap-2 mb-2">
+          {isOrgLoading ? (
+            <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+          ) : contextOrg?.storeConfig?.logoUrl ? (
+            <div className="relative h-16 w-32 mb-2">
+              <img 
+                src={contextOrg.storeConfig.logoUrl} 
+                alt={contextOrg.name} 
+                className="h-full w-full object-contain" 
+              />
+            </div>
+          ) : (
+            <div className="bg-primary/10 p-3 rounded-2xl mb-2">
+              <Sprout className="h-10 w-10 text-primary" />
+            </div>
+          )}
+          <h1 className="text-2xl font-headline font-bold text-slate-800">
+            {contextOrg ? contextOrg.name : "MercaFlow Portal"}
+          </h1>
         </div>
-        <CardTitle className="text-2xl font-headline">{t('login_title')}</CardTitle>
-        <CardDescription>{t('login_desc')}</CardDescription>
+        <CardTitle className="text-xl font-headline mt-2">{t('login_title')}</CardTitle>
+        <CardDescription>
+          {contextOrg ? `Accede al portal de ${contextOrg.name}` : t('login_desc')}
+        </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -169,7 +216,7 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="name@example.com" {...field} />
+                    <Input placeholder="name@example.com" {...field} className="h-11 rounded-xl" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -186,7 +233,7 @@ export function LoginForm() {
                       type="button"
                       onClick={handlePasswordReset}
                       disabled={isLoading}
-                      className="ml-auto inline-block text-sm underline disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="ml-auto inline-block text-xs underline disabled:opacity-50 disabled:cursor-not-allowed text-muted-foreground"
                     >
                       {t('forgot_password')}
                     </button>
@@ -197,7 +244,7 @@ export function LoginForm() {
                         type={showPassword ? "text" : "password"} 
                         placeholder="••••••••" 
                         {...field} 
-                        className="pr-10"
+                        className="pr-10 h-11 rounded-xl"
                       />
                       <button
                         type="button"
@@ -212,7 +259,7 @@ export function LoginForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full h-11 rounded-xl font-bold shadow-lg" disabled={isLoading}>
               {isLoading ? t('signing_in') : t('sign_in')}
             </Button>
           </form>
@@ -221,15 +268,15 @@ export function LoginForm() {
         {unverifiedUser && (
           <div className="mt-4 text-center">
               <p className="text-sm text-muted-foreground">{t('resend_prompt')}</p>
-              <Button variant="link" onClick={handleResendVerification} disabled={isLoading}>
+              <Button variant="link" onClick={handleResendVerification} disabled={isLoading} className="text-primary font-bold">
                   {t('resend_button')}
               </Button>
           </div>
         )}
 
-        <div className="mt-4 text-center text-sm">
+        <div className="mt-6 text-center text-sm text-muted-foreground">
           {t('no_account')}{' '}
-          <Link href="/signup" className="underline">
+          <Link href={`/signup${orgSlug ? `?org=${orgSlug}` : ''}`} className="underline font-bold text-primary">
             {t('sign_up')}
           </Link>
         </div>

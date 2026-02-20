@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Sprout, Info, ShieldAlert, Loader2 } from 'lucide-react';
+import { Sprout, Info, ShieldAlert, Loader2, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -15,12 +15,10 @@ import { useToast } from '@/hooks/use-toast';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, WithFieldValue, getDoc, updateDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
-import { Link, useRouter, usePathname } from '@/navigation';
+import { Link, useRouter } from '@/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import type { UserProfile, AdminInvite, Organization } from '@/types';
 import { debounce } from 'lodash';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { useSearchParams } from 'next/navigation';
 
 const SUPER_ADMIN_EMAIL = 'caenbera@gmail.com';
@@ -35,6 +33,9 @@ const signupSchema = z.object({
 export function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const orgSlug = searchParams.get('org');
+  const invitedEmail = searchParams.get('email');
+  
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
@@ -51,18 +52,38 @@ export function SignupForm() {
     defaultValues: {
       businessName: "",
       contactPerson: "",
-      email: searchParams.get('email') || "",
+      email: invitedEmail || "",
       password: "",
     },
   });
 
   const watchedEmail = form.watch("email");
 
+  // Carga del contexto de marca por slug si existe
+  useEffect(() => {
+    async function fetchOrgContext() {
+      if (!orgSlug) return;
+      try {
+        const q = query(collection(db, 'organizations'), where('slug', '==', orgSlug), limit(1));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const org = { id: snap.docs[0].id, ...snap.docs[0].data() } as Organization;
+          setTargetOrg(org);
+          form.setValue('businessName', org.name);
+        }
+      } catch (e) {
+        console.error("Error fetching org context:", e);
+      }
+    }
+    fetchOrgContext();
+  }, [orgSlug, form]);
+
   const checkInvite = useCallback(
     debounce(async (email: string) => {
       if (!email || !z.string().email().safeParse(email).success) {
         setInviteData(null);
-        setTargetOrg(null);
+        // Si hay orgSlug, mantenemos el targetOrg del contexto, si no lo limpiamos
+        if (!orgSlug) setTargetOrg(null);
         setInviteError(null);
         return;
       }
@@ -70,7 +91,6 @@ export function SignupForm() {
       setIsCheckingInvite(true);
       setInviteError(null);
       try {
-        // 1. Verificar si el correo es el del Super Admin
         if (email.toLowerCase() === SUPER_ADMIN_EMAIL) {
           setIsSuperAdmin(true);
           setInviteData(null);
@@ -80,7 +100,6 @@ export function SignupForm() {
           setIsSuperAdmin(false);
         }
 
-        // 2. Buscar invitación en la colección adminInvites
         const inviteDocRef = doc(db, 'adminInvites', email.toLowerCase());
         const docSnap = await getDoc(inviteDocRef);
         
@@ -88,18 +107,17 @@ export function SignupForm() {
           const invite = docSnap.data() as AdminInvite;
           setInviteData(invite);
 
-          // Si la invitación tiene un organizationId, cargamos los datos del edificio
           if (invite.organizationId) {
             const orgDoc = await getDoc(doc(db, 'organizations', invite.organizationId));
             if (orgDoc.exists()) {
-              setTargetOrg({ id: orgDoc.id, ...orgDoc.data() } as Organization);
-              form.setValue('businessName', orgDoc.data().name);
+              const orgData = { id: orgDoc.id, ...orgDoc.data() } as Organization;
+              setTargetOrg(orgData);
+              form.setValue('businessName', orgData.name);
             }
           }
         } else {
-          // Bloqueo estricto: Si no hay invitación ni es superadmin, no puede registrarse
           setInviteData(null);
-          setTargetOrg(null);
+          if (!orgSlug) setTargetOrg(null);
           setInviteError("Este correo no tiene una invitación activa. Por favor, contacta al administrador.");
         }
       } catch (error) {
@@ -109,7 +127,7 @@ export function SignupForm() {
         setIsCheckingInvite(false);
       }
     }, 500),
-    [form]
+    [form, orgSlug]
   );
 
   useEffect(() => {
@@ -138,15 +156,13 @@ export function SignupForm() {
       if (inviteData) {
         userData.role = inviteData.role;
         userData.organizationId = inviteData.organizationId;
-        userData.businessName = values.businessName || targetOrg?.name || 'Cliente MercaFlow';
+        userData.businessName = values.businessName || targetOrg?.name || 'Personal MercaFlow';
         
-        // Si el rol es el del dueño del edificio, actualizamos el ownerId de la organización
         if (inviteData.role === 'client' && inviteData.organizationId) {
           const orgRef = doc(db, 'organizations', inviteData.organizationId);
           await updateDoc(orgRef, { ownerId: user.uid }).catch(e => console.error("Error updating org owner", e));
         }
 
-        // Marcar invitación como reclamada
         const inviteDocRef = doc(db, 'adminInvites', inviteData.email.toLowerCase());
         await updateDoc(inviteDocRef, { status: 'claimed' });
 
@@ -165,7 +181,7 @@ export function SignupForm() {
         title: t('signup_success_title'),
         description: t('signup_success_desc'),
       });
-      router.push('/login');
+      router.push(`/login${orgSlug ? `?org=${orgSlug}` : ''}`);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -178,16 +194,32 @@ export function SignupForm() {
   }
   
   return (
-    <Card className="mx-auto max-w-sm w-full border-none shadow-2xl">
-      <CardHeader className="text-center">
-         <div className="flex justify-center items-center gap-2 mb-4">
-          <Sprout className="h-8 w-8 text-primary" />
-          <h1 className="text-2xl font-headline font-bold">MercaFlow</h1>
+    <Card className="mx-auto max-w-sm w-full border-none shadow-2xl rounded-3xl overflow-hidden">
+      <CardHeader className="text-center pb-2">
+         <div className="flex flex-col items-center gap-2 mb-2">
+          {targetOrg?.storeConfig?.logoUrl ? (
+            <div className="relative h-16 w-32 mb-2">
+              <img 
+                src={targetOrg.storeConfig.logoUrl} 
+                alt={targetOrg.name} 
+                className="h-full w-full object-contain" 
+              />
+            </div>
+          ) : (
+            <div className="bg-primary/10 p-3 rounded-2xl mb-2">
+              <Sprout className="h-10 w-10 text-primary" />
+            </div>
+          )}
+          <h1 className="text-2xl font-headline font-bold">
+            {targetOrg ? targetOrg.name : "MercaFlow"}
+          </h1>
         </div>
-        <CardTitle className="text-2xl font-headline">{t('signup_title')}</CardTitle>
-        <CardDescription>El registro requiere invitación previa del administrador.</CardDescription>
+        <CardTitle className="text-xl font-headline mt-2">{t('signup_title')}</CardTitle>
+        <CardDescription>
+          {targetOrg ? `Únete al equipo de ${targetOrg.name}` : "El registro requiere invitación previa."}
+        </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -198,7 +230,7 @@ export function SignupForm() {
                   <FormLabel>Email Invitado</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input placeholder="tu@empresa.com" {...field} />
+                      <Input placeholder="tu@empresa.com" {...field} className="h-11 rounded-xl" />
                       {isCheckingInvite && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
                     </div>
                   </FormControl>
@@ -208,7 +240,7 @@ export function SignupForm() {
             />
 
             {inviteError && (
-              <Alert variant="destructive" className="bg-red-50">
+              <Alert variant="destructive" className="bg-red-50 rounded-xl border-red-100">
                 <ShieldAlert className="h-4 w-4" />
                 <AlertDescription className="text-xs">{inviteError}</AlertDescription>
               </Alert>
@@ -216,13 +248,13 @@ export function SignupForm() {
 
             {(inviteData || isSuperAdmin) && (
               <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-                <Alert className="bg-green-50 border-green-200 text-green-800">
+                <Alert className="bg-green-50 border-green-100 text-green-800 rounded-xl">
                   <Info className="h-4 w-4 !text-green-700" />
                   <AlertTitle className="text-xs font-bold uppercase tracking-wider">Invitación Validada</AlertTitle>
                   <AlertDescription className="text-xs">
                     {isSuperAdmin 
                       ? "Identidad de Administrador confirmada." 
-                      : `Acceso autorizado para gestionar "${targetOrg?.name || 'tu edificio'}".`}
+                      : `Acceso autorizado para ${targetOrg?.name || 'el edificio'}.`}
                   </AlertDescription>
                 </Alert>
 
@@ -233,7 +265,7 @@ export function SignupForm() {
                     <FormItem>
                       <FormLabel>Nombre Completo</FormLabel>
                       <FormControl>
-                        <Input placeholder="Tu nombre" {...field} />
+                        <Input placeholder="Tu nombre" {...field} className="h-11 rounded-xl" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -246,9 +278,9 @@ export function SignupForm() {
                     name="businessName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Nombre del Negocio</FormLabel>
+                        <FormLabel>Negocio / Edificio</FormLabel>
                         <FormControl>
-                          <Input readOnly className="bg-muted" {...field} />
+                          <Input readOnly className="bg-muted h-11 rounded-xl" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -263,23 +295,23 @@ export function SignupForm() {
                     <FormItem>
                       <FormLabel>Crea tu Contraseña</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
+                        <Input type="password" placeholder="••••••••" {...field} className="h-11 rounded-xl" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <Button type="submit" className="w-full !mt-4" disabled={isLoading}>
+                <Button type="submit" className="w-full h-11 rounded-xl font-bold shadow-lg !mt-4" disabled={isLoading}>
                   {isLoading ? t('creating_account') : t('create_account')}
                 </Button>
               </div>
             )}
           </form>
         </Form>
-        <div className="mt-6 text-center text-sm">
+        <div className="mt-6 text-center text-sm text-muted-foreground">
           {t('has_account')}{' '}
-          <Link href="/login" className="underline font-bold text-primary">
+          <Link href={`/login${orgSlug ? `?org=${orgSlug}` : ''}`} className="underline font-bold text-primary">
             {t('login')}
           </Link>
         </div>
