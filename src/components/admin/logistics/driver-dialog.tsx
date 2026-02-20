@@ -40,16 +40,16 @@ import { useUsers } from '@/hooks/use-users';
 import { Loader2, UserCheck, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-const driverSchema = z.object({
-  userId: z.string().min(1, "Debes seleccionar una cuenta de usuario"),
-  name: z.string().min(3, "El nombre es muy corto"),
-  phone: z.string().min(7, "El teléfono es requerido"),
-  email: z.string().email("Email inválido"),
+const createDriverSchema = (t: any) => z.object({
+  userId: z.string().min(1, t('dialog_driver_error_user')),
+  name: z.string().min(3, t('dialog_driver_error_name')),
+  phone: z.string().min(7, t('dialog_driver_error_phone')),
+  email: z.string().email(t('dialog_driver_error_email')),
   type: z.enum(['internal', 'external']),
-  vehicleInfo: z.string().min(2, "La información del vehículo es requerida"),
+  vehicleInfo: z.string().min(2, t('dialog_driver_error_vehicle')),
 });
 
-type FormValues = z.infer<typeof driverSchema>;
+type FormValues = z.infer<ReturnType<typeof createDriverSchema>>;
 
 interface DriverDialogProps {
   open: boolean;
@@ -64,13 +64,12 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
   const { users, loading: usersLoading } = useUsers();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Filtrar solo usuarios aprobados con rol de transportista
   const availableUsers = useMemo(() => {
     return users.filter(u => u.role === 'driver');
   }, [users]);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(driverSchema),
+    resolver: zodResolver(createDriverSchema(t)),
     defaultValues: {
       userId: '',
       name: '',
@@ -105,7 +104,6 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
     }
   }, [open, driver, form]);
 
-  // Al seleccionar un usuario, auto-completar datos básicos
   const handleUserSelect = (uid: string) => {
     const selectedUser = availableUsers.find(u => u.uid === uid);
     if (selectedUser) {
@@ -121,7 +119,7 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
     try {
       if (driver) {
         await updateDriver(driver.id, values);
-        toast({ title: "Perfil actualizado" });
+        toast({ title: t('toast_driver_added') });
       } else {
         await addDriver({
           ...values,
@@ -132,7 +130,7 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
       }
       onOpenChange(false);
     } catch (e) {
-      toast({ variant: 'destructive', title: "Error", description: "No se pudo vincular el conductor." });
+      toast({ variant: 'destructive', title: "Error" });
     } finally {
       setIsLoading(false);
     }
@@ -144,19 +142,19 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserCheck className="h-5 w-5 text-primary" />
-            {driver ? 'Editar Perfil de Conductor' : t('add_driver_button')}
+            {driver ? t('dialog_driver_edit_title') : t('add_driver_button')}
           </DialogTitle>
           <DialogDescription>
-            Vincula una cuenta de usuario aprobada con un recurso de transporte.
+            {t('dialog_driver_desc')}
           </DialogDescription>
         </DialogHeader>
 
         {availableUsers.length === 0 && !driver && !usersLoading && (
           <Alert variant="destructive" className="bg-red-50">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>No hay usuarios disponibles</AlertTitle>
+            <AlertTitle>{t('dialog_driver_no_users_title')}</AlertTitle>
             <AlertDescription>
-              Primero debes aprobar a alguien con el rol de "Transportista" en la sección de Personal y Accesos.
+              {t('dialog_driver_no_users_desc')}
             </AlertDescription>
           </Alert>
         )}
@@ -168,7 +166,7 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
               name="userId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Seleccionar Cuenta de Usuario</FormLabel>
+                  <FormLabel>{t('dialog_driver_select_user')}</FormLabel>
                   <Select 
                     onValueChange={(val) => {
                       field.onChange(val);
@@ -179,7 +177,7 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
                   >
                     <FormControl>
                       <SelectTrigger className="h-11">
-                        <SelectValue placeholder={usersLoading ? "Cargando personal..." : "Elegir transportista aprobado"} />
+                        <SelectValue placeholder={usersLoading ? t('dialog_driver_loading_users') : t('dialog_driver_placeholder_user')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -191,7 +189,7 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
                     </SelectContent>
                   </Select>
                   <FormDescription className="text-[10px]">
-                    Solo aparecen usuarios con el rol de "Transportista" asignado.
+                    {t('dialog_driver_hint_user')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -247,10 +245,10 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
             )}/>
 
             <DialogFooter className="pt-4">
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>{t('dialog_driver_cancel')}</Button>
               <Button type="submit" disabled={isLoading || (availableUsers.length === 0 && !driver)}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {driver ? 'Guardar Cambios' : 'Vincular y Activar'}
+                {driver ? t('dialog_driver_save') : t('dialog_driver_activate')}
               </Button>
             </DialogFooter>
           </form>

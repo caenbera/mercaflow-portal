@@ -30,13 +30,12 @@ const getInitials = (name: string) => {
 const COLORS = ['#27ae60', '#f1c40f', '#2c3e50', '#e74c3c', '#8e44ad'];
 type Period = "week" | "month" | "quarter" | "semester" | "year";
 
-// Helper function to get semester dates
 const getSemesterDetails = (date: Date) => {
   const month = date.getMonth();
   const year = date.getFullYear();
-  if (month < 6) { // First semester (Jan - Jun)
+  if (month < 6) {
     return { start: new Date(year, 0, 1), end: new Date(year, 5, 30, 23, 59, 59, 999) };
-  } else { // Second semester (Jul - Dec)
+  } else {
     return { start: new Date(year, 6, 1), end: new Date(year, 11, 31, 23, 59, 59, 999) };
   }
 };
@@ -68,21 +67,17 @@ export function ClientDashboard() {
 
     const now = new Date();
 
-    // Active Tracking Order (shipped or active in route)
     const activeTrackingOrder = orders.find(o => o.status === 'shipped' || (o.status === 'delivered' && o.deliveryInfo?.deliveredAt && (now.getTime() - o.deliveryInfo.deliveredAt.toMillis() < 3600000)));
 
-    // Month Spend
     const currentMonthStr = format(now, 'yyyy-MM');
     const monthSpend = orders
       .filter(order => order.createdAt && format(order.createdAt.toDate(), 'yyyy-MM') === currentMonthStr)
       .reduce((sum, order) => sum + order.total, 0);
     
-    // Pending Balance
     const pendingBalance = orders
         .filter(order => order.status !== 'delivered' && order.status !== 'cancelled')
         .reduce((sum, order) => sum + order.total, 0);
 
-    // Top Products
     const productCounts = orders.flatMap(order => order.items).reduce((acc, item) => {
         acc[item.productId] = (acc[item.productId] || 0) + item.quantity;
         return acc;
@@ -95,7 +90,6 @@ export function ClientDashboard() {
         return { ...product, totalQuantity: productCounts[id], totalSpent };
     }).filter((p): p is (Product & { totalQuantity: number, totalSpent: number }) => !!p?.id);
 
-    // Savings Card
     let startDate: Date, endDate: Date;
     switch (selectedPeriod) {
         case 'week': startDate = startOfWeek(now); endDate = endOfWeek(now); break;
@@ -118,12 +112,11 @@ export function ClientDashboard() {
             const percentageChange = ((currentSavings - previousSavings) / previousSavings) * 100;
             comparison = { value: percentageChange };
         } else if (currentSavings > 0) {
-            comparison = { value: 100 }; // If no savings last year, any saving is a 100% increase
+            comparison = { value: 100 };
         }
     }
     const savingsData = { currentSavings, comparison };
     
-    // Spend Chart
     const spendChartData = Array.from({ length: 6 }).map((_, i) => {
         const d = subYears(startOfMonth(now), i/12);
         const monthStr = format(d, 'MMM');
@@ -132,7 +125,6 @@ export function ClientDashboard() {
         return { name: monthStr, Gasto: total };
     }).reverse();
 
-    // Category Chart
     const salesByCategory: { [category: string]: number } = {};
     orders.forEach(order => {
         order.items.forEach(item => {
@@ -157,7 +149,6 @@ export function ClientDashboard() {
 
   return (
     <div className="flex flex-col gap-4 pb-20 md:pb-4">
-      {/* Header */}
       <div className="bg-card p-4 rounded-b-2xl shadow-sm md:shadow-none md:rounded-none md:bg-transparent md:p-6 lg:p-8">
         <div className="flex justify-between items-center">
             <div>
@@ -170,7 +161,6 @@ export function ClientDashboard() {
             </Avatar>
         </div>
 
-        {/* Tracking Card */}
         {dashboardData.activeTrackingOrder && (
           <Card className={cn(
             "mt-4 overflow-hidden border-none shadow-xl transition-all",
@@ -180,7 +170,7 @@ export function ClientDashboard() {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-black text-sm uppercase tracking-wider flex items-center gap-2">
                   {dashboardData.activeTrackingOrder.status === 'delivered' ? <CheckCircle2 className="h-4 w-4" /> : <Truck className="h-4 w-4 animate-bounce" />}
-                  {dashboardData.activeTrackingOrder.status === 'delivered' ? "PEDIDO ENTREGADO" : tLog('tracking_card_title')}
+                  {dashboardData.activeTrackingOrder.status === 'delivered' ? tLog('tracking_delivered_title') : tLog('tracking_card_title')}
                 </h3>
                 <Badge variant="outline" className="border-white/20 text-white text-[10px]">
                   #{dashboardData.activeTrackingOrder.id.substring(0,6).toUpperCase()}
@@ -199,13 +189,13 @@ export function ClientDashboard() {
                   <p className="text-sm font-medium opacity-90">
                     {tLog('tracking_driver_info', { 
                       driverName: dashboardData.activeTrackingOrder.deliveryInfo?.driverName || 'Nuestro equipo',
-                      vehicle: 'Unidad de Reparto' 
+                      vehicle: tLog('delivery_unit')
                     })}
                   </p>
                   <div className="flex items-center gap-4 pt-2 border-t border-white/10 mt-2">
                     <div className="flex flex-col">
-                      <span className="text-[10px] uppercase font-bold text-slate-400">Llegada</span>
-                      <span className="text-lg font-black text-primary">15-20 MIN</span>
+                      <span className="text-[10px] uppercase font-bold text-slate-400">{tLog('tracking_arrival_label')}</span>
+                      <span className="text-lg font-black text-primary">{tLog('tracking_arrival_time')}</span>
                     </div>
                     <div className="h-8 w-px bg-white/10" />
                     <p className="text-[10px] font-medium text-slate-400 italic">

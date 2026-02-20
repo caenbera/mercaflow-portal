@@ -69,7 +69,6 @@ export default function LogisticsPage() {
             serviceTimePointsCount++;
 
             // Consideramos "A tiempo" si el servicio (descarga) tomó menos de 45 minutos
-            // Esto es un KPI de eficiencia en el punto de entrega
             if (duration < 45 * 60 * 1000) {
               onTimeCount++;
             }
@@ -144,12 +143,12 @@ export default function LogisticsPage() {
             <Card className="lg:col-span-1 border-none shadow-md">
               <CardHeader>
                 <CardTitle className="text-lg">{t('pending_orders')}</CardTitle>
-                <CardDescription>Pedidos listos para ser asignados a una ruta.</CardDescription>
+                <CardDescription>{t('pending_orders_desc')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="p-12 text-center border-2 border-dashed rounded-2xl bg-slate-50/50">
                   <MapPin className="mx-auto h-10 w-10 text-slate-300 mb-3" />
-                  <p className="text-sm text-slate-500">Selecciona pedidos en el mapa para agruparlos.</p>
+                  <p className="text-sm text-slate-500">{t('map_instructions')}</p>
                 </div>
                 <Button className="w-full h-12 rounded-xl font-bold gap-2" disabled>
                   <Navigation className="h-4 w-4" />
@@ -160,8 +159,8 @@ export default function LogisticsPage() {
 
             <Card className="lg:col-span-2 border-none shadow-md overflow-hidden bg-slate-100 min-h-[500px] flex items-center justify-center">
                <div className="text-center">
-                  <p className="text-slate-400 font-medium">Mapa Interactivo de Logística</p>
-                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">Cargando Capas Geográficas...</p>
+                  <p className="text-slate-400 font-medium">{t('map_title')}</p>
+                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">{t('map_loading')}</p>
                </div>
             </Card>
           </div>
@@ -195,7 +194,7 @@ export default function LogisticsPage() {
                 <CardContent className="p-4 text-center">
                   <Truck className="h-6 w-6 text-primary mx-auto mb-2" />
                   <p className="text-2xl font-black text-white">{stats.totalRoutes}</p>
-                  <p className="text-[10px] uppercase font-bold text-slate-400">Viajes Totales</p>
+                  <p className="text-[10px] uppercase font-bold text-slate-400">{t('stats_total_trips')}</p>
                 </CardContent>
               </Card>
             </div>
@@ -210,10 +209,10 @@ export default function LogisticsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="pl-6">{t('log_driver')}</TableHead>
-                    <TableHead>Fecha</TableHead>
+                    <TableHead>{t('log_header_date')}</TableHead>
                     <TableHead>{t('log_status')}</TableHead>
-                    <TableHead>Puntos</TableHead>
-                    <TableHead className="text-right pr-6">Recepción</TableHead>
+                    <TableHead>{t('log_header_points')}</TableHead>
+                    <TableHead className="text-right pr-6">{t('log_header_reception')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -241,7 +240,7 @@ export default function LogisticsPage() {
                             {route.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-xs font-medium">{route.stops.length} paradas</TableCell>
+                        <TableCell className="text-xs font-medium">{route.stops.length} {t('label_stops')}</TableCell>
                         <TableCell className="text-right pr-6">
                           <div className="flex flex-col items-end">
                             {route.stops.filter(s => s.status === 'delivered').map(stop => (
@@ -257,7 +256,7 @@ export default function LogisticsPage() {
                       </TableRow>
                     ))
                   ) : (
-                    <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">No hay historial de rutas.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">{t('no_history')}</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -281,10 +280,10 @@ export default function LogisticsPage() {
               <Table>
                 <TableHeader className="bg-slate-50/50">
                   <TableRow>
-                    <TableHead className="pl-6">Conductor</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Vehículo</TableHead>
-                    <TableHead>Estado</TableHead>
+                    <TableHead className="pl-6">{t('driver_header_name')}</TableHead>
+                    <TableHead>{t('driver_header_type')}</TableHead>
+                    <TableHead>{t('driver_header_vehicle')}</TableHead>
+                    <TableHead>{t('driver_header_status')}</TableHead>
                     <TableHead className="text-right pr-6"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -327,7 +326,7 @@ export default function LogisticsPage() {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">
-                        No hay conductores vinculados.
+                        {t('no_drivers_linked')}
                       </TableCell>
                     </TableRow>
                   )}
