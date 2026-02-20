@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useOrganization } from '@/context/organization-context';
 import { useDrivers } from '@/hooks/use-drivers';
@@ -24,7 +24,6 @@ import { cn } from '@/lib/utils';
 import type { DriverProfile, Route } from '@/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { useEffect } from 'react';
 
 export default function LogisticsPage() {
   const t = useTranslations('Logistics');
@@ -50,15 +49,49 @@ export default function LogisticsPage() {
 
   const stats = useMemo(() => {
     const completed = routes.filter(r => r.status === 'completed');
-    const totalDeliveries = completed.reduce((acc, r) => acc + r.stops.length, 0);
     
-    // Cálculo de tiempo promedio (simulado basado en datos reales si existieran)
+    let totalStopsDelivered = 0;
+    let totalServiceTimeMs = 0;
+    let serviceTimePointsCount = 0;
+    let onTimeCount = 0;
+
+    routes.forEach(route => {
+      route.stops.forEach(stop => {
+        if (stop.status === 'delivered') {
+          totalStopsDelivered++;
+          
+          if (stop.arrivedAt && stop.completedAt) {
+            const arrival = stop.arrivedAt.toMillis();
+            const completion = stop.completedAt.toMillis();
+            const duration = completion - arrival;
+            
+            totalServiceTimeMs += duration;
+            serviceTimePointsCount++;
+
+            // Consideramos "A tiempo" si el servicio (descarga) tomó menos de 45 minutos
+            // Esto es un KPI de eficiencia en el punto de entrega
+            if (duration < 45 * 60 * 1000) {
+              onTimeCount++;
+            }
+          }
+        }
+      });
+    });
+
+    const avgMinutes = serviceTimePointsCount > 0 
+      ? Math.round((totalServiceTimeMs / serviceTimePointsCount) / 60000) 
+      : 0;
+    
+    const onTimeRate = totalStopsDelivered > 0 
+      ? Math.round((onTimeCount / totalStopsDelivered) * 100) 
+      : 100;
+
     return {
       totalRoutes: routes.length,
       completedRoutes: completed.length,
-      totalDeliveries,
-      avgDeliveryTime: "24 min",
-      onTimeRate: "94%"
+      totalDeliveries: totalStopsDelivered,
+      avgDeliveryTime: `${avgMinutes} min`,
+      onTimeRate: `${onTimeRate}%`
     };
   }, [routes]);
 
