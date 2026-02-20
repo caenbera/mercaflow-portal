@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { 
   Truck, Route as RouteIcon, UserCheck, Plus, 
   MapPin, Clock, CheckCircle2, ChevronRight, Navigation,
-  BarChart3, History, Timer, User, ShieldCheck
+  BarChart3, History, Timer, User, ShieldCheck, Package
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DriverDialog } from '@/components/admin/logistics/driver-dialog';
