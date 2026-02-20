@@ -14,10 +14,11 @@ import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { AlertCircle, PiggyBank, Wallet, Repeat, ArrowDown, ArrowUp } from 'lucide-react';
+import { AlertCircle, PiggyBank, Wallet, Repeat, ArrowDown, ArrowUp, Truck, CheckCircle2 } from 'lucide-react';
 import type { Order, Product } from '@/types';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subYears, getMonth } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subYears } from 'date-fns';
 import { useRouter } from '@/navigation';
+import { cn } from '@/lib/utils';
 
 const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
@@ -42,6 +43,7 @@ const getSemesterDetails = (date: Date) => {
 
 export function ClientDashboard() {
   const t = useTranslations('ClientDashboardPage');
+  const tLog = useTranslations('Logistics');
   const router = useRouter();
   const { userProfile } = useAuth();
   const locale = useLocale();
@@ -60,10 +62,14 @@ export function ClientDashboard() {
             savingsData: { currentSavings: 0, comparison: null },
             spendChartData: [],
             categoryChartData: [],
+            activeTrackingOrder: null,
         };
     }
 
     const now = new Date();
+
+    // Active Tracking Order (shipped or active in route)
+    const activeTrackingOrder = orders.find(o => o.status === 'shipped' || (o.status === 'delivered' && o.deliveryInfo?.deliveredAt && (now.getTime() - o.deliveryInfo.deliveredAt.toMillis() < 3600000)));
 
     // Month Spend
     const currentMonthStr = format(now, 'yyyy-MM');
@@ -143,7 +149,7 @@ export function ClientDashboard() {
       value: parseFloat(((value / totalSales) * 100).toFixed(1))
     })).sort((a, b) => b.value - a.value) : [];
 
-    return { monthSpend, pendingBalance, topProducts, savingsData, spendChartData, categoryChartData };
+    return { monthSpend, pendingBalance, topProducts, savingsData, spendChartData, categoryChartData, activeTrackingOrder };
   }, [orders, products, loading, userProfile, locale, selectedPeriod]);
 
   const budget = 5000;
@@ -163,6 +169,54 @@ export function ClientDashboard() {
                 <AvatarFallback>{userProfile ? getInitials(userProfile.businessName) : 'U'}</AvatarFallback>
             </Avatar>
         </div>
+
+        {/* Tracking Card */}
+        {dashboardData.activeTrackingOrder && (
+          <Card className={cn(
+            "mt-4 overflow-hidden border-none shadow-xl transition-all",
+            dashboardData.activeTrackingOrder.status === 'delivered' ? "bg-green-600 text-white" : "bg-slate-900 text-white"
+          )}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-black text-sm uppercase tracking-wider flex items-center gap-2">
+                  {dashboardData.activeTrackingOrder.status === 'delivered' ? <CheckCircle2 className="h-4 w-4" /> : <Truck className="h-4 w-4 animate-bounce" />}
+                  {dashboardData.activeTrackingOrder.status === 'delivered' ? "PEDIDO ENTREGADO" : tLog('tracking_card_title')}
+                </h3>
+                <Badge variant="outline" className="border-white/20 text-white text-[10px]">
+                  #{dashboardData.activeTrackingOrder.id.substring(0,6).toUpperCase()}
+                </Badge>
+              </div>
+              
+              {dashboardData.activeTrackingOrder.status === 'delivered' ? (
+                <p className="text-sm font-medium">
+                  {tLog('tracking_delivered_msg', { 
+                    person: dashboardData.activeTrackingOrder.deliveryInfo?.receivedBy || 'Usted',
+                    time: format(dashboardData.activeTrackingOrder.deliveryInfo?.deliveredAt?.toDate() || new Date(), 'HH:mm')
+                  })}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium opacity-90">
+                    {tLog('tracking_driver_info', { 
+                      driverName: dashboardData.activeTrackingOrder.deliveryInfo?.driverName || 'Nuestro equipo',
+                      vehicle: 'Unidad de Reparto' 
+                    })}
+                  </p>
+                  <div className="flex items-center gap-4 pt-2 border-t border-white/10 mt-2">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] uppercase font-bold text-slate-400">Llegada</span>
+                      <span className="text-lg font-black text-primary">15-20 MIN</span>
+                    </div>
+                    <div className="h-8 w-px bg-white/10" />
+                    <p className="text-[10px] font-medium text-slate-400 italic">
+                      {tLog('tracking_stop_number', { number: 3 })}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="mt-4 bg-primary text-primary-foreground border-none shadow-lg relative overflow-hidden">
             <div className="absolute w-24 h-24 bg-white/5 rounded-full -top-5 -right-5"></div>

@@ -363,6 +363,15 @@ export interface Order {
     general?: string;
     items?: Record<string, string>;
   };
+  deliveryInfo?: {
+    driverId: string;
+    driverName: string;
+    routeId: string;
+    shippedAt: Timestamp;
+    deliveredAt?: Timestamp;
+    receivedBy?: string;
+    eta?: string;
+  };
 }
 
 export type OrderInput = Omit<Order, 'id' | 'createdAt'>;
@@ -426,13 +435,15 @@ export interface DriverProfile {
 
 export interface RouteStop {
   orderId: string;
-  status: 'pending' | 'delivered' | 'failed';
+  status: 'pending' | 'arrived' | 'delivered' | 'failed';
   sequence: number;
   customerName: string;
   address: string;
   lat?: number;
   lng?: number;
+  arrivedAt?: Timestamp;
   completedAt?: Timestamp;
+  receivedBy?: string;
 }
 
 export interface Route {

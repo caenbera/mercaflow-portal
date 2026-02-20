@@ -36,6 +36,7 @@
   "role_picker": "Picker",
   "role_purchaser": "Comprador",
   "role_salesperson": "Vendedor",
+  "role_driver": "Transportista",
   "menu_access_control": "Control de Acceso",
   "menu_delete_account": "Eliminar Cuenta"
 }
