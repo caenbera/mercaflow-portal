@@ -50,5 +50,7 @@
   "tracking_stop_number": "Eres la parada #{number} de la ruta.",
   "tracking_delivered_msg": "Tu pedido fue recibido por {person} a las {time}",
   "delivery_started": "Ruta Iniciada",
-  "delivery_finished": "Ruta Finalizada"
+  "delivery_finished": "Ruta Finalizada",
+  "select_user_label": "Seleccionar Cuenta de Usuario",
+  "select_user_placeholder": "Elegir transportista aprobado"
 }

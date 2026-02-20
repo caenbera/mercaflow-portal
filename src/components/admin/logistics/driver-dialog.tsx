@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import {
   Select,
@@ -32,16 +34,19 @@ import {
 } from '@/components/ui/select';
 import { addDriver, updateDriver } from '@/lib/firestore/drivers';
 import { useToast } from '@/hooks/use-toast';
-import type { DriverProfile, DriverType } from '@/types';
+import type { DriverProfile, DriverType, UserProfile } from '@/types';
 import { useOrganization } from '@/context/organization-context';
-import { Loader2, Truck, UserCheck } from 'lucide-react';
+import { useUsers } from '@/hooks/use-users';
+import { Loader2, UserCheck, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const driverSchema = z.object({
-  name: z.string().min(3, "Name is too short"),
-  phone: z.string().min(7, "Phone is required"),
-  email: z.string().email("Invalid email"),
+  userId: z.string().min(1, "Debes seleccionar una cuenta de usuario"),
+  name: z.string().min(3, "El nombre es muy corto"),
+  phone: z.string().min(7, "El teléfono es requerido"),
+  email: z.string().email("Email inválido"),
   type: z.enum(['internal', 'external']),
-  vehicleInfo: z.string().min(2, "Vehicle info is required"),
+  vehicleInfo: z.string().min(2, "La información del vehículo es requerida"),
 });
 
 type FormValues = z.infer<typeof driverSchema>;
@@ -56,11 +61,18 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
   const t = useTranslations('Logistics');
   const { toast } = useToast();
   const { activeOrgId } = useOrganization();
+  const { users, loading: usersLoading } = useUsers();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Filtrar solo usuarios aprobados con rol de transportista
+  const availableUsers = useMemo(() => {
+    return users.filter(u => u.role === 'driver');
+  }, [users]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(driverSchema),
     defaultValues: {
+      userId: '',
       name: '',
       phone: '',
       email: '',
@@ -73,6 +85,7 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
     if (open) {
       if (driver) {
         form.reset({
+          userId: driver.userId,
           name: driver.name,
           phone: driver.phone,
           email: driver.email,
@@ -81,6 +94,7 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
         });
       } else {
         form.reset({
+          userId: '',
           name: '',
           phone: '',
           email: '',
@@ -91,24 +105,34 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
     }
   }, [open, driver, form]);
 
+  // Al seleccionar un usuario, auto-completar datos básicos
+  const handleUserSelect = (uid: string) => {
+    const selectedUser = availableUsers.find(u => u.uid === uid);
+    if (selectedUser) {
+      form.setValue('name', selectedUser.contactPerson || selectedUser.businessName);
+      form.setValue('email', selectedUser.email);
+      if (selectedUser.phone) form.setValue('phone', selectedUser.phone);
+    }
+  };
+
   const onSubmit = async (values: FormValues) => {
     if (!activeOrgId) return;
     setIsLoading(true);
     try {
       if (driver) {
         await updateDriver(driver.id, values);
-        toast({ title: t('toast_driver_added') });
+        toast({ title: "Perfil actualizado" });
       } else {
         await addDriver({
           ...values,
           organizationId: activeOrgId,
-          userId: 'PENDING', // In a real app, you'd create a user or link an existing one
+          status: 'active',
         });
         toast({ title: t('toast_driver_added') });
       }
       onOpenChange(false);
     } catch (e) {
-      toast({ variant: 'destructive', title: "Error" });
+      toast({ variant: 'destructive', title: "Error", description: "No se pudo vincular el conductor." });
     } finally {
       setIsLoading(false);
     }
@@ -120,22 +144,64 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserCheck className="h-5 w-5 text-primary" />
-            {driver ? t('add_driver_button') : t('add_driver_button')}
+            {driver ? 'Editar Perfil de Conductor' : t('add_driver_button')}
           </DialogTitle>
+          <DialogDescription>
+            Vincula una cuenta de usuario aprobada con un recurso de transporte.
+          </DialogDescription>
         </DialogHeader>
+
+        {availableUsers.length === 0 && !driver && !usersLoading && (
+          <Alert variant="destructive" className="bg-red-50">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>No hay usuarios disponibles</AlertTitle>
+            <AlertDescription>
+              Primero debes aprobar a alguien con el rol de "Transportista" en la sección de Personal y Accesos.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="name" render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('driver_name_label')}</FormLabel>
-                <FormControl><Input {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )}/>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="phone" render={({ field }) => (
+            <FormField
+              control={form.control}
+              name="userId"
+              render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('driver_phone_label')}</FormLabel>
+                  <FormLabel>Seleccionar Cuenta de Usuario</FormLabel>
+                  <Select 
+                    onValueChange={(val) => {
+                      field.onChange(val);
+                      handleUserSelect(val);
+                    }} 
+                    value={field.value}
+                    disabled={!!driver || usersLoading}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder={usersLoading ? "Cargando personal..." : "Elegir transportista aprobado"} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {availableUsers.map(u => (
+                        <SelectItem key={u.uid} value={u.uid}>
+                          {u.contactPerson || u.businessName} ({u.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription className="text-[10px]">
+                    Solo aparecen usuarios con el rol de "Transportista" asignado.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="name" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('driver_name_label')}</FormLabel>
                   <FormControl><Input {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -154,13 +220,24 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
                 </FormItem>
               )}/>
             </div>
-            <FormField control={form.control} name="email" render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('driver_email_label')}</FormLabel>
-                <FormControl><Input type="email" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )}/>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="phone" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('driver_phone_label')}</FormLabel>
+                  <FormControl><Input {...field} type="tel" /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}/>
+              <FormField control={form.control} name="email" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('driver_email_label')}</FormLabel>
+                  <FormControl><Input type="email" {...field} readOnly className="bg-muted/50" /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}/>
+            </div>
+
             <FormField control={form.control} name="vehicleInfo" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('vehicle_label')}</FormLabel>
@@ -168,11 +245,12 @@ export function DriverDialog({ open, onOpenChange, driver }: DriverDialogProps) 
                 <FormMessage />
               </FormItem>
             )}/>
-            <DialogFooter>
+
+            <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || (availableUsers.length === 0 && !driver)}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {t('add_driver_button')}
+                {driver ? 'Guardar Cambios' : 'Vincular y Activar'}
               </Button>
             </DialogFooter>
           </form>

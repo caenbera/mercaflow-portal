@@ -50,5 +50,7 @@
   "tracking_stop_number": "You are stop #{number} on the route.",
   "tracking_delivered_msg": "Your order was received by {person} at {time}",
   "delivery_started": "Route Started",
-  "delivery_finished": "Route Finished"
+  "delivery_finished": "Route Finished",
+  "select_user_label": "Select User Account",
+  "select_user_placeholder": "Choose approved driver"
 }
