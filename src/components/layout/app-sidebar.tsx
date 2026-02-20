@@ -40,6 +40,14 @@ export interface NavItem {
   icon: React.ElementType;
 }
 
+export interface NavDefinition {
+  mobile: {
+    client: NavItem[];
+    admin: NavItem[];
+    salesperson: NavItem[];
+  };
+}
+
 const CollapsibleSidebarGroup = ({ title, items, defaultOpen = false, icon: Icon, activeColor }: { title: string; items: NavItem[]; defaultOpen?: boolean; icon?: React.ElementType; activeColor?: string }) => {
   const pathname = usePathname();
   const isActiveGroup = items.some(item => pathname.startsWith(item.href));
