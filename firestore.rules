@@ -7,34 +7,37 @@ service cloud.firestore {
     /**
      * FUNCIONES GLOBALES DE SEGURIDAD
      */
-    function isAuthed() {
+    
+    // Verifica si el usuario está autenticado
+    function isSignedIn() {
       return request.auth != null;
     }
 
+    // Verifica si el correo es el del Super Admin principal
     function isEmailSuperAdmin() {
-      return isAuthed() && request.auth.token.email == 'caenbera@gmail.com';
+      return isSignedIn() && request.auth.token.email == 'caenbera@gmail.com';
     }
 
+    // Verifica si el usuario tiene el rol de superadmin en su perfil
     function isSuperAdmin() {
       return isEmailSuperAdmin() || (
-        isAuthed() && 
+        isSignedIn() && 
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin'
       );
     }
 
+    // Obtiene los datos del perfil del usuario actual
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    function userExists() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
+    // Verifica si el usuario pertenece al staff de una organización específica
     function isOrgStaff(orgId) {
-      return isAuthed() && (
+      return isSignedIn() && (
         isSuperAdmin() ||
-        (userExists() && getUserData().organizationId == orgId)
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         getUserData().organizationId == orgId)
       );
     }
 
@@ -42,14 +45,32 @@ service cloud.firestore {
      * LOGÍSTICA (DRIVERS & ROUTES)
      */
     match /drivers/{id} {
-      allow read: if isAuthed() && (isSuperAdmin() || resource.data.organizationId == getUserData().organizationId || resource.data.userId == request.auth.uid);
-      allow write: if isAuthed() && (isSuperAdmin() || request.resource.data.organizationId == getUserData().organizationId);
+      allow read: if isSignedIn() && (
+        isSuperAdmin() || 
+        (resource != null && resource.data.organizationId == getUserData().organizationId) || 
+        (resource != null && resource.data.userId == request.auth.uid)
+      );
+      allow write: if isSignedIn() && (
+        isSuperAdmin() || 
+        (request.resource.data.organizationId == getUserData().organizationId)
+      );
     }
 
     match /routes/{id} {
-      allow read: if isAuthed() && (isSuperAdmin() || resource.data.organizationId == getUserData().organizationId || resource.data.driverId == request.auth.uid);
-      allow update: if isAuthed() && (isSuperAdmin() || resource.data.organizationId == getUserData().organizationId || resource.data.driverId == request.auth.uid);
-      allow create, delete: if isAuthed() && (isSuperAdmin() || request.resource.data.organizationId == getUserData().organizationId);
+      allow read: if isSignedIn() && (
+        isSuperAdmin() || 
+        (resource != null && resource.data.organizationId == getUserData().organizationId) || 
+        (resource != null && resource.data.driverId == request.auth.uid)
+      );
+      allow update: if isSignedIn() && (
+        isSuperAdmin() || 
+        (resource != null && resource.data.organizationId == getUserData().organizationId) || 
+        (resource != null && resource.data.driverId == request.auth.uid)
+      );
+      allow create, delete: if isSignedIn() && (
+        isSuperAdmin() || 
+        (request.resource.data.organizationId == getUserData().organizationId)
+      );
     }
 
     /**
@@ -58,7 +79,7 @@ service cloud.firestore {
     match /organizations/{orgId} {
       allow read: if true;
       allow create: if isSuperAdmin();
-      allow update: if isSuperAdmin() || (isAuthed() && get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid);
+      allow update: if isSuperAdmin() || (isSignedIn() && get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid);
       allow delete: if isSuperAdmin();
     }
 
@@ -66,25 +87,42 @@ service cloud.firestore {
      * PEDIDOS
      */
     match /orders/{id} {
-      allow read: if isAuthed();
-      allow list: if isAuthed();
-      allow create: if isAuthed();
-      allow update: if isAuthed();
+      allow read, list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+    }
+
+    /**
+     * PRODUCTOS Y PROSPECTOS
+     */
+    match /products/{id} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /prospects/{id} {
+      allow read, write: if isSignedIn();
+      match /visits/{visitId} {
+        allow read, write: if isSignedIn();
+      }
     }
 
     /**
      * USUARIOS
      */
     match /users/{userId} {
-      allow read: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
+      allow read: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin());
       allow list: if isSuperAdmin();
-      allow write: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
+      allow write: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin());
       
       match /{allSubcollections=**} {
-        allow read, write: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
+        allow read, write: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin());
       }
     }
 
+    /**
+     * REGLA GLOBAL PARA SUPERADMIN
+     */
     match /{path=**} {
       allow read, write: if isSuperAdmin();
     }
