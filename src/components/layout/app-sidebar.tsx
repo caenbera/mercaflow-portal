@@ -238,6 +238,14 @@ export function AppSidebar() {
                                 <CollapsibleSidebarGroup title={t('group_procurement')} items={modules.procurement} icon={ShoppingBag} />
                                 <CollapsibleSidebarGroup title={t('group_warehouse')} items={modules.warehouse} icon={Boxes} />
                                 <CollapsibleSidebarGroup title={t('group_administration')} items={modules.administration} icon={UserCog} />
+                                
+                                <Separator className="my-2 opacity-30" />
+                                <div className="px-2 py-1 text-[9px] font-bold text-primary/70 uppercase tracking-widest flex items-center gap-2">
+                                  <Users className="h-3 w-3" /> {t('clientPortal')}
+                                </div>
+                                <CollapsibleSidebarGroup title={t('group_store')} items={modules.clientPortal.store} icon={ShoppingCart} activeColor="text-primary" />
+                                <CollapsibleSidebarGroup title={t('group_activity')} items={modules.clientPortal.activity} icon={History} activeColor="text-primary" />
+                                <CollapsibleSidebarGroup title={t('group_account')} items={modules.clientPortal.account} icon={UserCircle} activeColor="text-primary" />
                             </div>
                           </CollapsibleContent>
                         </Collapsible>
