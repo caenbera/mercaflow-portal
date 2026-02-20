@@ -1,0 +1,171 @@
+
+"use client";
+
+import { useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useOrganization } from '@/context/organization-context';
+import { useDrivers } from '@/hooks/use-drivers';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { 
+  Truck, Route as RouteIcon, UserCheck, Plus, 
+  MapPin, Clock, CheckCircle2, ChevronRight, Navigation
+} from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { DriverDialog } from '@/components/admin/logistics/driver-dialog';
+import type { DriverProfile } from '@/types';
+
+export default function LogisticsPage() {
+  const t = useTranslations('Logistics');
+  const { activeOrgId } = useOrganization();
+  const { drivers, loading: driversLoading } = useDrivers(activeOrgId);
+  
+  const [isDriverDialogOpen, setIsDriverDialogOpen] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<DriverProfile | null>(null);
+
+  const handleAddDriver = () => {
+    setSelectedDriver(null);
+    setIsDriverDialogOpen(true);
+  };
+
+  const handleEditDriver = (driver: DriverProfile) => {
+    setSelectedDriver(driver);
+    setIsDriverDialogOpen(true);
+  };
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto flex flex-col gap-8">
+      <DriverDialog 
+        open={isDriverDialogOpen} 
+        onOpenChange={setIsDriverDialogOpen} 
+        driver={selectedDriver} 
+      />
+
+      <div className="flex justify-between items-end flex-wrap gap-4">
+        <div>
+          <h1 className="text-3xl font-bold font-headline flex items-center gap-3">
+            <Truck className="text-primary h-8 w-8" />
+            {t('title')}
+          </h1>
+          <p className="text-muted-foreground mt-1">{t('subtitle')}</p>
+        </div>
+      </div>
+
+      <Tabs defaultValue="routes" className="w-full">
+        <TabsList className="bg-white p-1 rounded-xl border shadow-sm mb-8 h-auto">
+          <TabsTrigger value="routes" className="rounded-lg py-2.5 px-6 gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
+            <RouteIcon className="h-4 w-4" />
+            {t('tab_routes')}
+          </TabsTrigger>
+          <TabsTrigger value="drivers" className="rounded-lg py-2.5 px-6 gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
+            <UserCheck className="h-4 w-4" />
+            {t('tab_drivers')}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="routes">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <Card className="lg:col-span-1 border-none shadow-md">
+              <CardHeader>
+                <CardTitle className="text-lg">{t('pending_orders')}</CardTitle>
+                <CardDescription>Pedidos listos para ser asignados a una ruta.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-12 text-center border-2 border-dashed rounded-2xl bg-slate-50/50">
+                  <MapPin className="mx-auto h-10 w-10 text-slate-300 mb-3" />
+                  <p className="text-sm text-slate-500">Selecciona pedidos en el mapa para agruparlos.</p>
+                </div>
+                <Button className="w-full h-12 rounded-xl font-bold gap-2">
+                  <Navigation className="h-4 w-4" />
+                  {t('suggest_routes_ai')}
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2 border-none shadow-md overflow-hidden bg-slate-100 min-h-[500px] flex items-center justify-center">
+               <div className="text-center">
+                  <p className="text-slate-400 font-medium">Mapa Interactivo de Logística</p>
+                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">Cargando Capas Geográficas...</p>
+               </div>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="drivers">
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold">{t('drivers_title')}</h2>
+                <p className="text-sm text-muted-foreground">{t('drivers_desc')}</p>
+              </div>
+              <Button onClick={handleAddDriver} className="rounded-full shadow-lg">
+                <Plus className="mr-2 h-4 w-4" /> {t('add_driver_button')}
+              </Button>
+            </div>
+
+            <Card className="border-none shadow-md overflow-hidden">
+              <Table>
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow>
+                    <TableHead className="pl-6">Conductor</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Vehículo</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right pr-6"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {driversLoading ? (
+                    <TableRow><TableCell colSpan={5}><Skeleton className="h-12 w-full" /></TableCell></TableRow>
+                  ) : drivers.length > 0 ? (
+                    drivers.map((driver) => (
+                      <TableRow key={driver.id} className="hover:bg-slate-50">
+                        <TableCell className="pl-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-10 w-10 border">
+                              <AvatarFallback className="bg-primary/10 text-primary font-bold">{driver.name.substring(0,2).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-bold text-slate-800">{driver.name}</p>
+                              <p className="text-xs text-muted-foreground">{driver.phone}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={cn(
+                            "text-[10px] uppercase font-bold",
+                            driver.type === 'internal' ? "bg-blue-50 text-blue-700" : "bg-purple-50 text-purple-700"
+                          )}>
+                            {t(`type_${driver.type}` as any)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-slate-600">{driver.vehicleInfo}</TableCell>
+                        <TableCell>
+                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">{t('status_active')}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right pr-6">
+                          <Button variant="ghost" size="icon" onClick={() => handleEditDriver(driver)}>
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                        No hay conductores vinculados.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

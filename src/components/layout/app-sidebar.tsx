@@ -26,7 +26,7 @@ import {
   LayoutGrid, ShoppingCart, Package, Users,
   ClipboardList, Leaf, Truck, ShoppingBag, Boxes, Headset, 
   ChevronRight, Trophy, Building2, Globe, Store, Share2, Plus, Lock,
-  Target, UserCog, Eye, History, FileText, UserCircle, Tag
+  Target, UserCog, Eye, History, FileText, UserCircle, Tag, Navigation
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/navigation';
@@ -38,14 +38,6 @@ export interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
-}
-
-export interface NavDefinition {
-  mobile: {
-    client: NavItem[];
-    admin: NavItem[];
-    salesperson: NavItem[];
-  };
 }
 
 const CollapsibleSidebarGroup = ({ title, items, defaultOpen = false, icon: Icon, activeColor }: { title: string; items: NavItem[]; defaultOpen?: boolean; icon?: React.ElementType; activeColor?: string }) => {
@@ -94,7 +86,6 @@ export function AppSidebar() {
   const loading = authLoading || orgsLoading;
 
   const getModuleItems = (org: Organization) => {
-    // Convenios actuales del edificio
     const agreements = org.adminAgreements || { catalog: false, operations: false, finance: false, sales: false };
 
     const modules: any = {
@@ -107,6 +98,9 @@ export function AppSidebar() {
       sales: [
           { href: `/admin/sales`, label: t('prospects'), icon: Target },
           { href: `/admin/network`, label: t('supplyNetwork'), icon: Share2 },
+      ],
+      logistics: [
+          { href: `/admin/logistics`, label: 'Logística & Delivery', icon: Truck },
       ],
       administration: [
           { href: `/admin/users`, label: t('manageUsers'), icon: UserCog },
@@ -141,22 +135,18 @@ export function AppSidebar() {
       }
     };
 
-    // APLICACIÓN DE RESTRICCIONES (Incluso para Super Admin si está visualizando un edificio específico)
-    // Esto te permite validar que el sistema funciona correctamente.
-    
     if (!agreements.operations) {
       modules.management = modules.management.filter((m: any) => m.href !== '/admin/orders');
       modules.administration = [];
       modules.procurement = [];
       modules.warehouse = [];
+      modules.logistics = [];
     }
     
     if (!agreements.catalog) {
       modules.catalog = [];
     }
     
-    // REQUISITO REFINADO: Solo desaparece "Prospectos y Rutas" si el convenio de ventas está en OFF.
-    // "Red de Suministro" es necesaria y permanece visible.
     if (!agreements.sales) {
       modules.sales = modules.sales.filter((m: any) => m.href !== '/admin/sales');
     }
@@ -188,27 +178,18 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild 
-                  tooltip={t('manageBuildings')}
-                  onClick={() => setActiveOrgId(null)}
-                >
-                  <Link href="/admin/organizations">
-                    <Building2 />
-                    <span>{t('manageBuildings')}</span>
-                  </Link>
+                <SidebarMenuButton asChild tooltip={t('manageBuildings')} onClick={() => setActiveOrgId(null)}>
+                  <Link href="/admin/organizations"><Building2 /><span>{t('manageBuildings')}</span></Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild 
-                  tooltip={t('manageUsersGlobal')}
-                  onClick={() => setActiveOrgId(null)}
-                >
-                  <Link href="/admin/platform/users">
-                    <Users />
-                    <span>{t('manageUsersGlobal')}</span>
-                  </Link>
+                <SidebarMenuButton asChild tooltip={t('manageUsersGlobal')} onClick={() => setActiveOrgId(null)}>
+                  <Link href="/admin/platform/users"><Users /><span>{t('manageUsersGlobal')}</span></Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Terminal de Conductor">
+                  <Link href="/driver"><Navigation /><span>Terminal de Conductor</span></Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -231,9 +212,6 @@ export function AppSidebar() {
                     const OrgIcon = getOrgTypeIcon(org.type);
                     const modules = getModuleItems(org);
                     
-                    // El superadmin puede entrar a ver cualquier edificio para configurar sus módulos
-                    const canEnter = true; 
-
                     return (
                       <SidebarMenuItem key={org.id}>
                         <Collapsible 
@@ -244,49 +222,22 @@ export function AppSidebar() {
                           <CollapsibleTrigger asChild>
                             <SidebarMenuButton 
                               isActive={isActive}
-                              className={cn(
-                                "transition-colors",
-                                isActive ? "bg-primary/10 text-primary border border-primary/20" : ""
-                              )}
+                              className={cn("transition-colors", isActive ? "bg-primary/10 text-primary border border-primary/20" : "")}
                             >
                               <OrgIcon className="h-4 w-4 shrink-0" />
                               <span className="truncate">{org.name}</span>
-                              {org.isTest && <Badge variant="outline" className="text-[8px] h-3 px-1 ml-auto bg-yellow-400/10 text-yellow-600 border-yellow-400/20">TEST</Badge>}
                               <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 shrink-0" />
                             </SidebarMenuButton>
                           </CollapsibleTrigger>
                           <CollapsibleContent>
                             <div className="pl-4 py-1 space-y-1">
                                 <CollapsibleSidebarGroup title={t('group_management')} items={modules.management} icon={LayoutGrid} />
+                                <CollapsibleSidebarGroup title="Logística" items={modules.logistics} icon={Truck} activeColor="text-primary" />
                                 <CollapsibleSidebarGroup title={t('group_sales')} items={modules.sales} icon={Target} activeColor="text-primary" />
                                 <CollapsibleSidebarGroup title={t('group_catalog')} items={modules.catalog} icon={Package} />
                                 <CollapsibleSidebarGroup title={t('group_procurement')} items={modules.procurement} icon={ShoppingBag} />
                                 <CollapsibleSidebarGroup title={t('group_warehouse')} items={modules.warehouse} icon={Boxes} />
                                 <CollapsibleSidebarGroup title={t('group_administration')} items={modules.administration} icon={UserCog} />
-                                
-                                <div className="mt-2 pt-2 border-t border-sidebar-border/50">
-                                  <div className="px-2 py-1.5 text-[10px] font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                                    <Eye className="h-3 w-3" /> {t('clientPortal')}
-                                  </div>
-                                  <CollapsibleSidebarGroup 
-                                    title={t('group_store')} 
-                                    items={modules.clientPortal.store} 
-                                    icon={ShoppingBag} 
-                                    activeColor="text-primary"
-                                  />
-                                  <CollapsibleSidebarGroup 
-                                    title={t('group_activity')} 
-                                    items={modules.clientPortal.activity} 
-                                    icon={History} 
-                                    activeColor="text-primary"
-                                  />
-                                  <CollapsibleSidebarGroup 
-                                    title={t('group_account')} 
-                                    items={modules.clientPortal.account} 
-                                    icon={UserCog} 
-                                    activeColor="text-primary"
-                                  />
-                                </div>
                             </div>
                           </CollapsibleContent>
                         </Collapsible>

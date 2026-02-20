@@ -11,7 +11,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // El Super Admin por correo tiene poder absoluto para evitar bloqueos
     function isEmailSuperAdmin() {
       return isAuthed() && request.auth.token.email == 'caenbera@gmail.com';
     }
@@ -32,16 +31,6 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
-    // Verifica si el usuario es el dueño legal de una organización específica
-    function isOrgOwner(orgId) {
-      return isAuthed() && (
-        isSuperAdmin() ||
-        (exists(/databases/$(database)/documents/organizations/$(orgId)) && 
-         get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid)
-      );
-    }
-
-    // Verifica si el usuario pertenece al staff de esa organización
     function isOrgStaff(orgId) {
       return isAuthed() && (
         isSuperAdmin() ||
@@ -50,43 +39,43 @@ service cloud.firestore {
     }
 
     /**
-     * ORGANIZACIONES (EDIFICIOS)
+     * LOGÍSTICA (DRIVERS & ROUTES)
      */
-    match /organizations/{orgId} {
-      allow read: if true; // Publico para landing pages
-      allow create: if isSuperAdmin();
-      allow update: if isSuperAdmin() || isOrgOwner(orgId);
-      allow delete: if isSuperAdmin();
+    match /drivers/{id} {
+      allow read: if isAuthed() && (isSuperAdmin() || resource.data.organizationId == getUserData().organizationId || resource.data.userId == request.auth.uid);
+      allow write: if isAuthed() && (isSuperAdmin() || request.resource.data.organizationId == getUserData().organizationId);
+    }
+
+    match /routes/{id} {
+      allow read: if isAuthed() && (isSuperAdmin() || resource.data.organizationId == getUserData().organizationId || resource.data.driverId == request.auth.uid);
+      allow update: if isAuthed() && (isSuperAdmin() || resource.data.organizationId == getUserData().organizationId || resource.data.driverId == request.auth.uid);
+      allow create, delete: if isAuthed() && (isSuperAdmin() || request.resource.data.organizationId == getUserData().organizationId);
     }
 
     /**
-     * PRODUCTOS
+     * ORGANIZACIONES
      */
-    match /products/{id} {
-      allow read: if true; 
-      allow write: if isSuperAdmin() || isOrgStaff(request.resource.data.organizationId) || isOrgOwner(request.resource.data.organizationId);
+    match /organizations/{orgId} {
+      allow read: if true;
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin() || (isAuthed() && get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid);
+      allow delete: if isSuperAdmin();
     }
 
     /**
      * PEDIDOS
      */
     match /orders/{id} {
-      allow read: if isAuthed() && (
-        isSuperAdmin() ||
-        resource.data.userId == request.auth.uid || 
-        isOrgStaff(resource.data.organizationId) || 
-        isOrgOwner(resource.data.organizationId)
-      );
+      allow read: if isAuthed();
       allow list: if isAuthed();
       allow create: if isAuthed();
-      allow update: if isSuperAdmin() || isOrgStaff(resource.data.organizationId) || isOrgOwner(resource.data.organizationId);
+      allow update: if isAuthed();
     }
 
     /**
-     * USUARIOS Y PERFILES
+     * USUARIOS
      */
     match /users/{userId} {
-      // Simplificamos para que el dueño siempre pueda leer su propio perfil incluso si el sistema está inicializando
       allow read: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
       allow list: if isSuperAdmin();
       allow write: if isAuthed() && (request.auth.uid == userId || isSuperAdmin());
@@ -96,24 +85,8 @@ service cloud.firestore {
       }
     }
 
-    /**
-     * NEWSLETTER
-     */
-    match /newsletterSubscribers/{id} {
-      allow create: if true;
-      allow read: if isSuperAdmin() || isOrgOwner(resource.data.organizationId);
-    }
-
-    // Invitaciones de Admin
-    match /adminInvites/{email} {
-      allow read: if true; 
-      allow write: if isSuperAdmin();
-    }
-
-    // Regla de respaldo absoluta para el Super Admin
     match /{path=**} {
       allow read, write: if isSuperAdmin();
     }
   }
-
 }

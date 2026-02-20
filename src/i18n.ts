@@ -3,8 +3,6 @@ import {getRequestConfig} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {locales} from './i18n-config';
 
-// This function now dynamically imports all message files for a given locale
-// and combines them into a single object.
 async function getMessages(locale: string) {
   try {
     const authMessages = (await import(`./messages/${locale}/Auth.json`)).default;
@@ -44,6 +42,7 @@ async function getMessages(locale: string) {
     const metadataMessages = (await import(`./messages/${locale}/Metadata.json`)).default;
     const adminSalesPageMessages = (await import(`./messages/${locale}/AdminSalesPage.json`)).default;
     const b2cStoreMessages = (await import(`./messages/${locale}/B2CStore.json`)).default;
+    const logisticsMessages = (await import(`./messages/${locale}/Logistics.json`)).default;
 
 
     return {
@@ -51,7 +50,6 @@ async function getMessages(locale: string) {
       Dashboard: dashboardMessages,
       LandingPageAgitationSection: landingPageAgitationSectionMessages,
       LandingPageBridgeSection: landingPageBridgeSectionMessages,
-      LearningPageContactForms: landingPageContactFormsMessages, // Corrected typo if needed, but keeping current pattern
       LandingPageContactForms: landingPageContactFormsMessages,
       LandingPageContactInfo: landingPageContactInfoMessages,
       LandingPageFooter: landingPageFooterMessages,
@@ -85,6 +83,7 @@ async function getMessages(locale: string) {
       Metadata: metadataMessages,
       AdminSalesPage: adminSalesPageMessages,
       B2CStore: b2cStoreMessages,
+      Logistics: logisticsMessages,
     };
   } catch (error) {
     notFound();
@@ -92,14 +91,7 @@ async function getMessages(locale: string) {
 }
 
 export default getRequestConfig(async ({requestLocale}) => {
-  // Use the parameter instead of importing getRequestLocale
   const locale = await requestLocale;
-  
-  // Validate that the incoming `locale` parameter is valid
   if (!locale || !locales.includes(locale as any)) notFound();
- 
-  return {
-    locale,
-    messages: await getMessages(locale)
-  };
+  return { locale, messages: await getMessages(locale) };
 });

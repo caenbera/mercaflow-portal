@@ -2,7 +2,7 @@
 import type { Timestamp } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 
-export type UserRole = 'client' | 'admin' | 'superadmin' | 'picker' | 'purchaser' | 'salesperson' | 'customer';
+export type UserRole = 'client' | 'admin' | 'superadmin' | 'picker' | 'purchaser' | 'salesperson' | 'customer' | 'driver';
 export type UserStatus = 'active' | 'pending_approval' | 'blocked';
 export type ClientTier = 'standard' | 'bronze' | 'silver' | 'gold';
 
@@ -403,6 +403,49 @@ export interface RewardActivity {
   id: string;
   description: string;
   points: number;
+  createdAt: Timestamp;
+}
+
+// --- LOGISTICS ---
+export type DriverType = 'internal' | 'external';
+export type RouteStatus = 'pending' | 'active' | 'completed';
+
+export interface DriverProfile {
+  id: string;
+  organizationId: string;
+  userId: string; // UID of the user with 'driver' role
+  name: string;
+  phone: string;
+  email: string;
+  type: DriverType;
+  vehicleInfo: string;
+  status: 'active' | 'inactive';
+  currentRouteId?: string;
+  createdAt: Timestamp;
+}
+
+export interface RouteStop {
+  orderId: string;
+  status: 'pending' | 'delivered' | 'failed';
+  sequence: number;
+  customerName: string;
+  address: string;
+  lat?: number;
+  lng?: number;
+  completedAt?: Timestamp;
+}
+
+export interface Route {
+  id: string;
+  organizationId: string;
+  driverId: string;
+  driverName: string;
+  status: RouteStatus;
+  stops: RouteStop[];
+  estimatedDistanceKm?: number;
+  estimatedDurationMin?: number;
+  startTime?: Timestamp;
+  completedAt?: Timestamp;
   createdAt: Timestamp;
 }
 

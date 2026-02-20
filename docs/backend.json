@@ -38,19 +38,44 @@
       },
       "required": ["id", "name", "type", "status", "ownerId", "createdAt", "slug"]
     },
-    "OrganizationConnection": {
-      "title": "OrganizationConnection",
-      "description": "Vinculo comercial entre dos organizaciones dentro de la plataforma.",
+    "DriverProfile": {
+      "title": "DriverProfile",
+      "description": "Perfil de un transportista asignado a una organización.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "fromOrgId": { "type": "string" },
-        "toOrgId": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
-        "type": { "type": "string", "enum": ["supplier-client"] },
+        "organizationId": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "type": { "type": "string", "enum": ["internal", "external"] },
+        "vehicleInfo": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
         "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["fromOrgId", "toOrgId", "status", "type", "createdAt"]
+      }
+    },
+    "Route": {
+      "title": "Route",
+      "description": "Hoja de ruta asignada a un conductor.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "driverId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "active", "completed"] },
+        "stops": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "orderId": { "type": "string" },
+              "status": { "type": "string", "enum": ["pending", "delivered", "failed"] },
+              "sequence": { "type": "number" }
+            }
+          }
+        }
+      }
     },
     "UserProfile": {
       "title": "UserProfile",
@@ -59,53 +84,11 @@
       "properties": {
         "uid": { "type": "string" },
         "email": { "type": "string", "format": "email" },
-        "role": { "type": "string", "enum": ["client", "admin", "superadmin", "picker", "purchaser", "salesperson"] },
+        "role": { "type": "string", "enum": ["client", "admin", "superadmin", "picker", "purchaser", "salesperson", "driver"] },
         "organizationId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "role", "createdAt"]
-    },
-    "FAQ": {
-      "title": "FAQ",
-      "description": "Pregunta frecuente gestionable por la organización.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "organizationId": { "type": "string" },
-        "question": {
-          "type": "object",
-          "properties": {
-            "es": { "type": "string" },
-            "en": { "type": "string" }
-          }
-        },
-        "answer": {
-          "type": "object",
-          "properties": {
-            "es": { "type": "string" },
-            "en": { "type": "string" }
-          }
-        },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["organizationId", "question", "answer"]
-    },
-    "Newsletter": {
-      "title": "Newsletter",
-      "description": "Campaña de correo enviada a suscriptores.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "organizationId": { "type": "string" },
-        "subject": { "type": "string" },
-        "message": { "type": "string" },
-        "pdfUrl": { "type": "string" },
-        "status": { "type": "string", "enum": ["draft", "scheduled", "sent"] },
-        "scheduledAt": { "type": "string", "format": "date-time" },
-        "opens": { "type": "number", "default": 0 },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["organizationId", "subject", "message", "status", "scheduledAt"]
     }
   },
   "auth": {
@@ -116,21 +99,17 @@
       "schema": { "$ref": "#/entities/Organization" },
       "description": "Registro central de empresas."
     },
-    "/connections/{connId}": {
-      "schema": { "$ref": "#/entities/OrganizationConnection" },
-      "description": "Vínculos comerciales entre edificios."
+    "/drivers/{driverId}": {
+      "schema": { "$ref": "#/entities/DriverProfile" },
+      "description": "Perfiles de repartidores por edificio."
+    },
+    "/routes/{routeId}": {
+      "schema": { "$ref": "#/entities/Route" },
+      "description": "Rutas logísticas activas e históricas."
     },
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },
       "description": "Colección de usuarios."
-    },
-    "/faqs/{faqId}": {
-      "schema": { "$ref": "#/entities/FAQ" },
-      "description": "Preguntas frecuentes del portal de soporte."
-    },
-    "/newsletters/{newsletterId}": {
-      "schema": { "$ref": "#/entities/Newsletter" },
-      "description": "Campañas de boletines informativos."
     }
   }
 }
