@@ -20,15 +20,16 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { LanguageSwitcher } from '../landing/language-switcher';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { NotificationBell } from './notification-bell';
-import { Building2, ChevronRight, Share2 } from 'lucide-react';
+import { Building2, ChevronRight, Share2, Link as LinkIcon } from 'lucide-react';
 
 export function DashboardHeader() {
   const { user, userProfile, role } = useAuth();
   const { activeOrg } = useOrganization();
   const router = useRouter();
   const { toast } = useToast();
+  const locale = useLocale();
   const t = useTranslations('Dashboard');
   const tNav = useTranslations('NavigationBar');
 
@@ -54,10 +55,14 @@ export function DashboardHeader() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
-  const copySlug = () => {
+  const copyAccessLink = () => {
     if (!activeOrg?.slug) return;
-    navigator.clipboard.writeText(activeOrg.slug);
-    toast({ title: "Código Copiado", description: "Envía este código a tus clientes para conectarlos a tu red." });
+    const accessUrl = `${window.location.origin}/${locale}/login?org=${activeOrg.slug}`;
+    navigator.clipboard.writeText(accessUrl);
+    toast({ 
+      title: "Enlace de Acceso Copiado", 
+      description: "Envía este enlace a tu personal o clientes para que vean tu marca al entrar." 
+    });
   };
 
   return (
@@ -79,11 +84,11 @@ export function DashboardHeader() {
             </div>
             
             <div 
-                className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1 rounded-lg border shadow-sm cursor-pointer hover:bg-slate-800 transition-colors"
-                onClick={copySlug}
-                title="Haz clic para copiar tu Código de Red"
+                className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1 rounded-lg border shadow-sm cursor-pointer hover:bg-slate-800 transition-colors group"
+                onClick={copyAccessLink}
+                title="Haz clic para copiar tu Enlace de Acceso con Marca"
             >
-                <Share2 className="h-3 w-3 text-primary" />
+                <LinkIcon className="h-3 w-3 text-primary group-hover:scale-110 transition-transform" />
                 <span className="font-mono text-[11px] font-bold text-primary">{activeOrg.slug}</span>
             </div>
           </div>

@@ -40,6 +40,7 @@ import {
   Tag,
   Share2,
   Copy,
+  Link as LinkIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -99,12 +100,13 @@ export default function DashboardPage() {
     setFormattedActivityDate(format(now, 'd MMM', { locale: locale === 'es' ? es : undefined }));
   }, [locale]);
 
-  const copySlug = () => {
+  const copyAccessLink = () => {
     if (!activeOrg?.slug) return;
-    navigator.clipboard.writeText(activeOrg.slug);
+    const accessUrl = `${window.location.origin}/${locale}/login?org=${activeOrg.slug}`;
+    navigator.clipboard.writeText(accessUrl);
     toast({ 
-      title: t('copy_success_title'), 
-      description: t('copy_success_desc') 
+      title: "Enlace de Acceso Copiado", 
+      description: "El enlace completo para entrar con tu marca ha sido copiado al portapapeles." 
     });
   };
 
@@ -273,23 +275,23 @@ export default function DashboardPage() {
         {activeOrg && (
           <Card className="bg-slate-900 text-white overflow-hidden border-none shadow-xl relative">
             <div className="absolute top-0 right-0 p-3 opacity-10">
-                <Share2 className="h-16 w-16" />
+                <LinkIcon className="h-16 w-16" />
             </div>
             <CardContent className="p-4 flex flex-col justify-between h-full min-h-[100px]">
                 <div className="flex items-center gap-2 mb-2">
                     <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">{t('identity_card_title')}</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Enlace de Acceso Privado</span>
                 </div>
                 <div className="flex justify-between items-end">
                     <div className="flex flex-col">
                         <span className="text-2xl font-mono font-black text-primary tracking-tighter">{activeOrg.slug}</span>
-                        <span className="text-[9px] text-slate-500 font-medium">{t('identity_card_desc')}</span>
+                        <span className="text-[9px] text-slate-500 font-medium">Copiar URL para Invitaciones</span>
                     </div>
                     <Button 
                         size="sm" 
                         variant="secondary" 
                         className="h-8 rounded-lg bg-white/10 hover:bg-white/20 border-white/10 text-white gap-2"
-                        onClick={copySlug}
+                        onClick={copyAccessLink}
                     >
                         <Copy className="h-3 w-3" />
                         {t('copy_button')}

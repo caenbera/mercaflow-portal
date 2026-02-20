@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -11,7 +12,7 @@ import {
   PlusCircle, Building2, Globe, Truck, ShoppingBag, 
   Store, MoreVertical, Pencil, Trash2, ShieldCheck,
   Info, MessageSquare, Mail, Lock, Unlock, DatabaseZap, Loader2,
-  Target, FlaskConical
+  Target, FlaskConical, Link as LinkIcon, Copy
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OrganizationDialog } from '@/components/admin/organizations/organization-dialog';
@@ -76,16 +77,25 @@ export default function OrganizationsManagementPage() {
     }
   };
 
+  const copyRegisterLink = (org: Organization) => {
+    const registerUrl = `${window.location.origin}/${locale}/signup?org=${org.slug}`;
+    navigator.clipboard.writeText(registerUrl);
+    toast({ 
+      title: "Enlace de Registro Copiado", 
+      description: `URL para ${org.name} copiada al portapapeles.` 
+    });
+  };
+
   const sendInviteWhatsApp = (org: Organization) => {
     if (!org.ownerEmail) return;
-    const registerLink = `${window.location.origin}/${locale}/signup?email=${encodeURIComponent(org.ownerEmail)}`;
+    const registerLink = `${window.location.origin}/${locale}/signup?email=${encodeURIComponent(org.ownerEmail)}&org=${org.slug}`;
     const message = `¡Hola! Tu espacio en MercaFlow ya está listo. Regístrate aquí para gestionar tu edificio "${org.name}": ${registerLink}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const sendInviteEmail = (org: Organization) => {
     if (!org.ownerEmail) return;
-    const registerLink = `${window.location.origin}/${locale}/signup?email=${encodeURIComponent(org.ownerEmail)}`;
+    const registerLink = `${window.location.origin}/${locale}/signup?email=${encodeURIComponent(org.ownerEmail)}&org=${org.slug}`;
     const subject = `Invitación para gestionar ${org.name} en MercaFlow`;
     const body = `Hola,\n\nTu espacio administrativo para "${org.name}" ha sido creado. Por favor, completa tu registro en el siguiente enlace:\n\n${registerLink}\n\nSaludos,\nEquipo MercaFlow`;
     window.location.href = `mailto:${org.ownerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -149,6 +159,7 @@ export default function OrganizationsManagementPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => handleEdit(org)}><Pencil className="mr-2 h-4 w-4" /> Configurar Convenio</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => copyRegisterLink(org)}><Copy className="mr-2 h-4 w-4" /> Copiar Enlace Invitación</DropdownMenuItem>
                     {isMyTestOrg && (
                       <DropdownMenuItem onClick={() => handleMigrateLegacyData(org.id)} disabled={!!isMigrating}>
                         {isMigrating === org.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DatabaseZap className="mr-2 h-4 w-4" />}
@@ -190,6 +201,14 @@ export default function OrganizationsManagementPage() {
                     </Button>
                     <Button size="sm" variant="outline" className="h-9" onClick={() => sendInviteEmail(org)}>
                       <Mail className="h-3.5 w-3.5 mr-1.5" /> Email
+                    </Button>
+                  </div>
+                )}
+
+                {!org.ownerEmail && (
+                  <div className="mt-4">
+                    <Button size="sm" variant="secondary" className="w-full h-9 rounded-xl font-bold bg-slate-900 text-white hover:bg-slate-800" onClick={() => copyRegisterLink(org)}>
+                      <LinkIcon className="h-3.5 w-3.5 mr-1.5" /> Copiar Enlace Público
                     </Button>
                   </div>
                 )}
