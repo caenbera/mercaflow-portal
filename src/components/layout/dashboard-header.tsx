@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LanguageSwitcher } from '../landing/language-switcher';
 import { useTranslations, useLocale } from 'next-intl';
 import { NotificationBell } from './notification-bell';
-import { Building2, ChevronRight, Share2, Link as LinkIcon } from 'lucide-react';
+import { Building2, ChevronRight, Share2, Link as LinkIcon, UserPlus } from 'lucide-react';
 
 export function DashboardHeader() {
   const { user, userProfile, role } = useAuth();
@@ -55,13 +55,13 @@ export function DashboardHeader() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
-  const copyAccessLink = () => {
+  const copyInviteLink = () => {
     if (!activeOrg?.slug) return;
-    const accessUrl = `${window.location.origin}/${locale}/login?org=${activeOrg.slug}`;
-    navigator.clipboard.writeText(accessUrl);
+    const inviteUrl = `${window.location.origin}/${locale}/signup?org=${activeOrg.slug}`;
+    navigator.clipboard.writeText(inviteUrl);
     toast({ 
-      title: "Enlace de Acceso Copiado", 
-      description: "Envía este enlace a tu personal o clientes para que vean tu marca al entrar." 
+      title: "Enlace de Invitación Copiado", 
+      description: "Envía este enlace para que nuevos usuarios se registren bajo tu marca." 
     });
   };
 
@@ -84,12 +84,12 @@ export function DashboardHeader() {
             </div>
             
             <div 
-                className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1 rounded-lg border shadow-sm cursor-pointer hover:bg-slate-800 transition-colors group"
-                onClick={copyAccessLink}
-                title="Haz clic para copiar tu Enlace de Acceso con Marca"
+                className="flex items-center gap-2 bg-primary text-white px-3 py-1 rounded-lg border shadow-sm cursor-pointer hover:bg-primary/90 transition-colors group"
+                onClick={copyInviteLink}
+                title="Copiar enlace de invitación (Signup)"
             >
-                <LinkIcon className="h-3 w-3 text-primary group-hover:scale-110 transition-transform" />
-                <span className="font-mono text-[11px] font-bold text-primary">{activeOrg.slug}</span>
+                <UserPlus className="h-3 w-3 text-white group-hover:scale-110 transition-transform" />
+                <span className="font-mono text-[11px] font-bold text-white uppercase">Invitar</span>
             </div>
           </div>
         ) : (

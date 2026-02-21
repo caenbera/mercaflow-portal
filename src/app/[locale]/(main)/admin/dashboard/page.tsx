@@ -40,7 +40,8 @@ import {
   Tag,
   Share2,
   Copy,
-  Link as LinkIcon
+  Link as LinkIcon,
+  UserCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -100,13 +101,22 @@ export default function DashboardPage() {
     setFormattedActivityDate(format(now, 'd MMM', { locale: locale === 'es' ? es : undefined }));
   }, [locale]);
 
-  const copyAccessLink = () => {
+  const copySyncCode = () => {
     if (!activeOrg?.slug) return;
-    const accessUrl = `${window.location.origin}/${locale}/login?org=${activeOrg.slug}`;
-    navigator.clipboard.writeText(accessUrl);
+    navigator.clipboard.writeText(activeOrg.slug);
     toast({ 
-      title: "Enlace de Acceso Copiado", 
-      description: "El enlace completo para entrar con tu marca ha sido copiado al portapapeles." 
+      title: "Código de Sincronización Copiado", 
+      description: "Pégalo en el formulario de Red de tu socio comercial." 
+    });
+  };
+
+  const copyInviteLink = () => {
+    if (!activeOrg?.slug) return;
+    const inviteUrl = `${window.location.origin}/${locale}/signup?org=${activeOrg.slug}`;
+    navigator.clipboard.writeText(inviteUrl);
+    toast({ 
+      title: "Enlace de Invitación Copiado", 
+      description: "Compártelo por WhatsApp para que nuevos usuarios se registren." 
     });
   };
 
@@ -263,7 +273,7 @@ export default function DashboardPage() {
       
       {/* Welcome & Identity Card */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
+        <div className="md:col-span-1">
           <h1 className="text-3xl font-bold text-gray-800">
             {t('welcome_greeting', { name: userProfile?.contactPerson || 'Admin' })}
           </h1>
@@ -273,32 +283,61 @@ export default function DashboardPage() {
         </div>
         
         {activeOrg && (
-          <Card className="bg-slate-900 text-white overflow-hidden border-none shadow-xl relative">
-            <div className="absolute top-0 right-0 p-3 opacity-10">
-                <LinkIcon className="h-16 w-16" />
-            </div>
-            <CardContent className="p-4 flex flex-col justify-between h-full min-h-[100px]">
-                <div className="flex items-center gap-2 mb-2">
-                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Enlace de Acceso Privado</span>
-                </div>
-                <div className="flex justify-between items-end">
-                    <div className="flex flex-col">
-                        <span className="text-2xl font-mono font-black text-primary tracking-tighter">{activeOrg.slug}</span>
-                        <span className="text-[9px] text-slate-500 font-medium">Copiar URL para Invitaciones</span>
-                    </div>
-                    <Button 
-                        size="sm" 
-                        variant="secondary" 
-                        className="h-8 rounded-lg bg-white/10 hover:bg-white/20 border-white/10 text-white gap-2"
-                        onClick={copyAccessLink}
-                    >
-                        <Copy className="h-3 w-3" />
-                        {t('copy_button')}
-                    </Button>
-                </div>
-            </CardContent>
-          </Card>
+          <>
+            <Card className="bg-slate-900 text-white overflow-hidden border-none shadow-xl relative">
+              <div className="absolute top-0 right-0 p-3 opacity-10">
+                  <LinkIcon className="h-16 w-16" />
+              </div>
+              <CardContent className="p-4 flex flex-col justify-between h-full min-h-[100px]">
+                  <div className="flex items-center gap-2 mb-2">
+                      <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Sincronización Operativa</span>
+                  </div>
+                  <div className="flex justify-between items-end">
+                      <div className="flex flex-col">
+                          <span className="text-2xl font-mono font-black text-primary tracking-tighter">{activeOrg.slug}</span>
+                          <span className="text-[9px] text-slate-500 font-medium">Código para Red de Suministro</span>
+                      </div>
+                      <Button 
+                          size="sm" 
+                          variant="secondary" 
+                          className="h-8 rounded-lg bg-white/10 hover:bg-white/20 border-white/10 text-white gap-2"
+                          onClick={copySyncCode}
+                      >
+                          <Copy className="h-3 w-3" />
+                          Copiar
+                      </Button>
+                  </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-primary text-white overflow-hidden border-none shadow-xl relative">
+              <div className="absolute top-0 right-0 p-3 opacity-10">
+                  <UserCheck className="h-16 w-16" />
+              </div>
+              <CardContent className="p-4 flex flex-col justify-between h-full min-h-[100px]">
+                  <div className="flex items-center gap-2 mb-2">
+                      <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                      <span className="text-[10px] uppercase font-bold text-white/70 tracking-widest">Enlace de Invitación</span>
+                  </div>
+                  <div className="flex justify-between items-end">
+                      <div className="flex flex-col">
+                          <span className="text-xl font-black text-white tracking-tighter">Signup Link</span>
+                          <span className="text-[9px] text-white/60 font-medium italic">Para Personal y Clientes</span>
+                      </div>
+                      <Button 
+                          size="sm" 
+                          variant="secondary" 
+                          className="h-8 rounded-lg bg-black/20 hover:bg-black/30 border-white/10 text-white gap-2"
+                          onClick={copyInviteLink}
+                      >
+                          <Share2 className="h-3 w-3" />
+                          Compartir
+                      </Button>
+                  </div>
+              </CardContent>
+            </Card>
+          </>
         )}
       </div>
 
