@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -26,7 +25,7 @@ import {
   Calculator, Search, Lock, ShieldCheck,
   Send,
   Building2
-} from 'lucide-center';
+} from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
