@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useOrganization } from '@/context/organization-context';
 import { useOrganizations } from '@/hooks/use-organizations';
 import { useConnections } from '@/hooks/use-connections';
@@ -24,12 +24,14 @@ import {
   RefreshCw, Zap, ArrowUp, ArrowDown,
   Calculator, Search, Lock, ShieldCheck,
   Send,
-  Building2
+  Building2,
+  PackageSearch,
+  PackagePlus
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { collection, query, where, getDocs, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, serverTimestamp, addDoc, getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { Product, OrganizationType, Organization } from '@/types';
 import Image from 'next/image';
@@ -81,6 +83,11 @@ export default function SupplyNetworkPage() {
   // Global Search State
   const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
   const [globalResults, setGlobalResults] = useState<Organization[]>([]);
+
+  // Product Discovery State
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [isSearchingProducts, setIsSearchingProducts] = useState(false);
+  const [discoveredProducts, setDiscoveredProducts] = useState<any[]>([]);
 
   const loading = orgsLoading || connLoading || suppliersLoading || productsLoading;
   const isPremiumSearchEnabled = activeOrg?.adminAgreements?.premiumNetworkSearch || false;
@@ -209,7 +216,6 @@ export default function SupplyNetworkPage() {
       const snap = await getDocs(q);
       const allMatches = snap.docs.map(d => ({ id: d.id, ...d.data() } as Organization));
       
-      // Filtrado por nombre localmente para mayor flexibilidad
       const filteredMatches = allMatches.filter(org => 
         org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         org.slug.toLowerCase().includes(searchTerm.toLowerCase())
@@ -220,6 +226,64 @@ export default function SupplyNetworkPage() {
       toast({ variant: 'destructive', title: "Error", description: "Error al consultar la red global." });
     } finally {
       setIsSearchingGlobal(false);
+    }
+  };
+
+  const handleProductDiscovery = async () => {
+    if (!productSearchTerm || !activeOrg) return;
+
+    const targetType = HIERARCHY_MAP[activeOrg.type];
+    if (!targetType) return;
+
+    setIsSearchingProducts(true);
+    try {
+      // 1. Obtener los IDs de organizaciones permitidas en el nivel superior
+      const orgQuery = query(
+        collection(db, 'organizations'),
+        where('type', '==', targetType),
+        where('status', '==', 'active')
+      );
+      const orgSnap = await getDocs(orgQuery);
+      const allowedOrgIds = orgSnap.docs.map(d => d.id);
+      const orgNamesMap = orgSnap.docs.reduce((acc: any, d) => {
+        acc[d.id] = d.data().name;
+        return acc;
+      }, {});
+
+      if (allowedOrgIds.length === 0) {
+        setDiscoveredProducts([]);
+        return;
+      }
+
+      // 2. Buscar productos en esas organizaciones
+      // Nota: 'where in' tiene un límite de 10-30 elementos.
+      // Si hay muchos, esto requeriría una lógica de segmentación.
+      const prodQuery = query(
+        collection(db, 'products'),
+        where('organizationId', 'in', allowedOrgIds.slice(0, 30)),
+        where('active', '==', true)
+      );
+      
+      const prodSnap = await getDocs(prodQuery);
+      const allProducts = prodSnap.docs.map(d => ({ 
+        id: d.id, 
+        ...d.data(),
+        orgName: orgNamesMap[d.data().organizationId]
+      }));
+
+      // 3. Filtrar localmente por término de búsqueda
+      const filtered = allProducts.filter((p: any) => 
+        p.name.es.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+        p.name.en.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+        p.sku.toLowerCase().includes(productSearchTerm.toLowerCase())
+      );
+
+      setDiscoveredProducts(filtered);
+    } catch (e) {
+      console.error(e);
+      toast({ variant: 'destructive', title: "Error", description: "Error al buscar productos en la red." });
+    } finally {
+      setIsSearchingProducts(false);
     }
   };
 
@@ -245,10 +309,7 @@ export default function SupplyNetworkPage() {
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
-  if (!activeOrg) return <div className="p-8 text-center text-muted-foreground">{t('select_org_message')}</div>;
-
-  // Lógica robusta para la etiqueta de nivel jerárquico
-  const nextLevel = HIERARCHY_MAP[activeOrg.type];
+  const nextLevel = activeOrg ? HIERARCHY_MAP[activeOrg.type] : null;
   const targetLevelLabel = nextLevel ? t(`group_level_${nextLevel}` as any) : "Nivel superior";
 
   return (
@@ -261,159 +322,162 @@ export default function SupplyNetworkPage() {
           </h1>
           <p className="text-slate-500 mt-1">{t('network_subtitle')}</p>
         </div>
-        <div className="flex gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl border border-white/10 shadow-xl items-center">
-          <div className="flex flex-col text-right">
-            <span className="text-[10px] uppercase font-bold text-slate-400">{t('network_code_label')}</span>
-            <span className="font-mono text-sm font-bold text-primary">{activeOrg.slug}</span>
+        {activeOrg && (
+          <div className="flex gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl border border-white/10 shadow-xl items-center">
+            <div className="flex flex-col text-right">
+              <span className="text-[10px] uppercase font-bold text-slate-400">{t('network_code_label')}</span>
+              <span className="font-mono text-sm font-bold text-primary">{activeOrg.slug}</span>
+            </div>
+            <div className="h-8 w-px bg-white/10 mx-2" />
+            <Zap className="h-5 w-5 text-primary" />
           </div>
-          <div className="h-8 w-px bg-white/10 mx-2" />
-          <Zap className="h-5 w-5 text-primary" />
-        </div>
+        )}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-white p-1 rounded-xl border shadow-sm mb-6">
-          <TabsTrigger value="sync" className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
+        <TabsList className="bg-white p-1 rounded-xl border shadow-sm mb-6 h-auto flex flex-wrap">
+          <TabsTrigger value="sync" className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-white py-2">
             <RefreshCw className="h-4 w-4" /> {t('tab_sync')}
           </TabsTrigger>
-          <TabsTrigger value="manage" className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
+          <TabsTrigger value="manage" className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-white py-2">
             <Users className="h-4 w-4" /> {t('tab_manage')}
+          </TabsTrigger>
+          <TabsTrigger value="discovery" className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-white py-2">
+            <PackageSearch className="h-4 w-4" /> Explorar Productos
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="sync" className="mt-0">
-          <div className="grid gap-6">
-            <Card className="border-none shadow-md overflow-hidden">
-              <CardHeader className="bg-slate-50/50 border-b pb-4">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div>
-                    <CardTitle className="text-lg">{t('sync_card_title')}</CardTitle>
-                    <CardDescription>{t('sync_card_desc')}</CardDescription>
-                  </div>
-                  <Button onClick={handleCheckForUpdates} disabled={isSyncing} className="bg-primary hover:bg-primary/90 rounded-full h-11 px-6 shadow-lg">
-                    {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                    {t('search_changes_button')}
-                  </Button>
+          <Card className="border-none shadow-md overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b pb-4">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <CardTitle className="text-lg">{t('sync_card_title')}</CardTitle>
+                  <CardDescription>{t('sync_card_desc')}</CardDescription>
                 </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                {syncItems.length > 0 ? (
-                  <div className="flex flex-col">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-slate-50/30">
-                            <TableHead className="w-[50px] pl-6"></TableHead>
-                            <TableHead>{t('table_product_sku')}</TableHead>
-                            <TableHead className="text-right">{t('table_current_cost')}</TableHead>
-                            <TableHead className="text-right">{t('table_new_cost')}</TableHead>
-                            <TableHead className="text-center">{t('table_difference')}</TableHead>
-                            <TableHead className="text-right">{t('table_current_price')}</TableHead>
-                            <TableHead className="text-right bg-primary/5">{t('table_suggested_price')}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {syncItems.map((item) => {
-                            const diff = item.newCost - item.currentCost;
-                            const diffPercent = item.currentCost > 0 ? (diff / item.currentCost) * 100 : 0;
-                            
-                            return (
-                              <TableRow key={item.sku} className="hover:bg-slate-50 transition-colors">
-                                <TableCell className="pl-6">
-                                  <Checkbox 
-                                    checked={selectedSkus.includes(item.sku)}
-                                    onCheckedChange={() => toggleSelect(item.sku)}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-lg bg-slate-100 overflow-hidden shrink-0 border">
-                                      {item.photoUrl ? (
-                                        <Image src={item.photoUrl} alt={item.name} width={40} height={40} className="object-cover h-full w-full" />
-                                      ) : (
-                                        <div className="h-full w-full flex items-center justify-center bg-muted text-slate-300">
-                                          <RefreshCw className="h-5 w-5" />
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div>
-                                      <p className="font-bold text-sm text-slate-800">{item.name}</p>
-                                      <p className="text-[10px] text-muted-foreground">{item.supplierName}</p>
-                                    </div>
+                <Button onClick={handleCheckForUpdates} disabled={isSyncing} className="bg-primary hover:bg-primary/90 rounded-full h-11 px-6 shadow-lg">
+                  {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                  {t('search_changes_button')}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {syncItems.length > 0 ? (
+                <div className="flex flex-col">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-slate-50/30">
+                          <TableHead className="w-[50px] pl-6"></TableHead>
+                          <TableHead>{t('table_product_sku')}</TableHead>
+                          <TableHead className="text-right">{t('table_current_cost')}</TableHead>
+                          <TableHead className="text-right">{t('table_new_cost')}</TableHead>
+                          <TableHead className="text-center">{t('table_difference')}</TableHead>
+                          <TableHead className="text-right">{t('table_current_price')}</TableHead>
+                          <TableHead className="text-right bg-primary/5">{t('table_suggested_price')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {syncItems.map((item) => {
+                          const diff = item.newCost - item.currentCost;
+                          const diffPercent = item.currentCost > 0 ? (diff / item.currentCost) * 100 : 0;
+                          
+                          return (
+                            <TableRow key={item.sku} className="hover:bg-slate-50 transition-colors">
+                              <TableCell className="pl-6">
+                                <Checkbox 
+                                  checked={selectedSkus.includes(item.sku)}
+                                  onCheckedChange={() => toggleSelect(item.sku)}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <div className="h-10 w-10 rounded-lg bg-slate-100 overflow-hidden shrink-0 border">
+                                    {item.photoUrl ? (
+                                      <Image src={item.photoUrl} alt={item.name} width={40} height={40} className="object-cover h-full w-full" />
+                                    ) : (
+                                      <div className="h-full w-full flex items-center justify-center bg-muted text-slate-300">
+                                        <RefreshCw className="h-5 w-5" />
+                                      </div>
+                                    )}
                                   </div>
-                                </TableCell>
-                                <TableCell className="text-right text-slate-500 font-medium">
-                                  {formatCurrency(item.currentCost)}
-                                </TableCell>
-                                <TableCell className="text-right font-black text-slate-900">
-                                  {formatCurrency(item.newCost)}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <div className={cn(
-                                    "inline-flex items-center gap-1 font-bold text-xs px-2 py-1 rounded-lg",
-                                    diff > 0 ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"
-                                  )}>
-                                    {diff > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                                    {Math.abs(diffPercent).toFixed(1)}%
+                                  <div>
+                                    <p className="font-bold text-sm text-slate-800">{item.name}</p>
+                                    <p className="text-[10px] text-muted-foreground">{item.supplierName}</p>
                                   </div>
-                                </TableCell>
-                                <TableCell className="text-right text-slate-500">
-                                  {formatCurrency(item.currentSalePrice)}
-                                </TableCell>
-                                <TableCell className="text-right font-black text-primary bg-primary/5">
-                                  {formatCurrency(item.suggestedSalePrice)}
-                                  <div className="text-[9px] text-primary/60 uppercase font-bold">
-                                    {item.pricingMethod === 'margin' ? t('maintain_margin_method_margin') : t('maintain_margin_method_markup')}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                    <div className="p-6 bg-slate-50 border-t flex flex-col md:flex-row justify-between items-center gap-6">
-                      <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border shadow-sm flex-grow w-full md:w-auto">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                          <Calculator className="h-5 w-5" />
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Label htmlFor="maintain-margins" className="font-bold text-sm">{t('maintain_margin_label')}</Label>
-                            <Switch 
-                              id="maintain-margins" 
-                              checked={maintainMargins} 
-                              onCheckedChange={setMaintainMargins} 
-                            />
-                          </div>
-                          <p className="text-[10px] text-muted-foreground">{t('maintain_margin_desc')}</p>
-                        </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right text-slate-500 font-medium">
+                                {formatCurrency(item.currentCost)}
+                              </TableCell>
+                              <TableCell className="text-right font-black text-slate-900">
+                                {formatCurrency(item.newCost)}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <div className={cn(
+                                  "inline-flex items-center gap-1 font-bold text-xs px-2 py-1 rounded-lg",
+                                  diff > 0 ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"
+                                )}>
+                                  {diff > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                                  {Math.abs(diffPercent).toFixed(1)}%
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right text-slate-500">
+                                {formatCurrency(item.currentSalePrice)}
+                              </TableCell>
+                              <TableCell className="text-right font-black text-primary bg-primary/5">
+                                {formatCurrency(item.suggestedSalePrice)}
+                                <div className="text-[9px] text-primary/60 uppercase font-bold">
+                                  {item.pricingMethod === 'margin' ? t('maintain_margin_method_margin') : t('maintain_margin_method_markup')}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="p-6 bg-slate-50 border-t flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border shadow-sm flex-grow w-full md:w-auto">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        <Calculator className="h-5 w-5" />
                       </div>
-                      
-                      <Button 
-                        disabled={selectedSkus.length === 0 || isProcessingSync}
-                        onClick={handleApplySync}
-                        className="bg-slate-900 hover:bg-slate-800 text-white px-10 rounded-xl font-bold h-14 shadow-xl shrink-0 w-full md:w-auto"
-                      >
-                        {isProcessingSync ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5" />}
-                        {t('update_products_button', { count: selectedSkus.length })}
-                      </Button>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="maintain-margins" className="font-bold text-sm">{t('maintain_margin_label')}</Label>
+                          <Switch 
+                            id="maintain-margins" 
+                            checked={maintainMargins} 
+                            onCheckedChange={setMaintainMargins} 
+                          />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">{t('maintain_margin_desc')}</p>
+                      </div>
                     </div>
+                    
+                    <Button 
+                      disabled={selectedSkus.length === 0 || isProcessingSync}
+                      onClick={handleApplySync}
+                      className="bg-slate-900 hover:bg-slate-800 text-white px-10 rounded-xl font-bold h-14 shadow-xl shrink-0 w-full md:w-auto"
+                    >
+                      {isProcessingSync ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5" />}
+                      {t('update_products_button', { count: selectedSkus.length })}
+                    </Button>
                   </div>
-                ) : (
-                  <div className="text-center py-24 flex flex-col items-center gap-4">
-                    <div className="h-20 w-20 rounded-full bg-slate-50 flex items-center justify-center border-2 border-dashed border-slate-200">
-                      <RefreshCw className="h-8 w-8 text-slate-300" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-slate-800">{t('sync_up_to_date_title')}</h3>
-                      <p className="text-slate-500 max-w-sm mx-auto mt-1">{t('sync_up_to_date_desc')}</p>
-                    </div>
+                </div>
+              ) : (
+                <div className="text-center py-24 flex flex-col items-center gap-4">
+                  <div className="h-20 w-20 rounded-full bg-slate-50 flex items-center justify-center border-2 border-dashed border-slate-200">
+                    <RefreshCw className="h-8 w-8 text-slate-300" />
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-800">{t('sync_up_to_date_title')}</h3>
+                    <p className="text-slate-500 max-w-sm mx-auto mt-1">{t('sync_up_to_date_desc')}</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="manage" className="mt-0">
@@ -482,7 +546,7 @@ export default function SupplyNetworkPage() {
                   <span className="text-xs font-bold uppercase tracking-wider">Jerarquía Segura</span>
                 </div>
                 <p className="text-[10px] text-blue-800 leading-relaxed">
-                  Tu edificio está configurado como <strong>{activeOrg.type}</strong>. Por seguridad, solo puedes buscar y vincularte con <strong>{targetLevelLabel}</strong>.
+                  Tu edificio está configurado como <strong>{activeOrg?.type}</strong>. Por seguridad, solo puedes buscar y vincularte con <strong>{targetLevelLabel}</strong>.
                 </p>
               </div>
             </div>
@@ -538,6 +602,124 @@ export default function SupplyNetworkPage() {
                 </CardContent>
               </Card>
             </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="discovery" className="mt-0">
+          <div className="grid gap-6">
+            <Card className="border-none shadow-md overflow-hidden relative">
+              {!isPremiumSearchEnabled && (
+                <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 text-center">
+                  <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                    <Lock className="h-7 w-7" />
+                  </div>
+                  <h3 className="font-bold text-slate-900 mb-1">Explorador de Productos Premium</h3>
+                  <p className="text-sm text-slate-500 mb-4 max-w-md">
+                    Accede a los inventarios de los mejores proveedores de Chicago y compara precios en tiempo real.
+                  </p>
+                  <Button variant="default" className="rounded-full px-8">Solicitar Acceso</Button>
+                </div>
+              )}
+              <CardHeader className="bg-slate-50/50 border-b pb-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <CardTitle className="text-lg">Explorador de Productos</CardTitle>
+                    <CardDescription>Busca productos entre proveedores de tu nivel permitido</CardDescription>
+                  </div>
+                  <div className="flex gap-2 w-full md:w-auto">
+                    <div className="relative flex-grow">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Buscar producto (ej: Aguacate)..." 
+                        className="pl-9 h-11 bg-white"
+                        value={productSearchTerm}
+                        onChange={(e) => setProductSearchTerm(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleProductDiscovery()}
+                      />
+                    </div>
+                    <Button onClick={handleProductDiscovery} disabled={isSearchingProducts || !productSearchTerm} className="h-11 px-6">
+                      {isSearchingProducts ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {discoveredProducts.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50/30">
+                        <TableHead className="pl-6">Producto</TableHead>
+                        <TableHead>Proveedor</TableHead>
+                        <TableHead className="text-right">Precio Sugerido</TableHead>
+                        <TableHead className="text-right pr-6">Acción</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {discoveredProducts.map((product) => {
+                        const isConnected = connections.some(c => 
+                          (c.fromOrgId === product.organizationId || c.toOrgId === product.organizationId) && 
+                          c.status === 'accepted'
+                        );
+
+                        return (
+                          <TableRow key={product.id} className="hover:bg-slate-50 transition-colors">
+                            <TableCell className="pl-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="h-12 w-12 rounded-lg bg-slate-100 overflow-hidden border shrink-0">
+                                  <Image src={product.photoUrl || '/placeholder.svg'} alt={product.name.es} width={48} height={48} className="object-cover h-full w-full" />
+                                </div>
+                                <div>
+                                  <p className="font-bold text-slate-800">{product.name.es}</p>
+                                  <p className="text-[10px] font-mono text-muted-foreground uppercase">{product.sku}</p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="font-medium text-slate-700">{product.orgName}</span>
+                                <span className="text-[10px] text-muted-foreground uppercase">{targetLevelLabel}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="font-black text-slate-900">{formatCurrency(product.salePrice)}</span>
+                              <p className="text-[10px] text-muted-foreground uppercase">{product.unit.es}</p>
+                            </TableCell>
+                            <TableCell className="text-right pr-6">
+                              {isConnected ? (
+                                <Badge variant="secondary" className="bg-green-100 text-green-700 border-none">
+                                  <Check className="h-3 w-3 mr-1" /> Vinculado
+                                </Badge>
+                              ) : (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="border-primary text-primary hover:bg-primary/5"
+                                  onClick={() => handleRequestConnection(product.organizationId)}
+                                >
+                                  <PackagePlus className="h-4 w-4 mr-1.5" /> Vincular
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-24 flex flex-col items-center gap-4">
+                    <div className="h-20 w-20 rounded-full bg-slate-50 flex items-center justify-center border-2 border-dashed border-slate-200">
+                      <PackageSearch className="h-8 w-8 text-slate-300" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-800">Descubre productos en la red</h3>
+                      <p className="text-slate-500 max-w-sm mx-auto mt-1">
+                        Escribe el nombre de un producto para ver quién lo ofrece en tu red.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
       </Tabs>
