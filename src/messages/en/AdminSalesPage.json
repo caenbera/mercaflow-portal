@@ -163,5 +163,9 @@
     "no_partners_message": "You don't have any linked commercial partners yet.",
     "select_org_message": "Select a building to manage its network.",
     "maintain_margin_method_margin": "Maintain Margin",
-    "maintain_margin_method_markup": "Maintain Markup"
+    "maintain_margin_method_markup": "Maintain Markup",
+    "group_level_importer": "Importers",
+    "group_level_distributor": "Distributors",
+    "group_level_wholesaler": "Wholesalers",
+    "group_level_retailer": "Retailers"
 }

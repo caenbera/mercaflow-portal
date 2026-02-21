@@ -163,5 +163,9 @@
     "no_partners_message": "Aún no tienes socios comerciales vinculados.",
     "select_org_message": "Selecciona un edificio para gestionar su red.",
     "maintain_margin_method_margin": "Mantener Margen",
-    "maintain_margin_method_markup": "Mantener Recargo"
+    "maintain_margin_method_markup": "Mantener Recargo",
+    "group_level_importer": "Importadores",
+    "group_level_distributor": "Distribuidores",
+    "group_level_wholesaler": "Mayoristas",
+    "group_level_retailer": "Minoristas"
 }
