@@ -26,7 +26,7 @@ import {
   Calculator, Search, Lock, ShieldCheck,
   Send,
   Building2
-} from 'lucide-react';
+} from 'lucide-center';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -248,7 +248,9 @@ export default function SupplyNetworkPage() {
 
   if (!activeOrg) return <div className="p-8 text-center text-muted-foreground">{t('select_org_message')}</div>;
 
-  const targetLevelLabel = HIERARCHY_MAP[activeOrg.type] ? t(`group_level_${HIERARCHY_MAP[activeOrg.type]}` as any) : "Nivel superior";
+  // Lógica robusta para la etiqueta de nivel jerárquico
+  const nextLevel = HIERARCHY_MAP[activeOrg.type];
+  const targetLevelLabel = nextLevel ? t(`group_level_${nextLevel}` as any) : "Nivel superior";
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 flex flex-col gap-8 max-w-7xl mx-auto">
