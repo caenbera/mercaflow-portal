@@ -15,6 +15,7 @@ export interface AdminAgreements {
   operations: boolean;
   finance: boolean;
   sales: boolean;
+  premiumNetworkSearch?: boolean; // Nueva propiedad para el buscador premium
 }
 
 export interface StoreTestimonial {
@@ -391,6 +392,21 @@ export interface RewardTier {
   name: { es: string; en: string };
   minPoints: number;
   iconName: string;
+}
+
+export interface RewardRule {
+  id: string;
+  name: { es: string; en: string };
+  ruleType: 'pointsPerDollar' | 'bonusForAmount' | 'fixedPointsPerOrder' | 'bonusForProduct' | 'multiplierPerDay' | 'firstOrderBonus' | 'anniversaryBonus' | 'bonusForVariety' | 'bonusForCategory' | 'consecutiveBonus';
+  points?: number;
+  amount?: number;
+  perAmount?: number;
+  multiplier?: number;
+  productId?: string;
+  category?: ProductCategory;
+  dayOfWeek?: number;
+  weeks?: number;
+  isActive: boolean;
 }
 
 export interface RewardRule {

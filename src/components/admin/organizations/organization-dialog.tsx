@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -37,7 +38,7 @@ import { addAdminInvite } from '@/lib/firestore/users';
 import { useToast } from '@/hooks/use-toast';
 import type { Organization, OrganizationType, OrganizationStatus } from '@/types';
 import { useAuth } from '@/context/auth-context';
-import { ShieldAlert, Info, UserCheck, Lock, Globe, Target, FlaskConical } from 'lucide-react';
+import { ShieldAlert, Info, UserCheck, Lock, Globe, Target, FlaskConical, Search } from 'lucide-react';
 
 const orgSchema = z.object({
   name: z.string().min(3, "El nombre debe tener al menos 3 caracteres."),
@@ -51,6 +52,7 @@ const orgSchema = z.object({
     operations: z.boolean().default(false),
     finance: z.boolean().default(false),
     sales: z.boolean().default(false),
+    premiumNetworkSearch: z.boolean().default(false),
   }),
   storeConfig: z.object({
     enabled: z.boolean().default(false),
@@ -84,6 +86,7 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
         operations: false,
         finance: false,
         sales: false,
+        premiumNetworkSearch: false,
       },
       storeConfig: {
         enabled: false,
@@ -106,6 +109,7 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
             operations: false,
             finance: false,
             sales: false,
+            premiumNetworkSearch: false,
           },
           storeConfig: {
             enabled: organization.storeConfig?.enabled || false,
@@ -124,6 +128,7 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
             operations: false,
             finance: false,
             sales: false,
+            premiumNetworkSearch: false,
           },
           storeConfig: {
             enabled: false,
@@ -309,12 +314,22 @@ export function OrganizationDialog({ open, onOpenChange, organization }: Organiz
                   </FormItem>
                 )}/>
                 <FormField control={form.control} name="adminAgreements.sales" render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border bg-background p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-xs">Convenio de Ventas (CRM)</FormLabel>
+                      <FormDescription className="text-[10px]">Activa el CRM y gestión de prospectos.</FormDescription>
+                    </div>
+                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                  </FormItem>
+                )}/>
+                
+                <FormField control={form.control} name="adminAgreements.premiumNetworkSearch" render={({ field }) => (
                   <FormItem className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 p-3 shadow-sm">
                     <div className="space-y-0.5">
                       <FormLabel className="text-xs font-bold text-primary flex items-center gap-1.5">
-                        <Target className="h-3 w-3" /> Convenio de Ventas (Servicio Plus)
+                        <Search className="h-3 w-3" /> Buscador de Red Premium
                       </FormLabel>
-                      <FormDescription className="text-[10px]">Activa el CRM, gestión de prospectos y optimizador de rutas.</FormDescription>
+                      <FormDescription className="text-[10px]">Permite buscar nuevos proveedores en la red respetando la jerarquía.</FormDescription>
                     </div>
                     <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                   </FormItem>

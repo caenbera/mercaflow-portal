@@ -23,14 +23,16 @@ import {
   Users, Link as LinkIcon, 
   Check, Loader2, Store,
   RefreshCw, Zap, ArrowUp, ArrowDown,
-  Calculator, Search
+  Calculator, Search, Lock, ShieldCheck,
+  Send,
+  Building2
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import type { Product } from '@/types';
+import type { Product, OrganizationType, Organization } from '@/types';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 
@@ -51,6 +53,13 @@ interface SyncItem {
   marginOrMarkup: number;
 }
 
+const HIERARCHY_MAP: Record<string, OrganizationType | null> = {
+  retailer: 'wholesaler',
+  wholesaler: 'distributor',
+  distributor: 'importer',
+  importer: null,
+};
+
 export default function SupplyNetworkPage() {
   const t = useTranslations('AdminSalesPage');
   const { activeOrg, activeOrgId } = useOrganization();
@@ -70,7 +79,12 @@ export default function SupplyNetworkPage() {
   const [isProcessingSync, setIsProcessingSync] = useState(false);
   const [maintainMargins, setMaintainMargins] = useState(true);
 
+  // Global Search State
+  const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
+  const [globalResults, setGlobalResults] = useState<Organization[]>([]);
+
   const loading = orgsLoading || connLoading || suppliersLoading || productsLoading;
+  const isPremiumSearchEnabled = activeOrg?.adminAgreements?.premiumNetworkSearch || false;
 
   const handleCheckForUpdates = async () => {
     if (!activeOrgId) return;
@@ -177,6 +191,55 @@ export default function SupplyNetworkPage() {
     }
   };
 
+  const handleGlobalSearch = async () => {
+    if (!searchTerm || !activeOrg) return;
+    
+    const targetType = HIERARCHY_MAP[activeOrg.type];
+    if (!targetType) {
+      toast({ title: "Fin de la cadena", description: "Tu nivel de edificio no permite buscar proveedores superiores." });
+      return;
+    }
+
+    setIsSearchingGlobal(true);
+    try {
+      const q = query(
+        collection(db, 'organizations'), 
+        where('type', '==', targetType),
+        where('status', '==', 'active')
+      );
+      const snap = await getDocs(q);
+      const allMatches = snap.docs.map(d => ({ id: d.id, ...d.data() } as Organization));
+      
+      // Filtrado por nombre localmente para mayor flexibilidad
+      const filteredMatches = allMatches.filter(org => 
+        org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        org.slug.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      
+      setGlobalResults(filteredMatches);
+    } catch (e) {
+      toast({ variant: 'destructive', title: "Error", description: "Error al consultar la red global." });
+    } finally {
+      setIsSearchingGlobal(false);
+    }
+  };
+
+  const handleRequestConnection = async (targetOrgId: string) => {
+    if (!activeOrgId) return;
+    try {
+      await addDoc(collection(db, 'connections'), {
+        fromOrgId: activeOrgId,
+        toOrgId: targetOrgId,
+        status: 'pending',
+        type: 'supplier-client',
+        createdAt: serverTimestamp()
+      });
+      toast({ title: "Solicitud Enviada", description: "El proveedor revisará tu conexión." });
+    } catch (e) {
+      toast({ variant: 'destructive', title: "Error" });
+    }
+  };
+
   const toggleSelect = (sku: string) => {
     setSelectedSkus(prev => prev.includes(sku) ? prev.filter(s => s !== sku) : [...prev, sku]);
   };
@@ -184,6 +247,8 @@ export default function SupplyNetworkPage() {
   const formatCurrency = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
   if (!activeOrg) return <div className="p-8 text-center text-muted-foreground">{t('select_org_message')}</div>;
+
+  const targetLevelLabel = HIERARCHY_MAP[activeOrg.type] ? t(`group_level_${HIERARCHY_MAP[activeOrg.type]}` as any) : "Nivel superior";
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 flex flex-col gap-8 max-w-7xl mx-auto">
@@ -353,23 +418,72 @@ export default function SupplyNetworkPage() {
         <TabsContent value="manage" className="mt-0">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1 space-y-4">
-              <Card className="border-none shadow-md">
+              <Card className="border-none shadow-md relative overflow-hidden">
+                {!isPremiumSearchEnabled && (
+                  <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 text-center">
+                    <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                      <Lock className="h-7 w-7" />
+                    </div>
+                    <h3 className="font-bold text-slate-900 mb-1">Buscador Premium</h3>
+                    <p className="text-[10px] text-slate-500 mb-4 leading-relaxed">
+                      Encuentra nuevos proveedores verificados en Chicago y expande tu catálogo.
+                    </p>
+                    <Button size="sm" variant="outline" className="rounded-full border-amber-200 text-amber-700 bg-white hover:bg-amber-50">
+                      Solicitar Acceso
+                    </Button>
+                  </div>
+                )}
                 <CardHeader className="pb-4">
                   <CardTitle className="text-base">{t('manage_card_title')}</CardTitle>
                   <CardDescription>{t('manage_card_desc')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder={t('search_org_placeholder')} 
-                      className="pl-8 bg-slate-50" 
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                  <div className="flex gap-2">
+                    <div className="relative flex-grow">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder={t('search_org_placeholder')} 
+                        className="pl-8 bg-slate-50" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleGlobalSearch()}
+                      />
+                    </div>
+                    <Button size="icon" variant="secondary" onClick={handleGlobalSearch} disabled={isSearchingGlobal}>
+                      {isSearchingGlobal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {globalResults.map(org => (
+                      <div key={org.id} className="p-3 border rounded-xl bg-white flex items-center justify-between hover:border-primary/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
+                            <Building2 className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-800 truncate">{org.name}</p>
+                            <p className="text-[9px] uppercase font-bold text-muted-foreground">{org.type}</p>
+                          </div>
+                        </div>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-primary" onClick={() => handleRequestConnection(org.id)}>
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
+              
+              <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
+                <div className="flex items-center gap-2 text-blue-700 mb-2">
+                  <ShieldCheck className="h-4 w-4" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Jerarquía Segura</span>
+                </div>
+                <p className="text-[10px] text-blue-800 leading-relaxed">
+                  Tu edificio está configurado como <strong>{activeOrg.type}</strong>. Por seguridad, solo puedes buscar y vincularte con <strong>{targetLevelLabel}</strong>.
+                </p>
+              </div>
             </div>
 
             <div className="lg:col-span-2 space-y-6">
