@@ -1,4 +1,3 @@
-
 {
   "title": "Gestión de Pedidos",
   "subtitle": "Controla y procesa las ventas de tu organización",
@@ -55,5 +54,9 @@
   "manual_dialog_create_error": "Error al crear el pedido",
   "next": "Siguiente",
   "back": "Atrás",
-  "finish": "Crear Pedido"
+  "finish": "Crear Pedido",
+  "cancel": "Cancelar",
+  "subtotal": "Subtotal",
+  "discount": "Descuento",
+  "total": "Total"
 }
