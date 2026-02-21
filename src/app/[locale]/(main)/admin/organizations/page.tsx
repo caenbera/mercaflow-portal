@@ -12,7 +12,7 @@ import {
   PlusCircle, Building2, Globe, Truck, ShoppingBag, 
   Store, MoreVertical, Pencil, Trash2, ShieldCheck,
   Info, MessageSquare, Mail, Lock, Unlock, DatabaseZap, Loader2,
-  Target, FlaskConical, Link as LinkIcon, Copy
+  Target, FlaskConical, Link as LinkIcon, Copy, MapPin
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OrganizationDialog } from '@/components/admin/organizations/organization-dialog';
@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 export default function OrganizationsManagementPage() {
   const { user } = useAuth();
@@ -135,13 +136,16 @@ export default function OrganizationsManagementPage() {
         {orgs.map((org) => {
           const isMyTestOrg = org.isTest;
           const isClaimed = !!org.ownerEmail && org.ownerId !== user?.uid;
+          const logoUrl = org.storeConfig?.logoUrl;
 
           return (
             <Card key={org.id} className={cn("overflow-hidden hover:shadow-lg transition-all border-l-4 border-t border-r border-b", isMyTestOrg ? "border-l-yellow-400" : "border-l-primary")}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-slate-50 rounded-xl border">
-                    {getTypeIcon(org.type)}
+                  <div className="p-2.5 bg-slate-50 rounded-xl border overflow-hidden h-12 w-12 flex items-center justify-center">
+                    {logoUrl ? (
+                      <img src={logoUrl} alt="logo" className="h-full w-full object-contain" />
+                    ) : getTypeIcon(org.type)}
                   </div>
                   <div className="min-w-0">
                     <CardTitle className="text-lg font-bold truncate text-slate-800">{org.name}</CardTitle>
@@ -177,6 +181,13 @@ export default function OrganizationsManagementPage() {
                     <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-semibold"><Mail className="h-3 w-3" /> Dueño:</span>
                     <span className="font-medium truncate max-w-[150px] text-xs text-slate-700">{org.ownerEmail || "Sin asignar"}</span>
                   </div>
+
+                  {org.address && (
+                    <div className="flex items-center gap-2 p-2 text-xs text-muted-foreground">
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{org.address}</span>
+                    </div>
+                  )}
                   
                   <div className="flex flex-wrap gap-1.5 mt-3">
                     <Badge variant={org.adminAgreements?.catalog ? "default" : "outline"} className={cn("text-[8px] h-5 px-1.5 gap-1", !org.adminAgreements?.catalog && "opacity-40")}>

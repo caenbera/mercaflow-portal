@@ -16,7 +16,7 @@ import {
   Image as ImageIcon, Check, Loader2, Layout, Share2, 
   MailQuestion, Users, Plus, Send, Calendar as CalendarIcon,
   Mail, MousePointer2, Clock, Trash2, FileDown, X, MailCheck, ShieldCheck, HelpCircle, AlertTriangle,
-  ChevronRight, Info, Lock, CreditCard, Wallet, Zap
+  ChevronRight, Info, Lock, CreditCard, Wallet, Zap, Fingerprint
 } from 'lucide-react';
 import { updateOrganization } from '@/lib/firestore/organizations';
 import { useToast } from '@/hooks/use-toast';
@@ -51,6 +51,8 @@ export default function StoreManagementPage() {
   const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(new Date());
 
+  const isRetailer = activeOrg?.type === 'retailer';
+
   const [formData, setFormData] = useState({
     enabled: false,
     heroImage: '',
@@ -66,6 +68,7 @@ export default function StoreManagementPage() {
     fbLink: '',
     igLink: '',
     minOrderAmount: 0,
+    logoUrl: '',
   });
 
   const [emailConfig, setEmailConfig] = useState<EmailConfig>({
@@ -97,6 +100,7 @@ export default function StoreManagementPage() {
     if (activeOrg) {
       setFormData({
         enabled: activeOrg.storeConfig?.enabled || false,
+        logoUrl: activeOrg.storeConfig?.logoUrl || '',
         heroImage: activeOrg.storeConfig?.heroImage || '',
         fruitsImage: activeOrg.storeConfig?.categoriesImages?.fruits || '',
         veggiesImage: activeOrg.storeConfig?.categoriesImages?.vegetables || '',
@@ -129,6 +133,7 @@ export default function StoreManagementPage() {
       const newConfig: StoreConfig = {
         ...activeOrg?.storeConfig,
         enabled: formData.enabled,
+        logoUrl: formData.logoUrl,
         heroImage: formData.heroImage,
         categoriesImages: {
           fruits: formData.fruitsImage,
@@ -153,7 +158,9 @@ export default function StoreManagementPage() {
       };
 
       await updateOrganization(activeOrgId, {
-        storeConfig: newConfig
+        storeConfig: newConfig,
+        address: formData.contactAddress,
+        phone: formData.contactPhone,
       });
       toast({ title: t('toast_save_success_title'), description: t('toast_save_success_desc') });
     } catch (e) {
@@ -205,12 +212,10 @@ export default function StoreManagementPage() {
     toast({ title: t('toast_link_copied_title'), description: t('toast_link_copied_desc') });
   };
 
-  if (!activeOrg || activeOrg.type !== 'retailer') {
+  if (!activeOrg) {
     return (
       <div className="p-8 text-center text-muted-foreground">
-        {t.rich('not_available_message', {
-          strong: (chunks) => <strong>{chunks}</strong>
-        })}
+        {t('select_org_message')}
       </div>
     );
   }
@@ -281,15 +286,17 @@ export default function StoreManagementPage() {
       <div className="flex justify-between items-end flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold font-headline flex items-center gap-3">
-            <Layout className="text-primary h-8 w-8" />
-            {t('title')}
+            <Fingerprint className="text-primary h-8 w-8" />
+            {t('identity_hub_title')}
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">{t('subtitle')}</p>
+          <p className="text-muted-foreground mt-1 text-sm">{t('identity_hub_subtitle')}</p>
         </div>
         <div className="flex gap-2">
-            <Button variant="outline" onClick={() => window.open(storeUrl, '_blank')} className="h-11">
-                <ExternalLink className="mr-2 h-4 w-4" /> {t('preview_button')}
-            </Button>
+            {isRetailer && (
+              <Button variant="outline" onClick={() => window.open(storeUrl, '_blank')} className="h-11">
+                  <ExternalLink className="mr-2 h-4 w-4" /> {t('preview_button')}
+              </Button>
+            )}
             <Button onClick={handleSave} disabled={isSaving} className="h-11 px-8 font-bold shadow-lg">
                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
                 {isSaving ? t('publishing') : t('publish_button')}
@@ -305,13 +312,20 @@ export default function StoreManagementPage() {
                     <CardTitle className="text-xs font-bold uppercase tracking-widest text-slate-400">{t('site_status_label')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10">
-                        <span className="text-sm font-semibold">{formData.enabled ? t('site_active') : t('site_maintenance')}</span>
-                        <Switch 
-                            checked={formData.enabled} 
-                            onCheckedChange={(val) => setFormData(prev => ({...prev, enabled: val}))} 
-                        />
-                    </div>
+                    {isRetailer ? (
+                      <div className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10">
+                          <span className="text-sm font-semibold">{formData.enabled ? t('site_active') : t('site_maintenance')}</span>
+                          <Switch 
+                              checked={formData.enabled} 
+                              onCheckedChange={(val) => setFormData(prev => ({...prev, enabled: val}))} 
+                          />
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-white/5 rounded-xl border border-white/10 flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        <span className="text-sm font-semibold">Perfil de Red Activo</span>
+                      </div>
+                    )}
                     <div className="p-3 bg-primary/10 rounded-xl border border-primary/20 space-y-2">
                         <p className="text-[10px] uppercase font-bold text-primary tracking-widest">{t('public_link_label')}</p>
                         <p className="text-xs font-mono break-all opacity-80">{storeUrl}</p>
@@ -328,7 +342,7 @@ export default function StoreManagementPage() {
                     className="w-full justify-start h-12 rounded-xl"
                     onClick={() => setActiveTab('images')}
                 >
-                    <ImageIcon className="mr-3 h-4 w-4" /> {t('tab_images')}
+                    <ImageIcon className="mr-3 h-4 w-4" /> {t('tab_branding')}
                 </Button>
                 <Button 
                     variant={activeTab === 'contact' ? 'secondary' : 'ghost'} 
@@ -337,27 +351,31 @@ export default function StoreManagementPage() {
                 >
                     <Share2 className="mr-3 h-4 w-4" /> {t('tab_contact')}
                 </Button>
-                <Button 
-                    variant={activeTab === 'marketing' ? 'secondary' : 'ghost'} 
-                    className="w-full justify-start h-12 rounded-xl"
-                    onClick={() => setActiveTab('marketing')}
-                >
-                    <MailQuestion className="mr-3 h-4 w-4" /> {t('tab_marketing')}
-                </Button>
-                <Button 
-                    variant={activeTab === 'email' ? 'secondary' : 'ghost'} 
-                    className="w-full justify-start h-12 rounded-xl"
-                    onClick={() => setActiveTab('email')}
-                >
-                    <MailCheck className="mr-3 h-4 w-4" /> {t('tab_email')}
-                </Button>
-                <Button 
-                    variant={activeTab === 'payments' ? 'secondary' : 'ghost'} 
-                    className="w-full justify-start h-12 rounded-xl"
-                    onClick={() => setActiveTab('payments')}
-                >
-                    <CreditCard className="mr-3 h-4 w-4" /> {t('tab_payments')}
-                </Button>
+                {isRetailer && (
+                  <>
+                    <Button 
+                        variant={activeTab === 'marketing' ? 'secondary' : 'ghost'} 
+                        className="w-full justify-start h-12 rounded-xl"
+                        onClick={() => setActiveTab('marketing')}
+                    >
+                        <MailQuestion className="mr-3 h-4 w-4" /> {t('tab_marketing')}
+                    </Button>
+                    <Button 
+                        variant={activeTab === 'email' ? 'secondary' : 'ghost'} 
+                        className="w-full justify-start h-12 rounded-xl"
+                        onClick={() => setActiveTab('email')}
+                    >
+                        <MailCheck className="mr-3 h-4 w-4" /> {t('tab_email')}
+                    </Button>
+                    <Button 
+                        variant={activeTab === 'payments' ? 'secondary' : 'ghost'} 
+                        className="w-full justify-start h-12 rounded-xl"
+                        onClick={() => setActiveTab('payments')}
+                    >
+                        <CreditCard className="mr-3 h-4 w-4" /> {t('tab_payments')}
+                    </Button>
+                  </>
+                )}
             </div>
         </div>
 
@@ -367,92 +385,119 @@ export default function StoreManagementPage() {
                     {activeTab === 'images' && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
                             <div className="space-y-4">
-                                <h3 className="font-bold flex items-center gap-2 text-primary border-b pb-2"><ImageIcon className="h-4 w-4"/> {t('main_images_title')}</h3>
-                                <div className="grid gap-2">
-                                    <div className="flex justify-between items-center">
-                                        <Label className="text-xs font-semibold">{t('hero_image_label')}</Label>
-                                        <span className="text-[10px] text-muted-foreground font-medium">{t('size_hint_hero')}</span>
-                                    </div>
-                                    <Input 
-                                        value={formData.heroImage} 
-                                        onChange={(e) => setFormData(prev => ({...prev, heroImage: e.target.value}))}
-                                        placeholder="https://..."
-                                        className="bg-slate-50"
-                                    />
+                                <h3 className="font-bold flex items-center gap-2 text-primary border-b pb-2"><ImageIcon className="h-4 w-4"/> {t('main_logo_title')}</h3>
+                                <div className="grid md:grid-cols-3 gap-6 items-center">
+                                  <div className="md:col-span-2 space-y-2">
+                                      <Label className="text-xs font-semibold">{t('logo_url_label')}</Label>
+                                      <Input 
+                                          value={formData.logoUrl} 
+                                          onChange={(e) => setFormData(prev => ({...prev, logoUrl: e.target.value}))}
+                                          placeholder="https://miweb.com/logo.png"
+                                          className="bg-slate-50 h-11"
+                                      />
+                                      <p className="text-[10px] text-muted-foreground">{t('logo_hint')}</p>
+                                  </div>
+                                  <div className="h-24 w-24 bg-slate-50 border-2 border-dashed rounded-2xl flex items-center justify-center overflow-hidden mx-auto">
+                                    {formData.logoUrl ? (
+                                      <img src={formData.logoUrl} alt="Logo Preview" className="h-full w-full object-contain" />
+                                    ) : (
+                                      <ImageIcon className="h-8 w-8 text-slate-200" />
+                                    )}
+                                  </div>
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-end border-b pb-2">
-                                    <h3 className="font-bold flex items-center gap-2 text-primary"><ShoppingBag className="h-4 w-4"/> {t('category_images_title')}</h3>
-                                    <span className="text-[10px] text-muted-foreground font-medium">{t('size_hint_category')}</span>
-                                </div>
-                                <div className="grid md:grid-cols-3 gap-4">
+                            {isRetailer && (
+                              <>
+                                <div className="space-y-4">
+                                    <h3 className="font-bold flex items-center gap-2 text-primary border-b pb-2"><ImageIcon className="h-4 w-4"/> {t('main_images_title')}</h3>
                                     <div className="grid gap-2">
-                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('fruits_label')}</Label>
+                                        <div className="flex justify-between items-center">
+                                            <Label className="text-xs font-semibold">{t('hero_image_label')}</Label>
+                                            <span className="text-[10px] text-muted-foreground font-medium">{t('size_hint_hero')}</span>
+                                        </div>
                                         <Input 
-                                            value={formData.fruitsImage} 
-                                            onChange={(e) => setFormData(prev => ({...prev, fruitsImage: e.target.value}))}
-                                            placeholder={t('url_placeholder')}
-                                            className="bg-slate-50"
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('vegetables_label')}</Label>
-                                        <Input 
-                                            value={formData.veggiesImage} 
-                                            onChange={(e) => setFormData(prev => ({...prev, veggiesImage: e.target.value}))}
-                                            placeholder={t('url_placeholder')}
-                                            className="bg-slate-50"
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('groceries_label')}</Label>
-                                        <Input 
-                                            value={formData.groceriesImage} 
-                                            onChange={(e) => setFormData(prev => ({...prev, groceriesImage: e.target.value}))}
-                                            placeholder={t('url_placeholder')}
+                                            value={formData.heroImage} 
+                                            onChange={(e) => setFormData(prev => ({...prev, heroImage: e.target.value}))}
+                                            placeholder="https://..."
                                             className="bg-slate-50"
                                         />
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-end border-b pb-2">
-                                    <h3 className="font-bold flex items-center gap-2 text-primary"><Users className="h-4 w-4"/> {t('testimonial_images_title')}</h3>
-                                    <span className="text-[10px] text-muted-foreground font-medium">{t('size_hint_avatar')}</span>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-end border-b pb-2">
+                                        <h3 className="font-bold flex items-center gap-2 text-primary"><ShoppingBag className="h-4 w-4"/> {t('category_images_title')}</h3>
+                                        <span className="text-[10px] text-muted-foreground font-medium">{t('size_hint_category')}</span>
+                                    </div>
+                                    <div className="grid md:grid-cols-3 gap-4">
+                                        <div className="grid gap-2">
+                                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('fruits_label')}</Label>
+                                            <Input 
+                                                value={formData.fruitsImage} 
+                                                onChange={(e) => setFormData(prev => ({...prev, fruitsImage: e.target.value}))}
+                                                placeholder={t('url_placeholder')}
+                                                className="bg-slate-50"
+                                            />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('vegetables_label')}</Label>
+                                            <Input 
+                                                value={formData.veggiesImage} 
+                                                onChange={(e) => setFormData(prev => ({...prev, veggiesImage: e.target.value}))}
+                                                placeholder={t('url_placeholder')}
+                                                className="bg-slate-50"
+                                            />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('groceries_label')}</Label>
+                                            <Input 
+                                                value={formData.groceriesImage} 
+                                                onChange={(e) => setFormData(prev => ({...prev, groceriesImage: e.target.value}))}
+                                                placeholder={t('url_placeholder')}
+                                                className="bg-slate-50"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="grid md:grid-cols-3 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('avatar_label_1')}</Label>
-                                        <Input 
-                                            value={formData.testi1Image} 
-                                            onChange={(e) => setFormData(prev => ({...prev, testi1Image: e.target.value}))}
-                                            placeholder={t('url_placeholder')}
-                                            className="bg-slate-50"
-                                        />
+
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-end border-b pb-2">
+                                        <h3 className="font-bold flex items-center gap-2 text-primary"><Users className="h-4 w-4"/> {t('testimonial_images_title')}</h3>
+                                        <span className="text-[10px] text-muted-foreground font-medium">{t('size_hint_avatar')}</span>
                                     </div>
-                                    <div className="grid gap-2">
-                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('avatar_label_2')}</Label>
-                                        <Input 
-                                            value={formData.testi2Image} 
-                                            onChange={(e) => setFormData(prev => ({...prev, testi2Image: e.target.value}))}
-                                            placeholder={t('url_placeholder')}
-                                            className="bg-slate-50"
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('avatar_label_3')}</Label>
-                                        <Input 
-                                            value={formData.testi3Image} 
-                                            onChange={(e) => setFormData(prev => ({...prev, testi3Image: e.target.value}))}
-                                            placeholder={t('url_placeholder')}
-                                            className="bg-slate-50"
-                                        />
+                                    <div className="grid md:grid-cols-3 gap-4">
+                                        <div className="grid gap-2">
+                                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('avatar_label_1')}</Label>
+                                            <Input 
+                                                value={formData.testi1Image} 
+                                                onChange={(e) => setFormData(prev => ({...prev, testi1Image: e.target.value}))}
+                                                placeholder={t('url_placeholder')}
+                                                className="bg-slate-50"
+                                            />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('avatar_label_2')}</Label>
+                                            <Input 
+                                                value={formData.testi2Image} 
+                                                onChange={(e) => setFormData(prev => ({...prev, testi2Image: e.target.value}))}
+                                                placeholder={t('url_placeholder')}
+                                                className="bg-slate-50"
+                                            />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('avatar_label_3')}</Label>
+                                            <Input 
+                                                value={formData.testi3Image} 
+                                                onChange={(e) => setFormData(prev => ({...prev, testi3Image: e.target.value}))}
+                                                placeholder={t('url_placeholder')}
+                                                className="bg-slate-50"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                              </>
+                            )}
                         </div>
                     )}
 
@@ -510,201 +555,203 @@ export default function StoreManagementPage() {
                         </div>
                     )}
 
-                    {activeTab === 'marketing' && (
-                        <div className="space-y-10 animate-in fade-in slide-in-from-right-4">
-                            <div className="grid gap-4 max-w-sm mb-8">
-                                <Label className="text-xs font-bold uppercase text-muted-foreground">{t('min_order_label')}</Label>
-                                <Input 
-                                    type="number" 
-                                    value={formData.minOrderAmount} 
-                                    onChange={(e) => setFormData(prev => ({...prev, minOrderAmount: parseFloat(e.target.value)}))}
-                                    className="h-12 bg-slate-50"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <Card className="bg-primary/5 border-primary/20">
-                                <CardContent className="p-4 text-center">
-                                  <Users className="mx-auto h-6 w-6 text-primary mb-2" />
-                                  <p className="text-2xl font-black text-slate-900">{subsLoading ? '...' : subscribers.length}</p>
-                                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{t('subscribers_list_title')}</p>
-                                </CardContent>
-                              </Card>
-                              <Card className="bg-blue-50 border-blue-200">
-                                <CardContent className="p-4 text-center">
-                                  <Mail className="mx-auto h-6 w-6 text-blue-600 mb-2" />
-                                  <p className="text-2xl font-black text-slate-900">{newsLoading ? '...' : newsletters.length}</p>
-                                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{t('campaign_history_title')}</p>
-                                </CardContent>
-                              </Card>
-                              <Card className="bg-orange-50 border-orange-200">
-                                <CardContent className="p-4 text-center">
-                                  <MousePointer2 className="mx-auto h-6 w-6 text-orange-600 mb-2" />
-                                  <p className="text-2xl font-black text-slate-900">
-                                    {newsLoading ? '...' : newsletters.reduce((acc, curr) => acc + (curr.opens || 0), 0)}
-                                  </p>
-                                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{t('table_opens')}</p>
-                                </CardContent>
-                              </Card>
-                            </div>
-
-                            <div className="space-y-4">
-                              <div className="flex justify-between items-center">
-                                <h3 className="font-bold flex items-center gap-2 text-slate-800">
-                                  <Mail className="h-5 w-5 text-primary" /> {t('campaign_history_title')}
-                                </h3>
-                                <Button onClick={() => setIsNewCampaignOpen(true)} size="sm" className="rounded-full shadow-md bg-slate-900 hover:bg-slate-800">
-                                  <Plus className="mr-2 h-4 w-4" /> {t('campaign_create_button')}
-                                </Button>
-                              </div>
-
-                              <div className="border rounded-2xl overflow-hidden bg-white">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow className="bg-slate-50/50">
-                                      <TableHead className="text-[10px] uppercase font-bold">{t('table_subject_status')}</TableHead>
-                                      <TableHead className="text-[10px] uppercase font-bold text-center">{t('table_opens')}</TableHead>
-                                      <TableHead className="text-[10px] uppercase font-bold text-right">{t('table_scheduled')}</TableHead>
-                                      <TableHead className="w-[50px]"></TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {newsLoading ? (
-                                      <TableRow><TableCell colSpan={4}><Skeleton className="h-12 w-full" /></TableCell></TableRow>
-                                    ) : newsletters.length > 0 ? (
-                                      newsletters.map((news) => (
-                                        <TableRow key={news.id}>
-                                          <TableCell>
-                                            <p className="text-sm font-bold text-slate-800">{news.subject}</p>
-                                            <Badge variant="outline" className={cn(
-                                              "text-[9px] uppercase h-4 px-1 border-none",
-                                              news.status === 'sent' ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
-                                            )}>
-                                              {news.status === 'sent' ? t('status_sent') : t('status_scheduled')}
-                                            </Badge>
-                                          </TableCell>
-                                          <TableCell className="text-center">
-                                            <div className="flex flex-col items-center">
-                                              <span className="font-black text-slate-900">{news.opens || 0}</span>
-                                              <span className="text-[9px] text-muted-foreground uppercase font-bold">{t('label_readers')}</span>
-                                            </div>
-                                          </TableCell>
-                                          <TableCell className="text-right">
-                                            <div className="flex flex-col items-end">
-                                              <span className="text-xs font-medium text-slate-600">{format(news.scheduledAt.toDate(), 'dd MMM, HH:mm')}</span>
-                                              <Clock className="h-3 w-3 text-slate-300" />
-                                            </div>
-                                          </TableCell>
-                                          <TableCell>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteCampaign(news.id)}>
-                                              <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                          </TableCell>
-                                        </TableRow>
-                                      ))
-                                    ) : (
-                                      <TableRow>
-                                        <TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic text-sm">
-                                          {t('no_campaigns_message')}
-                                        </TableCell>
-                                      </TableRow>
-                                    )}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                            </div>
-                            
-                            <div className="p-8 border-2 border-dashed rounded-[30px] flex flex-col items-center text-center gap-4 bg-slate-50">
-                                <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center">
-                                    <Users className="h-8 w-8" />
+                    {isRetailer && (
+                      <>
+                        {activeTab === 'marketing' && (
+                            <div className="space-y-10 animate-in fade-in slide-in-from-right-4">
+                                <div className="grid gap-4 max-w-sm mb-8">
+                                    <Label className="text-xs font-bold uppercase text-muted-foreground">{t('min_order_label')}</Label>
+                                    <Input 
+                                        type="number" 
+                                        value={formData.minOrderAmount} 
+                                        onChange={(e) => setFormData(prev => ({...prev, minOrderAmount: parseFloat(e.target.value)}))}
+                                        className="h-12 bg-slate-50"
+                                    />
                                 </div>
-                                <h3 className="text-xl font-bold">{t('subscribers_list_title')}</h3>
-                                <p className="text-muted-foreground max-w-md text-sm">
-                                    {t('subscribers_list_desc', { count: subscribers.length })}
-                                </p>
-                                <Button variant="outline" disabled={subscribers.length === 0} className="rounded-xl">
-                                  <FileDown className="mr-2 h-4 w-4" /> {t('export_csv_button')}
-                                </Button>
-                            </div>
-                        </div>
-                    )}
 
-                    {activeTab === 'email' && (
-                        <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
-                            <div className="flex justify-between items-start">
-                                <div className="space-y-1">
-                                    <h3 className="text-xl font-bold flex items-center gap-2">
-                                        <MailCheck className="text-primary h-6 w-6" />
-                                        {t('email_title')}
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground">{t('email_subtitle')}</p>
-                                </div>
-                                <Badge className={cn("px-3 py-1", emailConfig.verified ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
-                                    {emailConfig.verified ? <><ShieldCheck className="h-3 w-3 mr-1" /> {t('email_status_connected')}</> : <><AlertTriangle className="h-3 w-3 mr-1" /> {t('email_status_disconnected')}</>}
-                                </Badge>
-                            </div>
-
-                            <div className="grid md:grid-cols-2 gap-8">
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <Label className="font-bold">{t('email_provider_label')}</Label>
-                                        <Select 
-                                            value={emailConfig.provider} 
-                                            onValueChange={(val: any) => setEmailConfig(prev => ({...prev, provider: val}))}
-                                        >
-                                            <SelectTrigger className="h-12 bg-slate-50 rounded-xl">
-                                                <SelectValue placeholder={t('email_provider_placeholder')} />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="none">{t('email_provider_none')}</SelectItem>
-                                                <SelectItem value="sendgrid">{t('email_provider_sendgrid')}</SelectItem>
-                                                <SelectItem value="mailgun">{t('email_provider_mailgun')}</SelectItem>
-                                                <SelectItem value="smtp">{t('email_provider_smtp')}</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="font-bold">{t('email_apikey_label')}</Label>
-                                        <div className="relative">
-                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                            <Input 
-                                                type="password"
-                                                placeholder={t('email_apikey_placeholder')}
-                                                className="h-12 pl-10 bg-slate-50 rounded-xl"
-                                                value={emailConfig.apiKey}
-                                                onChange={(e) => setEmailConfig(prev => ({...prev, apiKey: e.target.value}))}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label className="font-bold">{t('email_sender_name_label')}</Label>
-                                            <Input 
-                                                placeholder={t('email_sender_name_placeholder')}
-                                                className="h-12 bg-slate-50 rounded-xl"
-                                                value={emailConfig.senderName}
-                                                onChange={(e) => setEmailConfig(prev => ({...prev, senderName: e.target.value}))}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="font-bold">{t('email_reply_to_label')}</Label>
-                                            <Input 
-                                                placeholder={t('email_reply_to_placeholder')}
-                                                className="h-12 bg-slate-50 rounded-xl"
-                                                value={emailConfig.replyTo}
-                                                onChange={(e) => setEmailConfig(prev => ({...prev, replyTo: e.target.value}))}
-                                            />
-                                        </div>
-                                    </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  <Card className="bg-primary/5 border-primary/20">
+                                    <CardContent className="p-4 text-center">
+                                      <Users className="mx-auto h-6 w-6 text-primary mb-2" />
+                                      <p className="text-2xl font-black text-slate-900">{subsLoading ? '...' : subscribers.length}</p>
+                                      <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{t('subscribers_list_title')}</p>
+                                    </CardContent>
+                                  </Card>
+                                  <Card className="bg-blue-50 border-blue-200">
+                                    <CardContent className="p-4 text-center">
+                                      <Mail className="mx-auto h-6 w-6 text-blue-600 mb-2" />
+                                      <p className="text-2xl font-black text-slate-900">{newsLoading ? '...' : newsletters.length}</p>
+                                      <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{t('campaign_history_title')}</p>
+                                    </CardContent>
+                                  </Card>
+                                  <Card className="bg-orange-50 border-orange-200">
+                                    <CardContent className="p-4 text-center">
+                                      <MousePointer2 className="mx-auto h-6 w-6 text-orange-600 mb-2" />
+                                      <p className="text-2xl font-black text-slate-900">
+                                        {newsLoading ? '...' : newsletters.reduce((acc, curr) => acc + (curr.opens || 0), 0)}
+                                      </p>
+                                      <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{t('table_opens')}</p>
+                                    </CardContent>
+                                  </Card>
                                 </div>
 
                                 <div className="space-y-4">
-                                    <div className="p-6 bg-slate-900 text-white rounded-3xl border shadow-xl">
-                                        <h4 className="font-bold flex items-center gap-2 mb-4">
-                                            <HelpCircle className="h-4 w-4 text-primary" />
-                                            {t('email_how_to_title')}
+                                  <div className="flex justify-between items-center">
+                                    <h3 className="font-bold flex items-center gap-2 text-slate-800">
+                                      <Mail className="h-5 w-5 text-primary" /> {t('campaign_history_title')}
+                                    </h3>
+                                    <Button onClick={() => setIsNewCampaignOpen(true)} size="sm" className="rounded-full shadow-md bg-slate-900 hover:bg-slate-800">
+                                      <Plus className="mr-2 h-4 w-4" /> {t('campaign_create_button')}
+                                    </Button>
+                                  </div>
+
+                                  <div className="border rounded-2xl overflow-hidden bg-white">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow className="bg-slate-50/50">
+                                          <TableHead className="text-[10px] uppercase font-bold">{t('table_subject_status')}</TableHead>
+                                          <TableHead className="text-[10px] uppercase font-bold text-center">{t('table_opens')}</TableHead>
+                                          <TableHead className="text-[10px] uppercase font-bold text-right">{t('table_scheduled')}</TableHead>
+                                          <TableHead className="w-[50px]"></TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {newsLoading ? (
+                                          <TableRow><TableCell colSpan={4}><Skeleton className="h-12 w-full" /></TableCell></TableRow>
+                                        ) : newsletters.length > 0 ? (
+                                          newsletters.map((news) => (
+                                            <TableRow key={news.id}>
+                                              <TableCell>
+                                                <p className="text-sm font-bold text-slate-800">{news.subject}</p>
+                                                <Badge variant="outline" className={cn(
+                                                  "text-[9px] uppercase h-4 px-1 border-none",
+                                                  news.status === 'sent' ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                                                )}>
+                                                  {news.status === 'sent' ? t('status_sent') : t('status_scheduled')}
+                                                </Badge>
+                                              </TableCell>
+                                              <TableCell className="text-center">
+                                                <div className="flex flex-col items-center">
+                                                  <span className="font-black text-slate-900">{news.opens || 0}</span>
+                                                  <span className="text-[9px] text-muted-foreground uppercase font-bold">{t('label_readers')}</span>
+                                                </div>
+                                              </TableCell>
+                                              <TableCell className="text-right">
+                                                <div className="flex flex-col items-end">
+                                                  <span className="text-xs font-medium text-slate-600">{format(news.scheduledAt.toDate(), 'dd MMM, HH:mm')}</span>
+                                                  <Clock className="h-3 w-3 text-slate-300" />
+                                                </div>
+                                              </TableCell>
+                                              <TableCell>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteCampaign(news.id)}>
+                                                  <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                              </TableCell>
+                                            </TableRow>
+                                          ))
+                                        ) : (
+                                          <TableRow>
+                                            <TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic text-sm">
+                                              {t('no_campaigns_message')}
+                                            </TableCell>
+                                          </TableRow>
+                                        )}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                </div>
+                                
+                                <div className="p-8 border-2 border-dashed rounded-[30px] flex flex-col items-center text-center gap-4 bg-slate-50">
+                                    <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center">
+                                        <Users className="h-8 w-8" />
+                                    </div>
+                                    <h3 className="text-xl font-bold">{t('subscribers_list_title')}</h3>
+                                    <p className="text-muted-foreground max-w-md text-sm">
+                                        {t('subscribers_list_desc', { count: subscribers.length })}
+                                    </p>
+                                    <Button variant="outline" disabled={subscribers.length === 0} className="rounded-xl">
+                                      <FileDown className="mr-2 h-4 w-4" /> {t('export_csv_button')}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'email' && (
+                            <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+                                <div className="flex justify-between items-start">
+                                    <div className="space-y-1">
+                                        <h3 className="text-xl font-bold flex items-center gap-2">
+                                            <MailCheck className="text-primary h-6 w-6" />
+                                            {t('email_title')}
+                                        </h3>
+                                        <p className="text-sm text-muted-foreground">{t('email_subtitle')}</p>
+                                    </div>
+                                    <Badge className={cn("px-3 py-1", emailConfig.verified ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                                        {emailConfig.verified ? <><ShieldCheck className="h-3 w-3 mr-1" /> {t('email_status_connected')}</> : <><AlertTriangle className="h-3 w-3 mr-1" /> {t('email_status_disconnected')}</>}
+                                    </Badge>
+                                </div>
+
+                                <div className="grid md:grid-cols-2 gap-8">
+                                    <div className="space-y-6">
+                                        <div className="space-y-2">
+                                            <Label className="font-bold">{t('email_provider_label')}</Label>
+                                            <Select 
+                                                value={emailConfig.provider} 
+                                                onValueChange={(val: any) => setEmailConfig(prev => ({...prev, provider: val}))}
+                                            >
+                                                <SelectTrigger className="h-12 bg-slate-50 rounded-xl">
+                                                    <SelectValue placeholder={t('email_provider_placeholder')} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">{t('email_provider_none')}</SelectItem>
+                                                    <SelectItem value="sendgrid">{t('email_provider_sendgrid')}</SelectItem>
+                                                    <SelectItem value="mailgun">{t('email_provider_mailgun')}</SelectItem>
+                                                    <SelectItem value="smtp">{t('email_provider_smtp')}</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label className="font-bold">{t('email_apikey_label')}</Label>
+                                            <div className="relative">
+                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                                <Input 
+                                                    type="password"
+                                                    placeholder={t('email_apikey_placeholder')}
+                                                    className="h-12 pl-10 bg-slate-50 rounded-xl"
+                                                    value={emailConfig.apiKey}
+                                                    onChange={(e) => setEmailConfig(prev => ({...prev, apiKey: e.target.value}))}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label className="font-bold">{t('email_sender_name_label')}</Label>
+                                                <Input 
+                                                    placeholder={t('email_sender_name_placeholder')}
+                                                    className="h-12 bg-slate-50 rounded-xl"
+                                                    value={emailConfig.senderName}
+                                                    onChange={(e) => setEmailConfig(prev => ({...prev, senderName: e.target.value}))}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="font-bold">{t('email_reply_to_label')}</Label>
+                                                <Input 
+                                                    placeholder={t('email_reply_to_placeholder')}
+                                                    className="h-12 bg-slate-50 rounded-xl"
+                                                    value={emailConfig.replyTo}
+                                                    onChange={(e) => setEmailConfig(prev => ({...prev, replyTo: e.target.value}))}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="p-6 bg-slate-900 text-white rounded-3xl border shadow-xl">
+                                            <h4 className="font-bold flex items-center gap-2 mb-4">
+                                                <HelpCircle className="h-4 w-4 text-primary" />
+                                                {t('email_how_to_title')}
                                         </h4>
                                         <ol className="space-y-4 text-sm text-slate-300 list-decimal pl-4">
                                             <li dangerouslySetInnerHTML={{ __html: t.raw('email_step_1') }}></li>
@@ -867,6 +914,8 @@ export default function StoreManagementPage() {
                             </div>
                         </div>
                     )}
+                  </>
+                )}
                 </CardContent>
             </Card>
         </div>

@@ -26,7 +26,7 @@ import {
   LayoutGrid, ShoppingCart, Package, Users,
   ClipboardList, Leaf, Truck, ShoppingBag, Boxes, Headset, 
   ChevronRight, Trophy, Building2, Globe, Store, Share2, Plus, Lock,
-  Target, UserCog, Eye, History, FileText, UserCircle, Tag, Navigation
+  Target, UserCog, Eye, History, FileText, UserCircle, Tag, Navigation, Fingerprint
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/navigation';
@@ -102,6 +102,7 @@ export function AppSidebar() {
           { href: `/admin/orders`, label: t('manageOrders'), icon: ShoppingCart },
           { href: `/admin/clients`, label: t('manageClients'), icon: Users },
           { href: `/admin/support`, label: t('support'), icon: Headset },
+          { href: `/admin/store`, label: t('b2cStore'), icon: Fingerprint },
       ],
       sales: [
           { href: `/admin/sales`, label: t('prospects'), icon: Target },
@@ -157,10 +158,6 @@ export function AppSidebar() {
     
     if (!agreements.sales) {
       modules.sales = modules.sales.filter((m: any) => m.href !== '/admin/sales');
-    }
-
-    if (org.type === 'retailer') {
-      modules.management.push({ href: `/admin/store`, label: t('b2cStore'), icon: Globe });
     }
 
     return modules;
