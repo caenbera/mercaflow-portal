@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import React, { useState, useMemo } from 'react';
+import { useLocale } from 'next-intl';
 import { 
   Dialog, 
   DialogContent, 
@@ -28,13 +28,12 @@ import {
   Calendar as CalendarIcon, 
   Plus, 
   Minus, 
-  CheckCircle2, 
   ChevronRight, 
-  ChevronLeft,
   Loader2,
   Trash2
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
+import { es, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { calculateDiscount } from '@/lib/pricing';
 import Image from 'next/image';
@@ -46,7 +45,6 @@ interface ManualOrderDialogProps {
 }
 
 export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps) {
-  const t = useTranslations('OrdersPage');
   const locale = useLocale() as 'es' | 'en';
   const { toast } = useToast();
   const { activeOrgId } = useOrganization();
@@ -64,7 +62,28 @@ export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filter clients
+  // Textos estáticos para evitar errores de traducción faltante
+  const labels = {
+    title: locale === 'es' ? "Crear Pedido Manual" : "Create Manual Order",
+    step1: locale === 'es' ? "Cliente" : "Customer",
+    step2: locale === 'es' ? "Productos" : "Products",
+    step3: locale === 'es' ? "Confirmación" : "Confirmation",
+    searchClient: locale === 'es' ? "Buscar cliente por nombre..." : "Search customer by name...",
+    searchProduct: locale === 'es' ? "Buscar producto..." : "Search product...",
+    deliveryDate: locale === 'es' ? "Fecha de entrega" : "Delivery date",
+    summary: locale === 'es' ? "Resumen del Pedido" : "Order Summary",
+    subtotal: locale === 'es' ? "Subtotal" : "Subtotal",
+    discount: locale === 'es' ? "Descuento aplicado" : "Discount applied",
+    total: locale === 'es' ? "Total" : "Total",
+    cancel: locale === 'es' ? "Cancelar" : "Cancel",
+    back: locale === 'es' ? "Atrás" : "Back",
+    next: locale === 'es' ? "Siguiente" : "Next",
+    finish: locale === 'es' ? "Crear Pedido" : "Create Order",
+    creating: locale === 'es' ? "Creando..." : "Creating...",
+    orderNotes: locale === 'es' ? "Notas del pedido" : "Order Notes",
+    notesPlaceholder: locale === 'es' ? "Instrucciones especiales..." : "Special instructions..."
+  };
+
   const filteredClients = useMemo(() => {
     return clients.filter(c => 
       c.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -72,7 +91,6 @@ export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps
     );
   }, [clients, searchTerm]);
 
-  // Filter products
   const filteredProducts = useMemo(() => {
     return products.filter(p => 
       p.name[locale].toLowerCase().includes(productSearch.toLowerCase()) ||
@@ -80,7 +98,6 @@ export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps
     );
   }, [products, productSearch, locale]);
 
-  // Cart calculations
   const cartResumen = useMemo(() => {
     if (!selectedClient) return { items: [], subtotal: 0, discount: 0, total: 0 };
     
@@ -140,11 +157,11 @@ export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps
         deliveryDate: Timestamp.fromDate(deliveryDate)
       });
 
-      toast({ title: t('manual_dialog_create_success') });
+      toast({ title: "Pedido creado", description: "El pedido manual ha sido registrado con éxito." });
       onOpenChange(false);
       resetForm();
     } catch (error) {
-      toast({ variant: 'destructive', title: t('manual_dialog_create_error') });
+      toast({ variant: 'destructive', title: "Error", description: "No se pudo crear el pedido." });
     } finally {
       setIsSubmitting(false);
     }
@@ -167,22 +184,22 @@ export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps
         <DialogHeader className="p-6 bg-slate-900 text-white">
           <DialogTitle className="text-xl flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-primary" />
-            {t('manual_dialog_title')}
+            {labels.title}
           </DialogTitle>
           <div className="flex items-center gap-4 mt-4">
             <div className={cn("flex items-center gap-2 text-xs font-bold uppercase tracking-widest", step >= 1 ? "text-primary" : "text-slate-500")}>
               <span className={cn("w-6 h-6 rounded-full flex items-center justify-center border-2", step >= 1 ? "border-primary bg-primary text-white" : "border-slate-500 text-slate-500")}>1</span>
-              {t('manual_dialog_step1')}
+              {labels.step1}
             </div>
             <div className="h-px w-8 bg-slate-700" />
             <div className={cn("flex items-center gap-2 text-xs font-bold uppercase tracking-widest", step >= 2 ? "text-primary" : "text-slate-500")}>
               <span className={cn("w-6 h-6 rounded-full flex items-center justify-center border-2", step >= 2 ? "border-primary bg-primary text-white" : "border-slate-500 text-slate-500")}>2</span>
-              {t('manual_dialog_step2')}
+              {labels.step2}
             </div>
             <div className="h-px w-8 bg-slate-700" />
             <div className={cn("flex items-center gap-2 text-xs font-bold uppercase tracking-widest", step >= 3 ? "text-primary" : "text-slate-500")}>
               <span className={cn("w-6 h-6 rounded-full flex items-center justify-center border-2", step >= 3 ? "border-primary bg-primary text-white" : "border-slate-500 text-slate-500")}>3</span>
-              {t('manual_dialog_step3')}
+              {labels.step3}
             </div>
           </div>
         </DialogHeader>
@@ -193,7 +210,7 @@ export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input 
-                  placeholder={t('manual_dialog_search_client')} 
+                  placeholder={labels.searchClient} 
                   className="pl-9 bg-slate-50 border-none h-11"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -240,7 +257,7 @@ export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input 
-                  placeholder={t('manual_dialog_search_product')} 
+                  placeholder={labels.searchProduct} 
                   className="pl-9 bg-slate-50 border-none h-11"
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
@@ -252,7 +269,7 @@ export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps
                   filteredProducts.map(product => (
                     <div key={product.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-3">
                       <div className="h-12 w-12 rounded-lg bg-slate-200 overflow-hidden relative border border-slate-200">
-                        <Image src={product.photoUrl || '/placeholder.svg'} alt="" fill className="object-cover" />
+                        <Image src={product.photoUrl || 'https://via.placeholder.com/80'} alt="" fill className="object-cover" />
                       </div>
                       <div className="flex-grow min-w-0">
                         <p className="font-bold text-sm text-slate-800 truncate">{product.name[locale]}</p>
@@ -288,8 +305,8 @@ export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
               <div className="bg-slate-50 p-4 rounded-2xl space-y-4 border border-slate-100">
                 <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Resumen del Pedido</span>
-                  <span className="text-xs font-bold text-primary">{cartResumen.items.length} Productos</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{labels.summary}</span>
+                  <span className="text-xs font-bold text-primary">{cartResumen.items.length} {labels.step2}</span>
                 </div>
                 <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
                   {cartResumen.items.map(item => (
@@ -301,15 +318,15 @@ export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps
                 </div>
                 <div className="border-t border-slate-200 pt-3 space-y-1">
                   <div className="flex justify-between text-xs">
-                    <span className="text-slate-500">Subtotal</span>
+                    <span className="text-slate-500">{labels.subtotal}</span>
                     <span className="text-slate-500">{formatPrice(cartResumen.subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-primary font-bold">Descuento aplicado</span>
+                    <span className="text-primary font-bold">{labels.discount}</span>
                     <span className="text-primary font-bold">-{formatPrice(cartResumen.discount)}</span>
                   </div>
                   <div className="flex justify-between text-lg pt-2">
-                    <span className="font-black text-slate-900 uppercase">Total</span>
+                    <span className="font-black text-slate-900 uppercase">{labels.total}</span>
                     <span className="font-black text-primary">{formatPrice(cartResumen.total)}</span>
                   </div>
                 </div>
@@ -317,12 +334,12 @@ export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps
 
               <div className="grid gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('manual_dialog_delivery_date')}</Label>
+                  <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">{labels.deliveryDate}</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-start h-11 bg-slate-50 border-none rounded-xl font-bold">
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {format(deliveryDate, "PPP")}
+                        {format(deliveryDate, "PPP", { locale: locale === 'es' ? es : enUS })}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -331,9 +348,9 @@ export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps
                   </Popover>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Notas del pedido</Label>
+                  <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">{labels.orderNotes}</Label>
                   <Textarea 
-                    placeholder="Agregue instrucciones especiales..." 
+                    placeholder={labels.notesPlaceholder} 
                     className="bg-slate-50 border-none rounded-xl min-h-[80px]"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
@@ -344,13 +361,13 @@ export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps
           )}
         </div>
 
-        <DialogFooter className="p-6 bg-slate-50 border-t flex items-center justify-between">
+        <div className="p-6 bg-slate-50 border-t flex items-center justify-between">
           <Button 
             variant="ghost" 
             onClick={() => step === 1 ? onOpenChange(false) : setStep(step - 1)}
             className="rounded-xl font-bold"
           >
-            {step === 1 ? t('cancel') : t('back')}
+            {step === 1 ? labels.cancel : labels.back}
           </Button>
           <Button 
             onClick={() => step === 3 ? handleCreateOrder() : setStep(step + 1)}
@@ -362,9 +379,9 @@ export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps
             className="rounded-xl px-8 bg-primary hover:bg-primary/90 font-bold h-11 shadow-lg"
           >
             {isSubmitting ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
-            {step === 3 ? t('finish') : t('next')}
+            {step === 3 ? labels.finish : labels.next}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
