@@ -256,8 +256,6 @@ export default function SupplyNetworkPage() {
       }
 
       // 2. Buscar productos en esas organizaciones
-      // Nota: 'where in' tiene un límite de 10-30 elementos.
-      // Si hay muchos, esto requeriría una lógica de segmentación.
       const prodQuery = query(
         collection(db, 'products'),
         where('organizationId', 'in', allowedOrgIds.slice(0, 30)),
