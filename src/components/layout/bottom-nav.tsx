@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Link, usePathname, useRouter } from '@/navigation';
 import { useTranslations } from 'next-intl';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { LanguageSwitcher } from '../landing/language-switcher';
 import { useAuth } from '@/context/auth-context';
@@ -39,7 +39,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import type { NavDefinition, NavItem } from './app-sidebar'; 
 import { NotificationSheetContent } from './notification-sheet';
-import { useNotifications } from '@/notifications/notification-context';
+import { useNotifications } from '@/context/notification-context';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 export function BottomNavBar({ navConfig }: { navConfig: NavDefinition }) {
@@ -50,7 +50,7 @@ export function BottomNavBar({ navConfig }: { navConfig: NavDefinition }) {
   const { role } = useAuth();
   const { unreadCount, markAllAsRead } = useNotifications();
 
-  let baseNavItems: NavItem[];
+  let baseNavItems: NavItem[] = [];
   
   if (role === 'client') {
     baseNavItems = navConfig.mobile.client;
@@ -58,8 +58,6 @@ export function BottomNavBar({ navConfig }: { navConfig: NavDefinition }) {
     baseNavItems = navConfig.mobile.admin;
   } else if (role === 'salesperson') {
     baseNavItems = navConfig.mobile.salesperson;
-  } else {
-    baseNavItems = [];
   }
 
   const navItems = baseNavItems.slice(0, 3);

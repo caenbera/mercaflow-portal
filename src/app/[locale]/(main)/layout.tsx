@@ -77,9 +77,11 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <div className="relative flex min-h-svh flex-1 flex-col bg-background overflow-hidden">
+      <div className="relative flex min-h-svh flex-1 flex-col bg-background">
         {!isMobile && <DashboardHeader />}
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
         {isMobile && <BottomNavBar navConfig={navConfig} />}
       </div>
     </SidebarProvider>
