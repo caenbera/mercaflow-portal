@@ -2,29 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 👇 MEJORAS PARA PREVENIR OVERFLOW HORIZONTAL Y PERMITIR SCROLL VERTICAL NATURAL 👇 */
-html, body {
-    width: 100%;
-    max-width: 100vw;
-    height: auto;
-    overflow-x: hidden !important;
-}
-
-body {
-    margin: 0;
-    padding: 0;
-    padding-bottom: 80px;
-    box-sizing: border-box;
-    /* Permitimos scroll vertical natural */
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-}
-
-/* Prevenir overflow en contenedores */
-* {
-    box-sizing: border-box;
-}
-
 @layer base {
   :root {
     --background: 0 0% 98%; /* gray-50 */
@@ -55,15 +32,8 @@ body {
     --input: 240 5.9% 90%;
     --ring: 145 63% 42%;
 
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    
     --radius: 0.5rem;
 
-    /* New sidebar colors from the prototype */
     --sidebar-background: 210 29% 24%;
     --sidebar-foreground: 210 20% 85%;
     --sidebar-primary: 145 63% 42%;
@@ -79,69 +49,53 @@ body {
   .dark {
     --background: 240 6% 10%;
     --foreground: 0 0% 98%;
-
     --card: 240 5% 15%;
     --card-foreground: 0 0% 98%;
-
     --popover: 240 5% 15%;
     --popover-foreground: 0 0% 98%;
-
     --primary: 145 63% 49%;
     --primary-foreground: 0 0% 100%;
-    
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
-
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
-
     --accent: 25 95% 53%;
     --accent-foreground: 0 0% 100%;
-    
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 145 63% 49%;
-    
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-
-    /* Sidebar is always dark themed */
-    --sidebar-background: 210 29% 24%;
-    --sidebar-foreground: 210 20% 85%;
-    --sidebar-primary: 145 63% 42%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 29% 30%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 210 25% 38%;
-    --sidebar-ring: 145 63% 49%;
   }
+}
 
+/* 👇 MEJORAS PARA PERMITIR SCROLL VERTICAL NATURAL 👇 */
+html, body {
+    height: auto;
+    min-height: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    @apply bg-background text-foreground antialiased;
+    padding-bottom: 80px; /* Espacio para el menú inferior */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@layer base {
   * {
     @apply border-border;
   }
+}
 
-  html {
-    @apply scroll-smooth;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-  }
-
-  /* 👇 Clase para ocultar scrollbar en contenedores con scroll horizontal 👇 */
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .hide-scrollbar {
-    -ms-overflow-style: none;  /* IE y Edge */
-    scrollbar-width: none;     /* Firefox */
-  }
+/* Ocultar scrollbar en contenedores específicos si es necesario */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 @layer utilities {
@@ -162,27 +116,6 @@ body {
     }
     .no-print {
       display: none !important;
-    }
-    .print-table {
-       width: 100%;
-       border-collapse: collapse;
-       margin-top: 20px;
-    }
-    .print-table th {
-      background-color: hsl(var(--sidebar-background)) !important;
-      color: white !important;
-      padding: 10px;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .print-table td {
-        padding: 10px;
-        border-bottom: 1px solid #eee;
-    }
-    .print-table tr:nth-child(even) {
-        background-color: var(--pastel-green) !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
     }
   }
 }

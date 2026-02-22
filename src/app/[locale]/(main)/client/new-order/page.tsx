@@ -44,7 +44,6 @@ const CheckoutContent = ({
   handleSubmitOrder, 
   t, 
   locale, 
-  priceListName, 
   activeOrg,
   userProfile
 }: any) => {
@@ -135,7 +134,7 @@ const CheckoutContent = ({
             </div>
             {discountAmount > 0 && (
                 <div className="flex justify-between text-sm text-primary font-bold">
-                    <span>{t('discount')} {priceListName ? `(${priceListName})` : ''}</span>
+                    <span>{t('discount')}</span>
                     <span>-{formatCurrency(discountAmount)}</span>
                 </div>
             )}
@@ -292,23 +291,6 @@ export default function NewOrderPage() {
     };
   }, [cart, products, offers, userProfile, priceLists, loading]);
 
-  const checkoutProps = {
-    orderItems,
-    itemNotes: notes,
-    generalObservations,
-    onGeneralObservationsChange: setGeneralObservations,
-    subtotal,
-    discountAmount,
-    total,
-    deliveryDate,
-    isSubmitting,
-    handleSubmitOrder,
-    t,
-    locale,
-    priceListName,
-    discountPercentage,
-  };
-
   const handleOpenNoteModal = (product: ProductType) => {
     setCurrentProductForNote(product);
     setCurrentNote(getNote(product.id) || '');
@@ -342,6 +324,23 @@ export default function NewOrderPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const checkoutProps = {
+    orderItems,
+    itemNotes: notes,
+    generalObservations,
+    onGeneralObservationsChange: setGeneralObservations,
+    subtotal,
+    discountAmount,
+    total,
+    deliveryDate,
+    isSubmitting,
+    handleSubmitOrder,
+    t,
+    locale,
+    priceListName,
+    discountPercentage,
   };
 
   return (
