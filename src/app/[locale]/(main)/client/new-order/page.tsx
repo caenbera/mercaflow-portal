@@ -262,8 +262,8 @@ export default function NewOrderPage() {
     return productList.sort((a, b) => a.name[locale].localeCompare(b.name[locale]));
   }, [activeCategory, activeSubcategory, searchTerm, unifiedProductsForClient, loading, favoriteProductIds, t, locale]);
 
-  const { orderItems, subtotal, discountAmount, total, totalItems, priceListName } = useMemo(() => {
-    if (loading) return { orderItems: [], subtotal: 0, discountAmount: 0, total: 0, totalItems: 0, priceListName: '' };
+  const { orderItems, subtotal, discountAmount, total, totalItems, priceListName, discountPercentage } = useMemo(() => {
+    if (loading) return { orderItems: [], subtotal: 0, discountAmount: 0, total: 0, totalItems: 0, priceListName: '', discountPercentage: 0 };
     const clientPriceList = priceLists.find(pl => pl.name === userProfile?.priceList) || null;
     let runningSubtotal = 0, runningDiscount = 0, runningTotalItems = 0;
     const runningOrderItems: (OrderItem & { photoUrl: string })[] = [];
@@ -281,8 +281,33 @@ export default function NewOrderPage() {
             price: finalPrice, photoUrl: product.photoUrl || '', isBox: product.isBox || false,
         });
     }
-    return { orderItems: runningOrderItems, subtotal: runningSubtotal, discountAmount: runningDiscount, total: runningSubtotal - runningDiscount, totalItems: runningTotalItems, priceListName: clientPriceList?.name || '' };
+    return { 
+      orderItems: runningOrderItems, 
+      subtotal: runningSubtotal, 
+      discountAmount: runningDiscount, 
+      total: runningSubtotal - runningDiscount, 
+      totalItems: runningTotalItems, 
+      priceListName: clientPriceList?.name || '',
+      discountPercentage: (clientPriceList?.tiers && clientPriceList.tiers[0]?.discount) || 0,
+    };
   }, [cart, products, offers, userProfile, priceLists, loading]);
+
+  const checkoutProps = {
+    orderItems,
+    itemNotes: notes,
+    generalObservations,
+    onGeneralObservationsChange: setGeneralObservations,
+    subtotal,
+    discountAmount,
+    total,
+    deliveryDate,
+    isSubmitting,
+    handleSubmitOrder,
+    t,
+    locale,
+    priceListName,
+    discountPercentage,
+  };
 
   const handleOpenNoteModal = (product: ProductType) => {
     setCurrentProductForNote(product);
@@ -348,7 +373,7 @@ export default function NewOrderPage() {
           <div className="absolute left-0 top-0 flex items-center gap-1.5 px-3 min-w-full">
             {allCategories.map((cat: any) => (
               <Button key={cat.es} variant={activeCategory === cat.es ? 'default' : 'outline'} size="sm" className="rounded-full h-7 px-3 text-[11px] font-bold" onClick={() => { setActiveCategory(cat.es); setActiveSubcategory('all'); }}>
-                {cat.isFavorite && <Star className="h-3 w-3 mr-1 text-yellow-400 fill-yellow-400" />}
+                {cat.isFavorite && <Star className="h-3.5 w-3.5 mr-1 text-yellow-400 fill-yellow-400" />}
                 {cat[locale] || cat.es}
               </Button>
             ))}
