@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import type { Product as ProductType, OrderItem } from '@/types';
-import { CalendarIcon, Search, MessageSquarePlus, Pencil, Minus, Plus, ShoppingBasket, Star, Printer, MessageCircle, Check } from 'lucide-react';
+import { CalendarIcon, Search, MessageSquarePlus, Pencil, Minus, Plus, ShoppingBasket, Star, Printer, MessageCircle, Check, Loader2 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -172,8 +172,6 @@ const CheckoutContent = ({
     </div>
   );
 };
-
-import { Loader2 } from 'lucide-react';
 
 export default function NewOrderPage() {
   const t = useTranslations('ClientNewOrderPage');
