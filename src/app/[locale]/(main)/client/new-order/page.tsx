@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -11,10 +12,10 @@ import { Input } from '@/components/ui/input';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import type { Product as ProductType, OrderItem } from '@/types';
-import { CalendarIcon, Search, MessageSquarePlus, Pencil, Minus, Plus, ShoppingBasket, Star, Printer, MessageCircle, Check, Loader2 } from 'lucide-react';
+import { CalendarIcon, Search, MessageSquarePlus, Pencil, Minus, Plus, ShoppingBasket, Star, Printer, MessageCircle, Check, Loader2, CheckCircle2 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -41,7 +42,9 @@ const CheckoutContent = ({
   total, 
   deliveryDate, 
   isSubmitting, 
+  isSuccess,
   handleSubmitOrder, 
+  onClose,
   t, 
   locale, 
   activeOrg,
@@ -54,7 +57,7 @@ const CheckoutContent = ({
 
   const handleWhatsApp = () => {
     if (!activeOrg?.storeConfig?.contactWhatsapp) {
-      alert("El proveedor no tiene configurado un número de WhatsApp.");
+      alert("El proveedor no tiene configurado un número de WhatsApp en su perfil de marca.");
       return;
     }
     
@@ -65,6 +68,35 @@ const CheckoutContent = ({
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
+  if (isSuccess) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-white">
+        <div className="bg-green-100 p-6 rounded-full mb-6 animate-in zoom-in-50 duration-500">
+          <CheckCircle2 className="h-20 w-20 text-green-600" />
+        </div>
+        <h2 className="text-3xl font-black text-slate-900 mb-2 uppercase tracking-tight">¡Pedido Recibido!</h2>
+        <p className="text-slate-500 mb-8 max-w-xs leading-relaxed">Tu orden ha sido enviada al proveedor. Puedes enviar un comprobante ahora por WhatsApp.</p>
+        
+        <div className="w-full space-y-3">
+          <Button 
+            className="w-full h-14 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-bold text-lg shadow-xl gap-2"
+            onClick={handleWhatsApp}
+          >
+            <MessageCircle className="h-6 w-6" />
+            Enviar por WhatsApp
+          </Button>
+          <Button 
+            variant="outline" 
+            className="w-full h-12 rounded-2xl font-bold"
+            onClick={onClose}
+          >
+            Cerrar y Volver
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-white relative">
       <SheetHeader className="p-4 text-left border-b bg-slate-50/50 no-print">
@@ -72,6 +104,7 @@ const CheckoutContent = ({
           <ShoppingBasket className="h-5 w-5 text-primary" />
           {t('confirmOrder')}
         </SheetTitle>
+        <SheetDescription className="text-xs">Revisa los detalles de tu compra antes de finalizar.</SheetDescription>
       </SheetHeader>
 
       <div className="flex-grow overflow-y-auto p-4 space-y-6 print-area">
@@ -97,7 +130,7 @@ const CheckoutContent = ({
             {orderItems.map((item: any) => (
               <div key={item.productId} className="flex gap-3 items-start p-3 bg-white border rounded-2xl shadow-sm">
                 <div className="h-12 w-12 rounded-lg overflow-hidden shrink-0 border bg-slate-50 no-print">
-                  <Image src={item.photoUrl} alt="" width={48} height={48} className="object-cover h-full w-full" />
+                  <Image src={item.photoUrl || '/placeholder.svg'} alt="" width={48} height={48} className="object-cover h-full w-full" />
                 </div>
                 <div className="flex-grow min-w-0">
                   <p className="font-bold text-sm text-slate-800 leading-tight">{item.productName[locale]}</p>
@@ -155,7 +188,6 @@ const CheckoutContent = ({
             variant="outline" 
             className="h-12 rounded-2xl font-bold gap-2 border-green-200 text-green-700 hover:bg-green-50"
             onClick={handleWhatsApp}
-            disabled={!activeOrg?.storeConfig?.contactWhatsapp}
           >
             <MessageCircle className="h-4 w-4" />
             WhatsApp
@@ -197,6 +229,7 @@ export default function NewOrderPage() {
   const [currentNote, setCurrentNote] = useState('');
   const [imageToView, setImageToView] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [generalObservations, setGeneralObservations] = useState("");
 
   const loading = productsLoading || ordersLoading || priceListsLoading || offersLoading;
@@ -256,8 +289,15 @@ export default function NewOrderPage() {
     let productList = activeCategory === t('favorites') 
       ? unifiedProductsForClient.filter(p => favoriteProductIds.has(p.id))
       : unifiedProductsForClient.filter(p => p.category.es === activeCategory);
-    if (activeSubcategory !== 'all') productList = productList.filter(p => p.subcategory?.es === activeSubcategory);
-    if (searchTerm) productList = productList.filter(p => p.name[locale].toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Solo filtramos por subcategoría si el usuario ha seleccionado una específica (no "all")
+    if (activeSubcategory !== 'all') {
+      productList = productList.filter(p => p.subcategory?.es === activeSubcategory);
+    }
+    
+    if (searchTerm) {
+      productList = productList.filter(p => p.name[locale].toLowerCase().includes(searchTerm.toLowerCase()));
+    }
     return productList.sort((a, b) => a.name[locale].localeCompare(b.name[locale]));
   }, [activeCategory, activeSubcategory, searchTerm, unifiedProductsForClient, loading, favoriteProductIds, t, locale]);
 
@@ -316,14 +356,18 @@ export default function NewOrderPage() {
         notes: { general: generalObservations, items: notes },
         deliveryDate: Timestamp.fromDate(deliveryDate || new Date()),
       });
-      toast({ title: t('orderPlaced') });
+      setIsSuccess(true);
       clearCart();
-      setIsCheckoutOpen(false);
     } catch (error: any) {
       toast({ variant: "destructive", title: t('orderFailed') });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCloseCheckout = () => {
+    setIsCheckoutOpen(false);
+    setIsSuccess(false);
   };
 
   const checkoutProps = {
@@ -336,7 +380,9 @@ export default function NewOrderPage() {
     total,
     deliveryDate,
     isSubmitting,
+    isSuccess,
     handleSubmitOrder,
+    onClose: handleCloseCheckout,
     t,
     locale,
     priceListName,
@@ -378,6 +424,32 @@ export default function NewOrderPage() {
             ))}
           </div>
         </div>
+        
+        {subcategories.length > 0 && (
+          <div className="relative h-9 overflow-x-auto hide-scrollbar mt-1 border-t pt-1">
+            <div className="absolute left-0 top-0 flex items-center gap-1.5 px-3 min-w-full">
+              <Button
+                variant={activeSubcategory === 'all' ? 'secondary' : 'ghost'}
+                size="sm"
+                className="rounded-full h-7 px-3 text-[10px] font-bold uppercase tracking-wider"
+                onClick={() => setActiveSubcategory('all')}
+              >
+                Todos
+              </Button>
+              {subcategories.map((sub: any) => (
+                <Button
+                  key={sub.es}
+                  variant={activeSubcategory === sub.es ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="rounded-full h-7 px-3 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
+                  onClick={() => setActiveSubcategory(sub.es)}
+                >
+                  {sub[locale] || sub.es}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex-grow overflow-y-auto pb-32 no-print">
@@ -427,19 +499,22 @@ export default function NewOrderPage() {
 
       <Dialog open={isNoteModalOpen} onOpenChange={setIsNoteModalOpen}>
         <DialogContent className="rounded-3xl p-6">
-          <DialogHeader><DialogTitle className="text-lg font-bold">Instrucciones para el Picker</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Instrucciones para el Picker</DialogTitle>
+            <SheetDescription>Indica detalles de maduración o empaque.</SheetDescription>
+          </DialogHeader>
           <Textarea value={currentNote} onChange={(e) => setCurrentNote(e.target.value)} placeholder="Ej: Necesito aguacates muy maduros..." className="bg-slate-50 border-none rounded-2xl min-h-[120px]" />
           <DialogFooter><Button onClick={handleSaveNote} size="lg" className="w-full rounded-2xl font-bold">{t('saveNote')}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Sheet open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
+      <Sheet open={isCheckoutOpen} onOpenChange={handleCloseCheckout}>
         <SheetContent side="bottom" className="h-[95dvh] max-h-[95dvh] p-0 flex flex-col rounded-t-[40px] overflow-hidden border-none shadow-2xl">
           <CheckoutContent {...{ ...checkoutProps, activeOrg, userProfile }} />
         </SheetContent>
       </Sheet>
 
-      {totalItems > 0 && (
+      {totalItems > 0 && !isCheckoutOpen && (
         <div className="fixed bottom-[75px] inset-x-4 z-30 sm:max-w-md sm:left-1/2 sm:-translate-x-1/2 no-print">
           <Button onClick={() => setIsCheckoutOpen(true)} className="w-full h-16 rounded-3xl shadow-2xl bg-slate-900 text-white flex justify-between items-center px-6">
             <div className="flex items-center gap-4">
