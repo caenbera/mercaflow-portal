@@ -5,15 +5,45 @@ import { useAuth } from '@/context/auth-context';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { DashboardHeader } from '@/components/layout/dashboard-header';
+import { BottomNavBar } from '@/components/layout/bottom-nav';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sprout } from 'lucide-react';
+import { 
+  Sprout, 
+  ShoppingCart, 
+  LayoutGrid, 
+  Trophy, 
+  Target, 
+  Share2 
+} from 'lucide-react';
 import { useRouter } from '@/navigation';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslations } from 'next-intl';
 
 export default function MainLayout({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, role } = useAuth();
   const router = useRouter();
   const isMobile = useIsMobile();
+  const t = useTranslations('NavigationBar');
+
+  const navConfig = {
+    mobile: {
+      client: [
+        { href: '/client/new-order', label: t('newOrder'), icon: ShoppingCart },
+        { href: '/client/dashboard', label: t('dashboard'), icon: LayoutGrid },
+        { href: '/client/rewards', label: t('my_rewards'), icon: Trophy },
+      ],
+      admin: [
+        { href: '/admin/dashboard', label: t('dashboard'), icon: LayoutGrid },
+        { href: '/admin/orders', label: t('manageOrders'), icon: ShoppingCart },
+        { href: '/admin/sales', label: t('prospects'), icon: Target },
+      ],
+      salesperson: [
+        { href: '/admin/sales', label: t('prospects'), icon: Target },
+        { href: '/admin/network', label: t('supplyNetwork'), icon: Share2 },
+        { href: '/admin/dashboard', label: t('dashboard'), icon: LayoutGrid },
+      ]
+    }
+  };
 
   useEffect(() => {
     // This effect ensures only authenticated users can access main layout routes.
@@ -47,9 +77,10 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <div className="relative flex min-h-svh flex-1 flex-col bg-background">
+      <div className="relative flex min-h-svh flex-1 flex-col bg-background overflow-hidden">
         {!isMobile && <DashboardHeader />}
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 overflow-y-auto">{children}</main>
+        {isMobile && <BottomNavBar navConfig={navConfig} />}
       </div>
     </SidebarProvider>
   );

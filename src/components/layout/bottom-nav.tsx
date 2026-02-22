@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -12,11 +11,35 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, UserCircle, MoreHorizontal, ChevronRight, LayoutGrid, Tag, Trophy, Headset, FileText, Bell, ShoppingCart, Package, Users, Truck, ShoppingBag, Boxes, ClipboardList, History, Share2, Target, UserCog } from 'lucide-react';
+import { 
+  LogOut, 
+  UserCircle, 
+  MoreHorizontal, 
+  ChevronRight, 
+  LayoutGrid, 
+  Tag, 
+  Trophy, 
+  Headset, 
+  FileText, 
+  Bell, 
+  ShoppingCart, 
+  Package, 
+  Users, 
+  Truck, 
+  ShoppingBag, 
+  Boxes, 
+  ClipboardList, 
+  History, 
+  Share2, 
+  Target, 
+  UserCog,
+  Building2,
+  Fingerprint
+} from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { NavDefinition, NavItem } from './app-sidebar'; 
 import { NotificationSheetContent } from './notification-sheet';
-import { useNotifications } from '@/context/notification-context';
+import { useNotifications } from '@/notifications/notification-context';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 export function BottomNavBar({ navConfig }: { navConfig: NavDefinition }) {
@@ -68,9 +91,9 @@ export function BottomNavBar({ navConfig }: { navConfig: NavDefinition }) {
                         className="flex flex-col items-center justify-center px-1 pt-2 font-medium text-center group text-muted-foreground hover:text-foreground relative"
                     >
                         <item.icon className="w-5 h-5 mb-1" />
-                        <span className="text-[11px] whitespace-normal text-center">{item.label}</span>
+                        <span className="text-[11px] whitespace-normal text-center leading-tight">{item.label}</span>
                         {unreadCount > 0 && (
-                          <span className="absolute top-1.5 right-3.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
+                          <span className="absolute top-1.5 right-3.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
                             {unreadCount}
                           </span>
                         )}
@@ -92,10 +115,10 @@ export function BottomNavBar({ navConfig }: { navConfig: NavDefinition }) {
                             className="flex flex-col items-center justify-center px-1 pt-2 font-medium text-center group text-muted-foreground hover:text-foreground"
                         >
                             <item.icon className="w-5 h-5 mb-1" />
-                            <span className="text-[11px] whitespace-normal text-center">{item.label}</span>
+                            <span className="text-[11px] whitespace-normal text-center leading-tight">{item.label}</span>
                         </button>
                     </SheetTrigger>
-                    <SheetContent side="bottom" className="h-auto w-full rounded-t-2xl p-0">
+                    <SheetContent side="bottom" className="h-[85vh] w-full rounded-t-[32px] p-0 overflow-hidden">
                       <MoreMenuSheetContent 
                         onClose={() => setIsMoreSheetOpen(false)}
                       />
@@ -131,13 +154,13 @@ function MoreMenuLink({ item, onClose }: { item: NavItem; onClose: () => void })
     <Link
       href={item.href}
       onClick={onClose}
-      className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-muted text-sm font-medium"
+      className="flex items-center justify-between gap-3 p-3 rounded-xl hover:bg-muted text-sm font-medium transition-colors"
     >
       <div className="flex items-center gap-3">
-          {React.createElement(item.icon, { className: "w-5 h-5 text-muted-foreground" })}
-          <span>{item.label}</span>
+          {React.createElement(item.icon, { className: "w-5 h-5 text-primary" })}
+          <span className="text-slate-700">{item.label}</span>
       </div>
-      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+      <ChevronRight className="w-4 h-4 text-slate-300" />
     </Link>
   );
 }
@@ -151,10 +174,10 @@ function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
     const handleSignOut = async () => {
         try {
             await signOut(auth);
-            toast({ title: t('logout'), description: "You have been successfully signed out." });
+            toast({ title: t('logout'), description: "Has cerrado sesión correctamente." });
             router.push('/login');
         } catch (error) {
-            toast({ variant: "destructive", title: "Error Signing Out" });
+            toast({ variant: "destructive", title: "Error al cerrar sesión" });
         }
     };
 
@@ -164,6 +187,13 @@ function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
     };
 
     const navGroups = {
+      platform: {
+        label: t('platform'),
+        items: [
+          { href: '/admin/organizations', label: t('manageBuildings'), icon: Building2 },
+          { href: '/admin/platform/users', label: t('manageUsersGlobal'), icon: Users },
+        ]
+      },
       management: {
         label: t('group_management'),
         items: [
@@ -171,6 +201,7 @@ function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
           { href: '/admin/orders', label: t('manageOrders'), icon: ShoppingCart },
           { href: '/admin/clients', label: t('manageClients'), icon: Users },
           { href: '/admin/support', label: t('support'), icon: Headset },
+          { href: '/admin/store', label: t('b2cStore'), icon: Fingerprint },
         ]
       },
       sales: {
@@ -234,106 +265,107 @@ function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
     };
     
     const adminVisibleGroups = ['management', 'sales', 'catalog', 'procurement'];
-    const superAdminVisibleGroups = Object.keys(navGroups).filter(k => k !== 'client'); // All except client
+    const superAdminVisibleGroups = ['platform', 'management', 'sales', 'catalog', 'procurement', 'warehouse', 'administration'];
 
     const getVisibleGroups = () => {
       if (role === 'superadmin') return superAdminVisibleGroups;
       if (role === 'admin') return adminVisibleGroups;
+      if (role === 'salesperson') return ['sales'];
       return [];
     }
 
     return (
-        <div className="flex flex-col p-4 max-h-[80vh] overflow-y-auto">
-            <SheetHeader className="text-left">
-              <SheetTitle>
-                <div className="flex items-center gap-3">
-                    <Avatar>
-                        <AvatarFallback>{getInitials(userProfile?.businessName)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                        <span className="font-semibold text-sm">{userProfile?.businessName || 'User'}</span>
-                        <span className="text-xs text-muted-foreground capitalize">{role || 'user'}</span>
-                    </div>
-                </div>
-              </SheetTitle>
-            </SheetHeader>
-            <div className="ml-auto -mt-8">
-                <LanguageSwitcher />
+        <div className="flex flex-col h-full bg-white">
+            <div className="p-6 pb-2">
+              <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12 border-2 border-primary/20">
+                          <AvatarFallback className="bg-primary/10 text-primary font-bold">{getInitials(userProfile?.businessName)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                          <span className="font-bold text-slate-900">{userProfile?.businessName || 'Usuario'}</span>
+                          <span className="text-xs text-muted-foreground capitalize bg-muted px-2 py-0.5 rounded-full inline-block w-fit">{role || 'user'}</span>
+                      </div>
+                  </div>
+                  <LanguageSwitcher />
+              </div>
             </div>
 
-            <Separator className="my-2" />
+            <Separator className="my-4" />
             
-            {role === 'client' ? (
-              <Accordion type="multiple" className="w-full">
-                {navGroups.client.groups.map(group => (
-                    <AccordionItem value={group.label} key={group.label}>
-                      <AccordionTrigger className="px-2 py-3 text-xs font-semibold text-muted-foreground uppercase hover:no-underline">
-                        {group.label}
-                      </AccordionTrigger>
-                      <AccordionContent className="pb-0">
-                        <div className="flex flex-col gap-1 pl-4 pb-2 border-l ml-2">
-                           {group.items.map(item => <MoreMenuLink key={item.href} item={item} onClose={onClose} />)}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-              </Accordion>
-            ) : (
-              <Accordion type="multiple" className="w-full">
-                {getVisibleGroups().map(key => {
-                  const group = navGroups[key as keyof typeof navGroups];
-                  if (!group || !('items' in group)) return null;
-                  return (
-                    <AccordionItem value={group.label} key={group.label}>
-                      <AccordionTrigger className="px-2 py-3 text-xs font-semibold text-muted-foreground uppercase hover:no-underline">
-                        {group.label}
-                      </AccordionTrigger>
-                      <AccordionContent className="pb-0">
-                        <div className="flex flex-col gap-1 pl-4 pb-2 border-l ml-2">
-                           {group.items.map(item => <MoreMenuLink key={item.href} item={item} onClose={onClose} />)}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  )
-                })}
-              </Accordion>
-            )}
+            <div className="flex-grow overflow-y-auto px-4 pb-20">
+              {role === 'client' ? (
+                <Accordion type="multiple" defaultValue={[navGroups.client.groups[0].label]} className="w-full">
+                  {navGroups.client.groups.map(group => (
+                      <AccordionItem value={group.label} key={group.label} className="border-none">
+                        <AccordionTrigger className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:no-underline opacity-70">
+                          {group.label}
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-2">
+                          <div className="flex flex-col gap-1">
+                             {group.items.map(item => <MoreMenuLink key={item.href} item={item} onClose={onClose} />)}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                </Accordion>
+              ) : (
+                <Accordion type="multiple" defaultValue={['platform', 'management']} className="w-full">
+                  {getVisibleGroups().map(key => {
+                    const group = navGroups[key as keyof typeof navGroups];
+                    if (!group || !('items' in group)) return null;
+                    return (
+                      <AccordionItem value={key} key={key} className="border-none">
+                        <AccordionTrigger className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:no-underline opacity-70">
+                          {group.label}
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-2">
+                          <div className="flex flex-col gap-1">
+                             {group.items.map(item => <MoreMenuLink key={item.href} item={item} onClose={onClose} />)}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )
+                  })}
+                </Accordion>
+              )}
 
-            {role === 'superadmin' && (
-                <>
-                    <Separator className="my-2" />
-                    <Accordion type="multiple" className="w-full">
-                        <AccordionItem value={navGroups.client.label}>
-                            <AccordionTrigger className="px-2 py-3 text-xs font-semibold text-muted-foreground uppercase hover:no-underline">
-                                {navGroups.client.label}
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-0">
-                                <Accordion type="multiple" className="w-full">
-                                    {navGroups.client.groups.map(subGroup => (
-                                        <AccordionItem value={subGroup.label} key={subGroup.label} className="border-b-0">
-                                            <AccordionTrigger className="px-2 py-2 text-sm font-medium text-muted-foreground hover:no-underline">
-                                                {subGroup.label}
-                                            </AccordionTrigger>
-                                            <AccordionContent className="pb-0">
-                                                <div className="flex flex-col gap-1 pl-4 pb-2 border-l ml-2">
-                                                    {subGroup.items.map(item => <MoreMenuLink key={item.href} item={item} onClose={onClose} />)}
-                                                </div>
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    ))}
-                                </Accordion>
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
-                </>
-            )}
+              {role === 'superadmin' && (
+                  <>
+                      <Separator className="my-4" />
+                      <Accordion type="single" collapsible className="w-full">
+                          <AccordionItem value="client-portal" className="border-none">
+                              <AccordionTrigger className="px-2 py-3 text-[10px] font-black text-primary uppercase tracking-widest hover:no-underline">
+                                  {navGroups.client.label}
+                              </AccordionTrigger>
+                              <AccordionContent className="pb-0">
+                                  <div className="space-y-4 pt-2">
+                                      {navGroups.client.groups.map(subGroup => (
+                                          <div key={subGroup.label}>
+                                              <p className="px-2 text-[9px] font-bold text-slate-400 uppercase mb-1">{subGroup.label}</p>
+                                              <div className="flex flex-col gap-1 border-l-2 border-slate-100 ml-2 pl-2">
+                                                  {subGroup.items.map(item => <MoreMenuLink key={item.href} item={item} onClose={onClose} />)}
+                                              </div>
+                                          </div>
+                                      ))}
+                                  </div>
+                              </AccordionContent>
+                          </AccordionItem>
+                      </Accordion>
+                  </>
+              )}
+            </div>
 
-            <Separator className="my-2" />
-
-            <Button variant="ghost" className="w-full justify-start p-2 text-sm font-medium text-destructive hover:text-destructive" onClick={handleSignOut}>
-                <LogOut className="w-5 h-5 mr-3" />
-                <span>{t('logout')}</span>
-            </Button>
+            <div className="p-4 bg-slate-50 border-t sticky bottom-0">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start h-12 rounded-xl text-sm font-bold text-destructive hover:bg-destructive/5 hover:text-destructive" 
+                onClick={handleSignOut}
+              >
+                  <LogOut className="w-5 h-5 mr-3" />
+                  <span>{t('logout')}</span>
+              </Button>
+            </div>
         </div>
     );
 }

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -56,12 +55,16 @@ const CheckoutContent = ({
   };
 
   const handleWhatsApp = () => {
-    if (!activeOrg?.storeConfig?.contactWhatsapp) return;
+    if (!activeOrg?.storeConfig?.contactWhatsapp) {
+      alert("El proveedor no tiene configurado un número de WhatsApp.");
+      return;
+    }
     
     const itemsText = orderItems.map((i: any) => `- ${i.quantity}x ${i.productName[locale]} (${formatCurrency(i.price)})`).join('\n');
     const msg = `*NUEVO PEDIDO - MERCAFLOW*\n\n*Cliente:* ${userProfile?.businessName}\n*Entrega:* ${deliveryDate ? format(deliveryDate, 'dd/MM/yyyy') : 'Pendiente'}\n\n*Productos:*\n${itemsText}\n\n*Subtotal:* ${formatCurrency(subtotal)}\n*Descuento:* -${formatCurrency(discountAmount)}\n*TOTAL:* ${formatCurrency(total)}\n\n*Notas:* ${generalObservations || 'Ninguna'}`;
     
-    window.open(`https://wa.me/${activeOrg.storeConfig.contactWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+    const phone = activeOrg.storeConfig.contactWhatsapp.replace(/\D/g, '');
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   return (
