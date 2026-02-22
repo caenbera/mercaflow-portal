@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import type { Product as ProductType, OrderItem } from '@/types';
-import { CalendarIcon, Search, MessageSquarePlus, Pencil, Minus, Plus, ShoppingBasket, Star } from 'lucide-react';
+import { CalendarIcon, Search, MessageSquarePlus, Pencil, Minus, Plus, ShoppingBasket, Star, Printer, MessageCircle, Check } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -32,74 +32,154 @@ import { Timestamp } from 'firebase/firestore';
 
 const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
-const CheckoutContent = ({ orderItems, itemNotes, generalObservations, onGeneralObservationsChange, subtotal, discountAmount, total, deliveryDate, isSubmitting, handleSubmitOrder, t, locale, priceListName, discountPercentage }: any) => (
-  <div className="flex flex-col h-full">
-    <SheetHeader className="p-3 text-left border-b">
-      <SheetTitle className="text-base">{t('confirmOrder')}</SheetTitle>
-    </SheetHeader>
-    <div className="p-3 flex-grow overflow-y-auto">
-      <div className="flex items-center gap-2 p-2 mb-3 bg-gray-100 rounded-md text-sm">
-        <CalendarIcon className="h-4 w-4 text-primary" />
-        <span className="text-muted-foreground">{t('delivery')}:</span>
-        <span className="font-semibold">{deliveryDate ? format(deliveryDate, 'PPP', { locale: locale === 'es' ? es : enUS }) : 'N/A'}</span>
-      </div>
-      <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">{t('selectedItems')}</h3>
-      <div className="space-y-2">
-        {orderItems.map((item: any) => (
-          <div key={item.productId} className="flex gap-2 items-start p-1.5 border-b">
-            <Image src={item.photoUrl} alt={item.productName[locale]} width={36} height={36} className="rounded-md object-cover shrink-0" />
-            <div className="flex-grow min-w-0">
-              <p className="font-medium text-sm truncate">{item.productName[locale]}</p>
-              <p className="text-xs text-muted-foreground">{item.quantity} x {formatCurrency(item.price)}</p>
-              {itemNotes[item.productId] && (
-                <p className="text-xs text-blue-600 bg-blue-50 p-1 rounded mt-1">
-                  <b className="font-bold">Nota:</b> {itemNotes[item.productId]}
-                </p>
-              )}
-            </div>
-            <p className="font-semibold text-sm shrink-0">{formatCurrency(item.quantity * item.price)}</p>
+const CheckoutContent = ({ 
+  orderItems, 
+  itemNotes, 
+  generalObservations, 
+  onGeneralObservationsChange, 
+  subtotal, 
+  discountAmount, 
+  total, 
+  deliveryDate, 
+  isSubmitting, 
+  handleSubmitOrder, 
+  t, 
+  locale, 
+  priceListName, 
+  discountPercentage,
+  activeOrg,
+  userProfile
+}: any) => {
+  
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleWhatsApp = () => {
+    if (!activeOrg?.storeConfig?.contactWhatsapp) return;
+    
+    const itemsText = orderItems.map((i: any) => `- ${i.quantity}x ${i.productName[locale]} (${formatCurrency(i.price)})`).join('\n');
+    const msg = `*NUEVO PEDIDO - MERCAFLOW*\n\n*Cliente:* ${userProfile?.businessName}\n*Entrega:* ${deliveryDate ? format(deliveryDate, 'dd/MM/yyyy') : 'Pendiente'}\n\n*Productos:*\n${itemsText}\n\n*Subtotal:* ${formatCurrency(subtotal)}\n*Descuento:* -${formatCurrency(discountAmount)}\n*TOTAL:* ${formatCurrency(total)}\n\n*Notas:* ${generalObservations || 'Ninguna'}`;
+    
+    window.open(`https://wa.me/${activeOrg.storeConfig.contactWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-white relative">
+      <SheetHeader className="p-4 text-left border-b bg-slate-50/50 no-print">
+        <SheetTitle className="text-lg font-bold flex items-center gap-2">
+          <ShoppingBasket className="h-5 w-5 text-primary" />
+          {t('confirmOrder')}
+        </SheetTitle>
+      </SheetHeader>
+
+      <div className="flex-grow overflow-y-auto p-4 space-y-6 print-area">
+        {/* Encabezado para impresión */}
+        <div className="hidden print:block mb-6 border-b pb-4">
+          <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">RESUMEN DE PEDIDO</h1>
+          <div className="flex justify-between mt-2 text-sm">
+            <p><b>Cliente:</b> {userProfile?.businessName}</p>
+            <p><b>Fecha:</b> {format(new Date(), 'dd/MM/yyyy')}</p>
           </div>
-        ))}
-      </div>
-      <div className="mt-4">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('observations')}</label>
-        <Textarea 
-            placeholder={t('observationsPlaceholder')} 
-            className="mt-1 text-sm" 
-            value={generalObservations}
-            onChange={(e) => onGeneralObservationsChange(e.target.value)}
-        />
-      </div>
-    </div>
-    <div className="p-3 bg-gray-50 border-t">
-       <div className="space-y-1 text-sm mb-3">
-          <div className="flex justify-between">
-              <span className="text-muted-foreground">{t('subtotal')}</span>
-              <span className="font-medium">{formatCurrency(subtotal)}</span>
+        </div>
+
+        <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-2xl text-sm no-print">
+          <CalendarIcon className="h-5 w-5 text-blue-600 shrink-0" />
+          <div>
+            <span className="text-blue-800 font-bold block leading-none">{t('delivery')}</span>
+            <span className="text-blue-600 font-medium">{deliveryDate ? format(deliveryDate, 'PPPP', { locale: locale === 'es' ? es : enUS }) : 'N/A'}</span>
           </div>
-          {discountAmount > 0 && (
-              <div className="flex justify-between text-primary">
-                  <span className="font-medium">{t('discount')} {discountPercentage > 0 ? `(${priceListName} ${discountPercentage}%)` : ''}</span>
-                  <span className="font-medium">-{formatCurrency(discountAmount)}</span>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">{t('selectedItems')}</h3>
+          <div className="space-y-2">
+            {orderItems.map((item: any) => (
+              <div key={item.productId} className="flex gap-3 items-start p-3 bg-white border rounded-2xl shadow-sm">
+                <div className="h-12 w-12 rounded-lg overflow-hidden shrink-0 border bg-slate-50 no-print">
+                  <Image src={item.photoUrl} alt="" width={48} height={48} className="object-cover h-full w-full" />
+                </div>
+                <div className="flex-grow min-w-0">
+                  <p className="font-bold text-sm text-slate-800 leading-tight">{item.productName[locale]}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{item.quantity} x {formatCurrency(item.price)}</p>
+                  {itemNotes[item.productId] && (
+                    <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded-lg">
+                      <p className="text-[10px] text-amber-700 leading-relaxed font-medium">
+                        <span className="font-bold uppercase tracking-tighter mr-1">Nota:</span> 
+                        {itemNotes[item.productId]}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <p className="font-black text-sm text-slate-900 shrink-0">{formatCurrency(item.quantity * item.price)}</p>
               </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2 no-print">
+          <label className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">{t('observations')}</label>
+          <Textarea 
+              placeholder={t('observationsPlaceholder')} 
+              className="mt-1 bg-slate-50 border-none rounded-2xl min-h-[80px]" 
+              value={generalObservations}
+              onChange={(e) => onGeneralObservationsChange(e.target.value)}
+          />
+        </div>
+
+        <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 space-y-2">
+            <div className="flex justify-between text-sm text-slate-500">
+                <span>{t('subtotal')}</span>
+                <span className="font-medium">{formatCurrency(subtotal)}</span>
+            </div>
+            {discountAmount > 0 && (
+                <div className="flex justify-between text-sm text-primary font-bold">
+                    <span>{t('discount')} {priceListName ? `(${priceListName})` : ''}</span>
+                    <span>-{formatCurrency(discountAmount)}</span>
+                </div>
+            )}
+            <div className="pt-2 border-t flex justify-between items-center">
+              <span className="font-black text-slate-900 uppercase tracking-tighter">{t('total')}</span>
+              <span className="text-2xl font-black text-primary">{formatCurrency(total)}</span>
+            </div>
+        </div>
+      </div>
+
+      <div className="p-4 bg-white border-t space-y-3 no-print">
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" className="h-12 rounded-2xl font-bold gap-2" onClick={handlePrint}>
+            <Printer className="h-4 w-4" />
+            Imprimir
+          </Button>
+          <Button 
+            variant="outline" 
+            className="h-12 rounded-2xl font-bold gap-2 border-green-200 text-green-700 hover:bg-green-50"
+            onClick={handleWhatsApp}
+            disabled={!activeOrg?.storeConfig?.contactWhatsapp}
+          >
+            <MessageCircle className="h-4 w-4" />
+            WhatsApp
+          </Button>
+        </div>
+        <Button onClick={handleSubmitOrder} disabled={isSubmitting} size="lg" className="w-full h-14 rounded-2xl text-lg font-black shadow-xl shadow-primary/20">
+          {isSubmitting ? (
+            <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> {t('sendingOrder')}</>
+          ) : (
+            <><Check className="mr-2 h-5 w-5" /> {t('sendOrder')}</>
           )}
+        </Button>
       </div>
-      <div className="flex justify-between items-center mb-2 pt-2 border-t">
-        <span className="text-muted-foreground font-medium">{t('total')}</span>
-        <span className="text-xl font-bold">{formatCurrency(total)}</span>
-      </div>
-      <Button onClick={handleSubmitOrder} disabled={isSubmitting} size="lg" className="w-full text-sm">
-        {isSubmitting ? t('sendingOrder') : t('sendOrder')}
-      </Button>
     </div>
-  </div>
-);
+  );
+};
+
+import { Loader2 } from 'lucide-react';
 
 export default function NewOrderPage() {
   const t = useTranslations('ClientNewOrderPage');
   const locale = useLocale() as 'es' | 'en';
   const { user, userProfile } = useAuth();
-  const { activeOrgId } = useOrganization();
+  const { activeOrg, activeOrgId } = useOrganization();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { products, loading: productsLoading } = useProducts();
@@ -201,7 +281,6 @@ export default function NewOrderPage() {
       productList = productList.filter(p => p.name[locale].toLowerCase().includes(searchTerm.toLowerCase()));
     }
     
-    // Sort the resulting list alphabetically by name based on the current locale
     return productList.sort((a, b) => a.name[locale].localeCompare(b.name[locale]));
     
   }, [activeCategory, activeSubcategory, searchTerm, unifiedProductsForClient, loading, favoriteProductIds, t, locale]);
@@ -231,7 +310,7 @@ export default function NewOrderPage() {
             productId: product.id,
             productName: product.name,
             quantity: cartItem.quantity,
-            price: finalPrice, // Use the final price after the best discount
+            price: finalPrice,
             photoUrl: product.photoUrl || '',
             isBox: product.isBox || false,
         });
@@ -323,16 +402,18 @@ export default function NewOrderPage() {
     locale,
     priceListName,
     discountPercentage,
+    activeOrg,
+    userProfile
   };
 
   return (
     <div className="flex flex-col h-full bg-gray-50/50">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b py-1.5 overflow-x-hidden">
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b py-1.5 overflow-x-hidden no-print">
         <div className="flex items-center gap-2 px-3 mb-1">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className={cn("flex-1 justify-start text-left font-normal text-sm h-9", !deliveryDate && "text-muted-foreground")}>
+              <Button variant="outline" className={cn("flex-1 justify-start text-left font-normal text-sm h-9 rounded-xl border-none bg-slate-100", !deliveryDate && "text-muted-foreground")}>
                 <CalendarIcon className="mr-2 h-3.5 w-3.5" />
                 {deliveryDate ? format(deliveryDate, "PPP", { locale: locale === 'es' ? es : enUS }) : <span>{t('pickDate')}</span>}
               </Button>
@@ -345,27 +426,27 @@ export default function NewOrderPage() {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               placeholder={t('searchPlaceholder')}
-              className="pl-8 pr-2 h-9 text-sm"
+              className="pl-8 pr-2 h-9 text-sm rounded-xl border-none bg-slate-100"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
 
-        <div className="relative h-9 overflow-x-auto hide-scrollbar">
+        <div className="relative h-9 overflow-x-auto hide-scrollbar mt-1">
           <div className="absolute left-0 top-0 flex items-center gap-1.5 px-3 min-w-full">
             {allCategories.map((cat: any) => (
               <Button
                 key={cat.es}
                 variant={activeCategory === cat.es ? 'default' : 'outline'}
                 size="sm"
-                className="rounded-full h-7 px-2.5 text-xs flex-shrink-0 whitespace-nowrap"
+                className="rounded-full h-7 px-3 text-[11px] font-bold flex-shrink-0 whitespace-nowrap shadow-sm"
                 onClick={() => {
                   setActiveCategory(cat.es);
                   setActiveSubcategory('all');
                 }}
               >
-                {cat.isFavorite && <Star className="h-3.5 w-3.5 mr-1 text-yellow-400" />}
+                {cat.isFavorite && <Star className="h-3 w-3 mr-1 text-yellow-400 fill-yellow-400" />}
                 {cat[locale] || cat.es}
               </Button>
             ))}
@@ -378,7 +459,7 @@ export default function NewOrderPage() {
                 key="all"
                 variant={activeSubcategory === 'all' ? 'secondary' : 'ghost'}
                 size="sm"
-                className="border rounded-full h-7 px-2.5 text-xs flex-shrink-0 whitespace-nowrap bg-blue-50 hover:bg-blue-100 text-blue-800"
+                className="border-none rounded-full h-7 px-3 text-[11px] font-medium flex-shrink-0 whitespace-nowrap bg-blue-50 hover:bg-blue-100 text-blue-800"
                 onClick={() => setActiveSubcategory('all')}
               >
                 Todos
@@ -388,7 +469,7 @@ export default function NewOrderPage() {
                   key={subcat.es}
                   variant={activeSubcategory === subcat.es ? 'secondary' : 'ghost'}
                   size="sm"
-                  className="border rounded-full h-7 px-2.5 text-xs flex-shrink-0 whitespace-nowrap bg-blue-50 hover:bg-blue-100 text-blue-800"
+                  className="border-none rounded-full h-7 px-3 text-[11px] font-medium flex-shrink-0 whitespace-nowrap bg-blue-50 hover:bg-blue-100 text-blue-800"
                   onClick={() => setActiveSubcategory(subcat.es)}
                 >
                   {subcat[locale] || subcat.es}
@@ -400,7 +481,7 @@ export default function NewOrderPage() {
       </div>
 
       {/* Product List */}
-      <div className="flex-grow overflow-y-auto pb-32">
+      <div className="flex-grow overflow-y-auto pb-32 no-print">
         {loading ? (
              <div className="p-2 space-y-px">
                 {[...Array(5)].map((_, i) => (
@@ -419,83 +500,79 @@ export default function NewOrderPage() {
             const quantity = cart[p.id]?.quantity || 0;
             const hasNote = !!notes[p.id];
             const unitText = typeof p.unit === 'object' && p.unit?.[locale] ? p.unit[locale] : (p.unit as any);
-            const categoryText = typeof p.category === 'object' && p.category?.[locale] ? p.category[locale] : (p.category as any);
-            const subCategoryText = typeof p.subcategory === 'object' && p.subcategory?.[locale] ? p.subcategory[locale] : (p.subcategory as any);
             return (
-              <div key={p.id} className="bg-background border-b p-2 flex items-center gap-2">
-                <button type="button" onClick={() => setImageToView(p.photoUrl || '/placeholder.svg')} className="shrink-0 rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+              <div key={p.id} className="bg-background border-b p-2 flex items-center gap-3">
+                <button type="button" onClick={() => setImageToView(p.photoUrl || '/placeholder.svg')} className="shrink-0 rounded-xl overflow-hidden focus:outline-none ring-1 ring-slate-100 shadow-sm">
                   <Image
                     src={p.photoUrl || '/placeholder.svg'}
                     alt={p.name[locale]}
-                    width={50}
-                    height={50}
-                    className="rounded-lg object-cover bg-gray-100"
+                    width={56}
+                    height={56}
+                    className="rounded-xl object-cover bg-slate-50"
                   />
                 </button>
                 <div className="flex-grow min-w-0">
-                  <p className="font-medium text-sm leading-tight">{p.name[locale]}</p>
-                  <div className="text-xs text-muted-foreground flex items-center mt-0.5">
+                  <p className="font-bold text-sm leading-tight text-slate-800">{p.name[locale]}</p>
+                  <div className="text-xs text-slate-500 flex items-center mt-1 font-medium">
                     <span>{formatCurrency(p.salePrice)} / {unitText}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={cn("h-auto px-1 py-0 ml-1 text-xs", hasNote && "text-primary hover:text-primary")}
+                      className={cn("h-auto px-1.5 py-0.5 ml-2 text-[10px] font-bold uppercase tracking-tighter rounded-full border", hasNote ? "bg-primary/10 text-primary border-primary/20" : "bg-slate-50 text-slate-400 border-slate-200")}
                       onClick={() => handleOpenNoteModal(p)}
                     >
-                      {hasNote ? <Pencil className="h-3 w-3 mr-0.5" /> : <MessageSquarePlus className="h-3 w-3 mr-0.5" />}
+                      {hasNote ? <Pencil className="h-2.5 w-2.5 mr-1" /> : <MessageSquarePlus className="h-2.5 w-2.5 mr-1" />}
                       {t('note')}
                     </Button>
                   </div>
                   {quantity > 0 && (
-                    <p className="font-bold text-primary text-sm mt-0.5">{formatCurrency(quantity * p.salePrice)}</p>
+                    <p className="font-black text-primary text-sm mt-1">{formatCurrency(quantity * p.salePrice)}</p>
                   )}
                 </div>
-                <div className="flex items-center gap-0.5 bg-gray-100 rounded-full border p-0.5 shrink-0">
+                <div className="flex items-center gap-1 bg-slate-100 rounded-2xl border border-slate-200 p-1 shrink-0 shadow-inner">
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-6 w-6 rounded-full"
+                    className="h-7 w-7 rounded-xl hover:bg-white transition-colors"
                     onClick={() => addToCart(p.id, -1)}
                   >
-                    <Minus className="h-3 w-3" />
+                    <Minus className="h-3.5 w-3.5" />
                   </Button>
-                  <Input
-                    readOnly
-                    value={quantity || ''}
-                    placeholder="0"
-                    className="h-6 w-8 text-center bg-transparent border-none p-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
-                  />
+                  <div className="w-7 text-center text-sm font-black text-slate-800">
+                    {quantity || '0'}
+                  </div>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-6 w-6 rounded-full"
+                    className="h-7 w-7 rounded-xl hover:bg-white transition-colors"
                     onClick={() => addToCart(p.id, 1)}
                   >
-                    <Plus className="h-3 w-3" />
+                    <Plus className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </div>
             );
           })
         ) : (
-          <div className="text-center text-muted-foreground mt-16 text-sm">{t('noProducts')}</div>
+          <div className="text-center text-muted-foreground mt-16 text-sm italic">{t('noProducts')}</div>
         )}
       </div>
 
       {/* Note Modal */}
       <Dialog open={isNoteModalOpen} onOpenChange={setIsNoteModalOpen}>
-        <DialogContent>
+        <DialogContent className="rounded-3xl p-6">
           <DialogHeader>
-            <DialogTitle className="text-sm">{t('addNoteFor')} {currentProductForNote?.name[locale]}</DialogTitle>
+            <DialogTitle className="text-lg font-bold">Instrucciones para el Picker</DialogTitle>
+            <p className="text-sm text-slate-500 font-medium">Producto: {currentProductForNote?.name[locale]}</p>
           </DialogHeader>
           <Textarea
             value={currentNote}
             onChange={(e) => setCurrentNote(e.target.value)}
-            placeholder={t('notePlaceholder')}
-            className="text-sm"
+            placeholder="Ej: Necesito aguacates muy maduros para hoy mismo..."
+            className="text-sm bg-slate-50 border-none rounded-2xl min-h-[120px]"
           />
-          <DialogFooter>
-            <Button onClick={handleSaveNote} size="sm">{t('saveNote')}</Button>
+          <DialogFooter className="pt-4">
+            <Button onClick={handleSaveNote} size="lg" className="w-full rounded-2xl font-bold">{t('saveNote')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -504,13 +581,14 @@ export default function NewOrderPage() {
       <Dialog open={!!imageToView} onOpenChange={(isOpen) => !isOpen && setImageToView(null)}>
         <DialogContent className="p-0 border-none bg-transparent shadow-none max-w-xl">
           {imageToView && (
-            <Image
-              src={imageToView}
-              alt="Product image zoom"
-              width={500}
-              height={500}
-              className="rounded-lg object-contain w-full h-auto"
-            />
+            <div className="relative aspect-square w-full">
+              <Image
+                src={imageToView}
+                alt="Product zoom"
+                fill
+                className="rounded-3xl object-cover"
+              />
+            </div>
           )}
         </DialogContent>
       </Dialog>
@@ -518,13 +596,13 @@ export default function NewOrderPage() {
       {/* Checkout */}
       {isMobile ? (
         <Sheet open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-          <SheetContent side="bottom" className="h-[90dvh] max-h-[90dvh] p-0 flex flex-col">
+          <SheetContent side="bottom" className="h-[95dvh] max-h-[95dvh] p-0 flex flex-col rounded-t-[40px] overflow-hidden border-none shadow-2xl">
             <CheckoutContent {...checkoutProps} />
           </SheetContent>
         </Sheet>
       ) : (
         <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-          <DialogContent className="max-w-md p-0 sm:max-w-md">
+          <DialogContent className="max-w-lg p-0 sm:max-w-lg rounded-3xl overflow-hidden border-none shadow-2xl">
             <CheckoutContent {...checkoutProps} />
           </DialogContent>
         </Dialog>
@@ -532,17 +610,26 @@ export default function NewOrderPage() {
 
       {/* Floating Cart Bar */}
       {totalItems > 0 && (
-        <div className="fixed bottom-[65px] inset-x-3 z-30 sm:bottom-4 sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-md">
-          <div className="bg-background/80 backdrop-blur-lg rounded-xl shadow-lg p-2.5 flex justify-between items-center border">
-            <div>
-              <p className="text-xs text-muted-foreground">{totalItems} {t('items')}</p>
-              <p className="font-bold text-base">{formatCurrency(total)}</p>
+        <div className="fixed bottom-[75px] inset-x-4 z-30 sm:bottom-6 sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-md no-print">
+          <Button 
+            onClick={() => setIsCheckoutOpen(true)} 
+            className="w-full h-16 rounded-3xl shadow-2xl bg-slate-900 text-white flex justify-between items-center px-6 transition-transform active:scale-95 group overflow-hidden border-none"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="bg-primary p-2 rounded-xl">
+                <ShoppingBasket className="h-6 w-6" />
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] uppercase font-black text-slate-400 leading-none mb-1">{totalItems} {t('items')}</p>
+                <p className="font-black text-xl leading-none">{formatCurrency(total)}</p>
+              </div>
             </div>
-            <Button onClick={() => setIsCheckoutOpen(true)} size="sm" className="whitespace-nowrap">
-              <ShoppingBasket className="mr-1.5 h-3.5 w-3.5" />
-              {t('viewOrder')}
-            </Button>
-          </div>
+            <div className="flex items-center gap-2 relative z-10">
+              <span className="font-bold text-sm uppercase tracking-widest">{t('viewOrder')}</span>
+              <Plus className="h-4 w-4 bg-white/20 rounded-full" />
+            </div>
+          </Button>
         </div>
       )}
     </div>

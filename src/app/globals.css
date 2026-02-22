@@ -1,6 +1,34 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 👇 MEJORAS PARA PREVENIR OVERFLOW HORIZONTAL 👇 */
+html, body {
+    width: 100%;
+    overflow-x: hidden;
+    max-width: 100vw;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    padding-bottom: 80px;
+    box-sizing: border-box;
+}
+
+/* Prevenir overflow en contenedores */
+* {
+    box-sizing: border-box;
+}
+
+/* Contenedores principales no deben desbordarse */
+.container, .max-w-screen-xl, .max-w-screen-lg, .max-w-screen-md, .max-w-screen-sm {
+    max-width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+/* 👆 FIN DE MEJORAS PARA OVERFLOW 👆 */
 
 @layer base {
   :root {
@@ -51,25 +79,6 @@
     --sidebar-ring: 145 63% 49%;
 
     --pastel-green: #e8f5e9;
-    
-    /* Custom variables from prototype */
-    --primary-light: #4CAF50;
-    --primary-dark: #1B5E20;
-    --danger: #E53935;
-    --warning: #FFB300;
-    --success: #43A047;
-    --info: #1976D2;
-    --bg: #f8f9fa;
-    --card-bg: #ffffff;
-    --text: #212121;
-    --text-light: #757575;
-    
-    /* Prospect status states */
-    --status-new: #9E9E9E;
-    --status-visited: #2196F3;
-    --status-negotiating: #FF9800;
-    --status-closed-won: #4CAF50;
-    --status-closed-lost: #E53935;
   }
 
   .dark {
@@ -151,12 +160,14 @@
       visibility: visible;
     }
     .print-area {
-      position: absolute;
+      position: fixed;
       left: 0;
       top: 0;
       width: 100%;
+      height: 100%;
       background: white;
       padding: 2rem;
+      z-index: 9999;
     }
     .no-print {
       display: none !important;
@@ -171,6 +182,7 @@
       color: white !important;
       padding: 10px;
       -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .print-table td {
         padding: 10px;
@@ -179,9 +191,67 @@
     .print-table tr:nth-child(even) {
         background-color: var(--pastel-green) !important;
         -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
   }
+  
+  /* 👇 CORRECCIONES FINALES PARA OVERFLOW 👇 */
+  /* Forzar contención en móviles */
+  .mobile-container {
+    @apply w-full max-w-full overflow-x-hidden;
+  }
+  
+  /* Prevenir desbordamiento en textos */
+  .text-truncate {
+    @apply truncate max-w-full;
+  }
+  
+  /* Contenedores flexibles */
+  .flex-container {
+    @apply flex flex-wrap;
+  }
+  
+  /* Corrección específica para badges largos */
+  .badge-container {
+    @apply flex flex-wrap gap-1;
+  }
 }
+
+/* Correcciones específicas para elementos problemáticos */
+@media (max-width: 640px) {
+  /* Forzar que nada se salga */
+  * {
+    max-width: 100% !important;
+  }
+  
+  /* Contenedores de tarjetas */
+  .prospect-card-wrapper {
+    @apply w-full px-2;
+  }
+  
+  /* Corregir padding en elementos con posición absoluta */
+  [class*="absolute"] {
+    max-width: 100%;
+  }
+  
+  /* Prevenir overflow en badges */
+  .badge {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Corregir botones */
+  .btn-group {
+    @apply flex flex-wrap gap-2;
+  }
+  
+  /* Corregir grids */
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /* Añadir al final de tu globals.css */
 
 /* Custom Leaflet Markers */
@@ -221,50 +291,6 @@ body {
     padding-bottom: 80px;
 }
 
-/* Header Compacto para Móvil */
-.header {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-dark)) 100%);
-    color: white;
-    padding: 12px 15px;
-    position: sticky;
-    top: 0;
-    z-index: 40;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.logo {
-    font-size: 18px;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.user-stats {
-    display: flex;
-    gap: 15px;
-    font-size: 12px;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(255,255,255,0.2);
-}
-
-.stat-pill {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: rgba(255,255,255,0.15);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-weight: 600;
-}
-
 /* Zone Selector Horizontal */
 .zone-bar {
     background: white;
@@ -275,6 +301,10 @@ body {
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     overflow-x: auto;
     scrollbar-width: none;
+    width: 100vw;
+    left: 0;
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
 }
 
 .zone-bar::-webkit-scrollbar {
@@ -319,8 +349,7 @@ body {
 }
 
 .tab-item {
-    flex: 1;
-    padding: 12px 8px;
+    padding: 12px 4px;
     text-align: center;
     font-size: 12px;
     font-weight: 700;
@@ -667,3 +696,22 @@ body {
     color: var(--text-light);
     margin-top: 2px;
 }
+
+/* 👇 CLASES DE DEBUG - QUITAR EN PRODUCCIÓN 👇 */
+@media (max-width: 768px) {
+    .debug-overflow {
+        position: relative;
+    }
+    
+    .debug-overflow::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: -10px;
+        bottom: 0;
+        width: 10px;
+        background: rgba(255, 0, 0, 0.3);
+        pointer-events: none;
+    }
+}
+/* 👆 FIN DE CLASES DE DEBUG 👆 */
