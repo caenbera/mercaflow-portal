@@ -426,12 +426,17 @@ export default function NewOrderPage() {
         </div>
         
         {subcategories.length > 0 && (
-          <div className="relative h-9 overflow-x-auto hide-scrollbar mt-1 border-t pt-1">
-            <div className="absolute left-0 top-0 flex items-center gap-1.5 px-3 min-w-full">
+          <div className="relative h-11 overflow-x-auto hide-scrollbar mt-1 border-t flex items-center">
+            <div className="flex items-center gap-1.5 px-3 min-w-full h-full">
               <Button
-                variant={activeSubcategory === 'all' ? 'secondary' : 'ghost'}
+                variant="ghost"
                 size="sm"
-                className="rounded-full h-7 px-3 text-[10px] font-bold uppercase tracking-wider"
+                className={cn(
+                  "rounded-full h-7 px-3 text-[10px] font-bold uppercase tracking-wider border transition-all",
+                  activeSubcategory === 'all' 
+                    ? "bg-[#AFA428] text-white border-[#AFA428] hover:bg-[#AFA428]/90 shadow-sm" 
+                    : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                )}
                 onClick={() => setActiveSubcategory('all')}
               >
                 Todos
@@ -439,9 +444,14 @@ export default function NewOrderPage() {
               {subcategories.map((sub: any) => (
                 <Button
                   key={sub.es}
-                  variant={activeSubcategory === sub.es ? 'secondary' : 'ghost'}
+                  variant="ghost"
                   size="sm"
-                  className="rounded-full h-7 px-3 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
+                  className={cn(
+                    "rounded-full h-7 px-3 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap border transition-all",
+                    activeSubcategory === sub.es 
+                      ? "bg-[#AFA428] text-white border-[#AFA428] hover:bg-[#AFA428]/90 shadow-sm" 
+                      : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                  )}
                   onClick={() => setActiveSubcategory(sub.es)}
                 >
                   {sub[locale] || sub.es}
