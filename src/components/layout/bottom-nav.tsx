@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -37,7 +38,8 @@ import {
   Fingerprint,
   Globe,
   Store,
-  Navigation
+  Navigation,
+  CheckCircle2
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { NavDefinition, NavItem } from './app-sidebar'; 
@@ -126,6 +128,7 @@ export function BottomNavBar({ navConfig }: { navConfig: NavDefinition }) {
                     <SheetContent side="bottom" className="h-[85vh] w-full rounded-t-[32px] p-0 overflow-hidden">
                       <MoreMenuSheetContent 
                         onClose={() => setIsMoreSheetOpen(false)}
+                        navConfig={navConfig}
                       />
                     </SheetContent>
                   </Sheet>
@@ -170,7 +173,7 @@ function MoreMenuLink({ item, onClose }: { item: NavItem; onClose: () => void })
   );
 }
 
-function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
+function MoreMenuSheetContent({ onClose, navConfig }: { onClose: () => void, navConfig: NavDefinition }) {
     const { userProfile, role } = useAuth();
     const { activeOrgId, setActiveOrgId } = useOrganization();
     const { organizations } = useOrganizations();
@@ -225,6 +228,13 @@ function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
         procurement: [
             { href: `/admin/purchasing`, label: t('purchasing'), icon: ShoppingBag },
             { href: `/admin/purchase-orders`, label: t('purchaseOrders'), icon: ClipboardList },
+        ],
+        clientPortal: [
+            { href: `/client/new-order`, label: t('newOrder'), icon: ShoppingCart },
+            { href: `/client/offers`, label: t('offers'), icon: Tag },
+            { href: `/client/dashboard`, label: t('dashboard'), icon: LayoutGrid },
+            { href: `/client/history`, label: t('orderHistory'), icon: History },
+            { href: `/client/rewards`, label: t('my_rewards'), icon: Trophy },
         ]
       };
 
@@ -287,7 +297,7 @@ function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
                               const isActive = activeOrgId === org.id;
                               const modules = getModuleItems(org);
                               return (
-                                <div key={org.id} className="border rounded-2xl overflow-hidden shadow-sm">
+                                <div key={org.id} className={cn("border rounded-2xl overflow-hidden shadow-sm transition-all", isActive ? "border-primary/50" : "border-slate-100")}>
                                   <button 
                                     className={cn(
                                       "w-full flex items-center justify-between p-3 text-sm font-bold transition-colors",
@@ -299,20 +309,26 @@ function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
                                       {React.createElement(getOrgTypeIcon(org.type), { className: "h-4 w-4" })}
                                       {org.name}
                                     </div>
-                                    {isActive && <CheckCircle className="h-4 w-4" />}
+                                    {isActive ? <CheckCircle2 className="h-4 w-4" /> : <ChevronRight className="h-4 w-4 opacity-30" />}
                                   </button>
                                   {isActive && (
-                                    <div className="p-2 space-y-4 bg-white">
-                                      {Object.entries(modules).map(([groupKey, items]) => (
-                                        items.length > 0 && (
-                                          <div key={groupKey}>
-                                            <p className="px-2 text-[9px] font-black text-slate-400 uppercase mb-1">{t(`group_${groupKey}` as any)}</p>
-                                            <div className="flex flex-col gap-1 border-l-2 border-slate-100 ml-2 pl-2">
-                                              {items.map(item => <MoreMenuLink key={item.href} item={item} onClose={onClose} />)}
-                                            </div>
-                                          </div>
-                                        )
-                                      ))}
+                                    <div className="p-2 space-y-1 bg-white">
+                                      <Accordion type="single" collapsible className="w-full">
+                                        {Object.entries(modules).map(([groupKey, items]) => (
+                                          items.length > 0 && (
+                                            <AccordionItem key={groupKey} value={groupKey} className="border-none">
+                                              <AccordionTrigger className="px-2 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest hover:no-underline">
+                                                {t(`group_${groupKey}` as any)}
+                                              </AccordionTrigger>
+                                              <AccordionContent className="pb-1">
+                                                <div className="flex flex-col gap-1 border-l-2 border-primary/10 ml-2 pl-2">
+                                                  {items.map(item => <MoreMenuLink key={item.href} item={item} onClose={onClose} />)}
+                                                </div>
+                                              </AccordionContent>
+                                            </AccordionItem>
+                                          )
+                                        ))}
+                                      </Accordion>
                                     </div>
                                   )}
                                 </div>
@@ -326,9 +342,8 @@ function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
                 </Accordion>
               ) : (
                 <div className="space-y-6">
-                  {/* Otros roles como admin local o cliente */}
                   <div className="flex flex-col gap-1">
-                    {baseNavItems.map(item => <MoreMenuLink key={item.href} item={item} onClose={onClose} />)}
+                    {(role === 'client' ? navConfig.mobile.client : navConfig.mobile.admin).map(item => <MoreMenuLink key={item.href} item={item} onClose={onClose} />)}
                   </div>
                 </div>
               )}
@@ -346,20 +361,4 @@ function MoreMenuSheetContent({ onClose }: { onClose: () => void }) {
             </div>
         </div>
     );
-}
-
-function CheckCircle({ className }: { className?: string }) {
-  return (
-    <svg 
-      className={className} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="3" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
 }
