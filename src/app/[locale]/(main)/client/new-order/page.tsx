@@ -57,7 +57,7 @@ const CheckoutContent = ({
 
   const handleWhatsApp = () => {
     if (!activeOrg?.storeConfig?.contactWhatsapp) {
-      alert("El proveedor no tiene configurado un número de WhatsApp en su perfil de marca.");
+      alert("El proveedor no tiene configurado un número de WhatsApp en su sección de Marca.");
       return;
     }
     
@@ -290,7 +290,6 @@ export default function NewOrderPage() {
       ? unifiedProductsForClient.filter(p => favoriteProductIds.has(p.id))
       : unifiedProductsForClient.filter(p => p.category.es === activeCategory);
     
-    // Solo filtramos por subcategoría si el usuario ha seleccionado una específica (no "all")
     if (activeSubcategory !== 'all') {
       productList = productList.filter(p => p.subcategory?.es === activeSubcategory);
     }
@@ -370,25 +369,6 @@ export default function NewOrderPage() {
     setIsSuccess(false);
   };
 
-  const checkoutProps = {
-    orderItems,
-    itemNotes: notes,
-    generalObservations,
-    onGeneralObservationsChange: setGeneralObservations,
-    subtotal,
-    discountAmount,
-    total,
-    deliveryDate,
-    isSubmitting,
-    isSuccess,
-    handleSubmitOrder,
-    onClose: handleCloseCheckout,
-    t,
-    locale,
-    priceListName,
-    discountPercentage,
-  };
-
   return (
     <div className="flex flex-col h-full bg-gray-50/50">
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b py-1.5 overflow-x-hidden no-print">
@@ -426,7 +406,7 @@ export default function NewOrderPage() {
         </div>
         
         {subcategories.length > 0 && (
-          <div className="relative h-11 overflow-x-auto hide-scrollbar mt-1 border-t flex items-center">
+          <div className="relative h-11 overflow-x-auto hide-scrollbar mt-1 border-t flex items-center bg-white">
             <div className="flex items-center gap-1.5 px-3 min-w-full h-full">
               <Button
                 variant="ghost"
@@ -435,7 +415,7 @@ export default function NewOrderPage() {
                   "rounded-full h-7 px-3 text-[10px] font-bold uppercase tracking-wider border transition-all",
                   activeSubcategory === 'all' 
                     ? "bg-[#AFA428] text-white border-[#AFA428] hover:bg-[#AFA428]/90 shadow-sm" 
-                    : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                    : "bg-white text-slate-500 border-slate-200 hover:bg-accent hover:text-white hover:border-accent"
                 )}
                 onClick={() => setActiveSubcategory('all')}
               >
@@ -450,7 +430,7 @@ export default function NewOrderPage() {
                     "rounded-full h-7 px-3 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap border transition-all",
                     activeSubcategory === sub.es 
                       ? "bg-[#AFA428] text-white border-[#AFA428] hover:bg-[#AFA428]/90 shadow-sm" 
-                      : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                      : "bg-white text-slate-500 border-slate-200 hover:bg-accent hover:text-white hover:border-accent"
                   )}
                   onClick={() => setActiveSubcategory(sub.es)}
                 >
@@ -520,7 +500,26 @@ export default function NewOrderPage() {
 
       <Sheet open={isCheckoutOpen} onOpenChange={handleCloseCheckout}>
         <SheetContent side="bottom" className="h-[95dvh] max-h-[95dvh] p-0 flex flex-col rounded-t-[40px] overflow-hidden border-none shadow-2xl">
-          <CheckoutContent {...{ ...checkoutProps, activeOrg, userProfile }} />
+          <CheckoutContent 
+            orderItems={orderItems}
+            itemNotes={notes}
+            generalObservations={generalObservations}
+            onGeneralObservationsChange={setGeneralObservations}
+            subtotal={subtotal}
+            discountAmount={discountAmount}
+            total={total}
+            deliveryDate={deliveryDate}
+            isSubmitting={isSubmitting}
+            isSuccess={isSuccess}
+            handleSubmitOrder={handleSubmitOrder}
+            onClose={handleCloseCheckout}
+            t={t}
+            locale={locale}
+            activeOrg={activeOrg}
+            userProfile={userProfile}
+            priceListName={priceListName}
+            discountPercentage={discountPercentage}
+          />
         </SheetContent>
       </Sheet>
 
