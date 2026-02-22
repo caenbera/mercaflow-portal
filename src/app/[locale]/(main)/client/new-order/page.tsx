@@ -45,7 +45,6 @@ const CheckoutContent = ({
   t, 
   locale, 
   priceListName, 
-  discountPercentage,
   activeOrg,
   userProfile
 }: any) => {
@@ -77,7 +76,6 @@ const CheckoutContent = ({
       </SheetHeader>
 
       <div className="flex-grow overflow-y-auto p-4 space-y-6 print-area">
-        {/* Encabezado para impresión */}
         <div className="hidden print:block mb-6 border-b pb-4">
           <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">RESUMEN DE PEDIDO</h1>
           <div className="flex justify-between mt-2 text-sm">
@@ -164,7 +162,7 @@ const CheckoutContent = ({
             WhatsApp
           </Button>
         </div>
-        <Button onClick={handleSubmitOrder} disabled={isSubmitting} size="lg" className="w-full h-14 rounded-2xl text-lg font-black shadow-xl shadow-primary/20">
+        <Button onClick={handleSubmitOrder} disabled={isSubmitting} size="lg" className="w-full h-14 rounded-2xl text-lg font-black shadow-xl">
           {isSubmitting ? (
             <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> {t('sendingOrder')}</>
           ) : (
@@ -206,7 +204,6 @@ export default function NewOrderPage() {
 
   const unifiedProductsForClient = useMemo(() => {
     if (loading) return [];
-    
     const productMap = products.reduce((acc, product) => {
         const existing = acc.get(product.sku);
         if (existing) {
@@ -216,14 +213,11 @@ export default function NewOrderPage() {
         }
         return acc;
     }, new Map<string, ProductType>());
-
     return Array.from(productMap.values());
   }, [products, loading]);
 
-
   const favoriteProductIds = useMemo(() => {
     if (ordersLoading || !orders.length) return new Set<string>();
-
     const productOrderCounts: Record<string, number> = {};
     orders.forEach(order => {
         const productsInThisOrder = new Set<string>();
@@ -232,16 +226,13 @@ export default function NewOrderPage() {
             productOrderCounts[productId] = (productOrderCounts[productId] || 0) + 1;
         });
     });
-    
     return new Set<string>(Object.keys(productOrderCounts).filter(id => productOrderCounts[id] >= 3));
   }, [orders, ordersLoading]);
 
   const allCategories = useMemo(() => {
     if (loading) return [];
     const uniqueCategories = Array.from(new Map(unifiedProductsForClient.map(p => [p.category.es, p.category])).values());
-    
     const favCategory: any = { es: t('favorites'), en: 'Favorites', isFavorite: true };
-
     return [favCategory, ...uniqueCategories.sort((a,b) => a.es.localeCompare(b.es))];
   }, [unifiedProductsForClient, loading, t]);
   
@@ -256,76 +247,41 @@ export default function NewOrderPage() {
     const productsInCategory = unifiedProductsForClient.filter(p => p.category.es === activeCategory);
     const uniqueSubcats = new Map<string, { es: string; en: string }>();
     productsInCategory.forEach(p => {
-      if (p.subcategory?.es) {
-        uniqueSubcats.set(p.subcategory.es, p.subcategory);
-      }
+      if (p.subcategory?.es) uniqueSubcats.set(p.subcategory.es, p.subcategory);
     });
     return Array.from(uniqueSubcats.values()).sort((a, b) => a.es.localeCompare(b.es));
   }, [activeCategory, unifiedProductsForClient, loading]);
 
   const filteredProducts = useMemo(() => {
     if (loading) return [];
-
-    let productList: ProductType[];
-
-    if (activeCategory === t('favorites')) {
-      productList = unifiedProductsForClient.filter(p => favoriteProductIds.has(p.id));
-    } else {
-      productList = unifiedProductsForClient.filter(p => p.category.es === activeCategory);
-    }
-    
-    if (activeSubcategory !== 'all') {
-      productList = productList.filter(p => p.subcategory?.es === activeSubcategory);
-    }
-    
-    if (searchTerm) {
-      productList = productList.filter(p => p.name[locale].toLowerCase().includes(searchTerm.toLowerCase()));
-    }
-    
+    let productList = activeCategory === t('favorites') 
+      ? unifiedProductsForClient.filter(p => favoriteProductIds.has(p.id))
+      : unifiedProductsForClient.filter(p => p.category.es === activeCategory);
+    if (activeSubcategory !== 'all') productList = productList.filter(p => p.subcategory?.es === activeSubcategory);
+    if (searchTerm) productList = productList.filter(p => p.name[locale].toLowerCase().includes(searchTerm.toLowerCase()));
     return productList.sort((a, b) => a.name[locale].localeCompare(b.name[locale]));
-    
   }, [activeCategory, activeSubcategory, searchTerm, unifiedProductsForClient, loading, favoriteProductIds, t, locale]);
 
-  const { orderItems, subtotal, discountAmount, total, totalItems, priceListName, discountPercentage } = useMemo(() => {
-    if (loading) return { orderItems: [], subtotal: 0, discountAmount: 0, total: 0, totalItems: 0, priceListName: '', discountPercentage: 0 };
-    
+  const { orderItems, subtotal, discountAmount, total, totalItems, priceListName } = useMemo(() => {
+    if (loading) return { orderItems: [], subtotal: 0, discountAmount: 0, total: 0, totalItems: 0, priceListName: '' };
     const clientPriceList = priceLists.find(pl => pl.name === userProfile?.priceList) || null;
-    let runningSubtotal = 0;
-    let runningDiscount = 0;
-    let runningTotalItems = 0;
+    let runningSubtotal = 0, runningDiscount = 0, runningTotalItems = 0;
     const runningOrderItems: (OrderItem & { photoUrl: string })[] = [];
-
     for (const productId in cart) {
         const cartItem = cart[productId];
         const product = products.find(p => p.id === productId);
         if (!product || !cartItem) continue;
-
         const offer = offers.find(o => o.id === cartItem.offerId);
         const { finalPrice, discount } = calculateDiscount(product, clientPriceList, offer);
-
         runningSubtotal += product.salePrice * cartItem.quantity;
         runningDiscount += discount * cartItem.quantity;
         runningTotalItems += cartItem.quantity;
-        
         runningOrderItems.push({
-            productId: product.id,
-            productName: product.name,
-            quantity: cartItem.quantity,
-            price: finalPrice,
-            photoUrl: product.photoUrl || '',
-            isBox: product.isBox || false,
+            productId: product.id, productName: product.name, quantity: cartItem.quantity,
+            price: finalPrice, photoUrl: product.photoUrl || '', isBox: product.isBox || false,
         });
     }
-
-    return { 
-      orderItems: runningOrderItems,
-      subtotal: runningSubtotal,
-      discountAmount: runningDiscount,
-      total: runningSubtotal - runningDiscount,
-      totalItems: runningTotalItems,
-      priceListName: clientPriceList?.name || '',
-      discountPercentage: (clientPriceList?.tiers && clientPriceList.tiers[0]?.discount) || 0,
-    };
+    return { orderItems: runningOrderItems, subtotal: runningSubtotal, discountAmount: runningDiscount, total: runningSubtotal - runningDiscount, totalItems: runningTotalItems, priceListName: clientPriceList?.name || '' };
   }, [cart, products, offers, userProfile, priceLists, loading]);
 
   const handleOpenNoteModal = (product: ProductType) => {
@@ -335,86 +291,41 @@ export default function NewOrderPage() {
   };
 
   const handleSaveNote = () => {
-    if (currentProductForNote) {
-      updateNote(currentProductForNote.id, currentNote);
-    }
+    if (currentProductForNote) updateNote(currentProductForNote.id, currentNote);
     setIsNoteModalOpen(false);
     setCurrentProductForNote(null);
     setCurrentNote('');
   };
 
   const handleSubmitOrder = async () => {
-    if (!user || !userProfile || !activeOrgId) {
-      toast({ variant: "destructive", title: t('error'), description: t('noUserError') });
-      return;
-    }
-    if (orderItems.length === 0) {
-      toast({ variant: "destructive", title: t('error'), description: t('emptyCartError') });
-      return;
-    }
-    if (!userProfile.address) {
-      toast({ variant: "destructive", title: t('error'), description: t('noAddressError') });
-      return;
-    }
-    if (!deliveryDate) {
-      toast({ variant: "destructive", title: t('error'), description: t('noDateError') });
-      return;
-    }
-
+    if (!user || !userProfile || !activeOrgId) return;
+    if (orderItems.length === 0) return;
     setIsSubmitting(true);
     try {
       await addOrder({
-        organizationId: activeOrgId,
-        userId: user.uid,
-        businessName: userProfile.businessName,
-        items: orderItems.map(({ photoUrl, ...item }) => item),
-        total,
-        status: 'pending',
-        shippingAddress: userProfile.address,
-        discountApplied: discountAmount,
-        notes: {
-            general: generalObservations,
-            items: notes
-        },
-        deliveryDate: Timestamp.fromDate(deliveryDate),
+        organizationId: activeOrgId, userId: user.uid, businessName: userProfile.businessName,
+        items: orderItems.map(({ photoUrl, ...item }) => item), total, status: 'pending',
+        shippingAddress: userProfile.address, discountApplied: discountAmount,
+        notes: { general: generalObservations, items: notes },
+        deliveryDate: Timestamp.fromDate(deliveryDate || new Date()),
       });
-      toast({ title: t('orderPlaced'), description: t('orderPlacedDesc') });
+      toast({ title: t('orderPlaced') });
       clearCart();
       setIsCheckoutOpen(false);
     } catch (error: any) {
-      toast({ variant: "destructive", title: t('orderFailed'), description: error.message || t('orderFailedDesc') });
+      toast({ variant: "destructive", title: t('orderFailed') });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const checkoutProps = {
-    orderItems,
-    itemNotes: notes,
-    generalObservations,
-    onGeneralObservationsChange: setGeneralObservations,
-    subtotal,
-    discountAmount,
-    total,
-    deliveryDate,
-    isSubmitting,
-    handleSubmitOrder,
-    t,
-    locale,
-    priceListName,
-    discountPercentage,
-    activeOrg,
-    userProfile
-  };
-
   return (
     <div className="flex flex-col h-full bg-gray-50/50">
-      {/* Header */}
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b py-1.5 overflow-x-hidden no-print">
         <div className="flex items-center gap-2 px-3 mb-1">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className={cn("flex-1 justify-start text-left font-normal text-sm h-9 rounded-xl border-none bg-slate-100", !deliveryDate && "text-muted-foreground")}>
+              <Button variant="outline" className={cn("flex-1 justify-start text-left h-9 rounded-xl border-none bg-slate-100", !deliveryDate && "text-muted-foreground")}>
                 <CalendarIcon className="mr-2 h-3.5 w-3.5" />
                 {deliveryDate ? format(deliveryDate, "PPP", { locale: locale === 'es' ? es : enUS }) : <span>{t('pickDate')}</span>}
               </Button>
@@ -427,71 +338,31 @@ export default function NewOrderPage() {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               placeholder={t('searchPlaceholder')}
-              className="pl-8 pr-2 h-9 text-sm rounded-xl border-none bg-slate-100"
+              className="pl-8 h-9 text-sm rounded-xl border-none bg-slate-100"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
-
         <div className="relative h-9 overflow-x-auto hide-scrollbar mt-1">
           <div className="absolute left-0 top-0 flex items-center gap-1.5 px-3 min-w-full">
             {allCategories.map((cat: any) => (
-              <Button
-                key={cat.es}
-                variant={activeCategory === cat.es ? 'default' : 'outline'}
-                size="sm"
-                className="rounded-full h-7 px-3 text-[11px] font-bold flex-shrink-0 whitespace-nowrap shadow-sm"
-                onClick={() => {
-                  setActiveCategory(cat.es);
-                  setActiveSubcategory('all');
-                }}
-              >
+              <Button key={cat.es} variant={activeCategory === cat.es ? 'default' : 'outline'} size="sm" className="rounded-full h-7 px-3 text-[11px] font-bold" onClick={() => { setActiveCategory(cat.es); setActiveSubcategory('all'); }}>
                 {cat.isFavorite && <Star className="h-3 w-3 mr-1 text-yellow-400 fill-yellow-400" />}
                 {cat[locale] || cat.es}
               </Button>
             ))}
           </div>
         </div>
-        {subcategories.length > 0 && (
-          <div className="relative h-9 overflow-x-auto hide-scrollbar mt-1">
-            <div className="absolute left-0 top-0 flex items-center gap-1.5 px-3 min-w-full">
-              <Button
-                key="all"
-                variant={activeSubcategory === 'all' ? 'secondary' : 'ghost'}
-                size="sm"
-                className="border-none rounded-full h-7 px-3 text-[11px] font-medium flex-shrink-0 whitespace-nowrap bg-blue-50 hover:bg-blue-100 text-blue-800"
-                onClick={() => setActiveSubcategory('all')}
-              >
-                Todos
-              </Button>
-              {subcategories.map((subcat: any) => (
-                <Button
-                  key={subcat.es}
-                  variant={activeSubcategory === subcat.es ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="border-none rounded-full h-7 px-3 text-[11px] font-medium flex-shrink-0 whitespace-nowrap bg-blue-50 hover:bg-blue-100 text-blue-800"
-                  onClick={() => setActiveSubcategory(subcat.es)}
-                >
-                  {subcat[locale] || subcat.es}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Product List */}
       <div className="flex-grow overflow-y-auto pb-32 no-print">
         {loading ? (
              <div className="p-2 space-y-px">
                 {[...Array(5)].map((_, i) => (
                     <div key={i} className="bg-background border-b p-2 flex items-center gap-2">
                         <Skeleton className="h-[50px] w-[50px] rounded-lg shrink-0" />
-                        <div className="flex-grow min-w-0 space-y-2">
-                           <Skeleton className="h-4 w-3/4" />
-                           <Skeleton className="h-3 w-1/2" />
-                        </div>
+                        <div className="flex-grow min-w-0 space-y-2"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-3 w-1/2" /></div>
                         <Skeleton className="h-8 w-24 rounded-full shrink-0" />
                     </div>
                 ))}
@@ -503,53 +374,24 @@ export default function NewOrderPage() {
             const unitText = typeof p.unit === 'object' && p.unit?.[locale] ? p.unit[locale] : (p.unit as any);
             return (
               <div key={p.id} className="bg-background border-b p-2 flex items-center gap-3">
-                <button type="button" onClick={() => setImageToView(p.photoUrl || '/placeholder.svg')} className="shrink-0 rounded-xl overflow-hidden focus:outline-none ring-1 ring-slate-100 shadow-sm">
-                  <Image
-                    src={p.photoUrl || '/placeholder.svg'}
-                    alt={p.name[locale]}
-                    width={56}
-                    height={56}
-                    className="rounded-xl object-cover bg-slate-50"
-                  />
+                <button type="button" onClick={() => setImageToView(p.photoUrl || '/placeholder.svg')} className="shrink-0 rounded-xl overflow-hidden ring-1 ring-slate-100 shadow-sm">
+                  <Image src={p.photoUrl || '/placeholder.svg'} alt={p.name[locale]} width={56} height={56} className="rounded-xl object-cover bg-slate-50" />
                 </button>
                 <div className="flex-grow min-w-0">
                   <p className="font-bold text-sm leading-tight text-slate-800">{p.name[locale]}</p>
                   <div className="text-xs text-slate-500 flex items-center mt-1 font-medium">
                     <span>{formatCurrency(p.salePrice)} / {unitText}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={cn("h-auto px-1.5 py-0.5 ml-2 text-[10px] font-bold uppercase tracking-tighter rounded-full border", hasNote ? "bg-primary/10 text-primary border-primary/20" : "bg-slate-50 text-slate-400 border-slate-200")}
-                      onClick={() => handleOpenNoteModal(p)}
-                    >
+                    <Button variant="ghost" size="sm" className={cn("h-auto px-1.5 py-0.5 ml-2 text-[10px] font-bold uppercase tracking-tighter rounded-full border", hasNote ? "bg-primary/10 text-primary border-primary/20" : "bg-slate-50 text-slate-400 border-slate-200")} onClick={() => handleOpenNoteModal(p)}>
                       {hasNote ? <Pencil className="h-2.5 w-2.5 mr-1" /> : <MessageSquarePlus className="h-2.5 w-2.5 mr-1" />}
                       {t('note')}
                     </Button>
                   </div>
-                  {quantity > 0 && (
-                    <p className="font-black text-primary text-sm mt-1">{formatCurrency(quantity * p.salePrice)}</p>
-                  )}
+                  {quantity > 0 && <p className="font-black text-primary text-sm mt-1">{formatCurrency(quantity * p.salePrice)}</p>}
                 </div>
-                <div className="flex items-center gap-1 bg-slate-100 rounded-2xl border border-slate-200 p-1 shrink-0 shadow-inner">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 rounded-xl hover:bg-white transition-colors"
-                    onClick={() => addToCart(p.id, -1)}
-                  >
-                    <Minus className="h-3.5 w-3.5" />
-                  </Button>
-                  <div className="w-7 text-center text-sm font-black text-slate-800">
-                    {quantity || '0'}
-                  </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 rounded-xl hover:bg-white transition-colors"
-                    onClick={() => addToCart(p.id, 1)}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </Button>
+                <div className="flex items-center gap-1 bg-slate-100 rounded-2xl border p-1 shrink-0">
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => addToCart(p.id, -1)}><Minus className="h-3.5 w-3.5" /></Button>
+                  <div className="w-7 text-center text-sm font-black">{quantity || '0'}</div>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => addToCart(p.id, 1)}><Plus className="h-3.5 w-3.5" /></Button>
                 </div>
               </div>
             );
@@ -559,77 +401,31 @@ export default function NewOrderPage() {
         )}
       </div>
 
-      {/* Note Modal */}
       <Dialog open={isNoteModalOpen} onOpenChange={setIsNoteModalOpen}>
         <DialogContent className="rounded-3xl p-6">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold">Instrucciones para el Picker</DialogTitle>
-            <p className="text-sm text-slate-500 font-medium">Producto: {currentProductForNote?.name[locale]}</p>
-          </DialogHeader>
-          <Textarea
-            value={currentNote}
-            onChange={(e) => setCurrentNote(e.target.value)}
-            placeholder="Ej: Necesito aguacates muy maduros para hoy mismo..."
-            className="text-sm bg-slate-50 border-none rounded-2xl min-h-[120px]"
-          />
-          <DialogFooter className="pt-4">
-            <Button onClick={handleSaveNote} size="lg" className="w-full rounded-2xl font-bold">{t('saveNote')}</Button>
-          </DialogFooter>
+          <DialogHeader><DialogTitle className="text-lg font-bold">Instrucciones para el Picker</DialogTitle></DialogHeader>
+          <Textarea value={currentNote} onChange={(e) => setCurrentNote(e.target.value)} placeholder="Ej: Necesito aguacates muy maduros..." className="bg-slate-50 border-none rounded-2xl min-h-[120px]" />
+          <DialogFooter><Button onClick={handleSaveNote} size="lg" className="w-full rounded-2xl font-bold">{t('saveNote')}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Image Zoom Modal */}
-      <Dialog open={!!imageToView} onOpenChange={(isOpen) => !isOpen && setImageToView(null)}>
-        <DialogContent className="p-0 border-none bg-transparent shadow-none max-w-xl">
-          {imageToView && (
-            <div className="relative aspect-square w-full">
-              <Image
-                src={imageToView}
-                alt="Product zoom"
-                fill
-                className="rounded-3xl object-cover"
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <Sheet open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
+        <SheetContent side="bottom" className="h-[95dvh] max-h-[95dvh] p-0 flex flex-col rounded-t-[40px] overflow-hidden border-none shadow-2xl">
+          <CheckoutContent {...{ ...checkoutProps, activeOrg, userProfile }} />
+        </SheetContent>
+      </Sheet>
 
-      {/* Checkout */}
-      {isMobile ? (
-        <Sheet open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-          <SheetContent side="bottom" className="h-[95dvh] max-h-[95dvh] p-0 flex flex-col rounded-t-[40px] overflow-hidden border-none shadow-2xl">
-            <CheckoutContent {...checkoutProps} />
-          </SheetContent>
-        </Sheet>
-      ) : (
-        <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-          <DialogContent className="max-w-lg p-0 sm:max-w-lg rounded-3xl overflow-hidden border-none shadow-2xl">
-            <CheckoutContent {...checkoutProps} />
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Floating Cart Bar */}
       {totalItems > 0 && (
-        <div className="fixed bottom-[75px] inset-x-4 z-30 sm:bottom-6 sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-md no-print">
-          <Button 
-            onClick={() => setIsCheckoutOpen(true)} 
-            className="w-full h-16 rounded-3xl shadow-2xl bg-slate-900 text-white flex justify-between items-center px-6 transition-transform active:scale-95 group overflow-hidden border-none"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="bg-primary p-2 rounded-xl">
-                <ShoppingBasket className="h-6 w-6" />
-              </div>
+        <div className="fixed bottom-[75px] inset-x-4 z-30 sm:max-w-md sm:left-1/2 sm:-translate-x-1/2 no-print">
+          <Button onClick={() => setIsCheckoutOpen(true)} className="w-full h-16 rounded-3xl shadow-2xl bg-slate-900 text-white flex justify-between items-center px-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-primary p-2 rounded-xl"><ShoppingBasket className="h-6 w-6" /></div>
               <div className="text-left">
                 <p className="text-[10px] uppercase font-black text-slate-400 leading-none mb-1">{totalItems} {t('items')}</p>
                 <p className="font-black text-xl leading-none">{formatCurrency(total)}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 relative z-10">
-              <span className="font-bold text-sm uppercase tracking-widest">{t('viewOrder')}</span>
-              <Plus className="h-4 w-4 bg-white/20 rounded-full" />
-            </div>
+            <span className="font-bold text-sm uppercase tracking-widest">{t('viewOrder')}</span>
           </Button>
         </div>
       )}
