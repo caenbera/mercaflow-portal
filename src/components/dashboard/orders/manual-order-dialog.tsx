@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -273,7 +274,10 @@ export function ManualOrderDialog({ open, onOpenChange }: ManualOrderDialogProps
                       </div>
                       <div className="flex-grow min-w-0">
                         <p className="font-bold text-sm text-slate-800 truncate">{product.name[locale]}</p>
-                        <p className="text-xs text-primary font-bold">{formatPrice(calculateDiscount(product, priceLists.find(pl => pl.name === selectedClient.priceList)).finalPrice)} <span className="text-slate-400 font-normal line-through">{formatPrice(product.salePrice)}</span></p>
+                        <p className="text-xs text-primary font-bold">
+                          {formatPrice(calculateDiscount(product, priceLists.find(pl => pl.name === selectedClient.priceList) || null).finalPrice)} 
+                          <span className="text-slate-400 font-normal line-through ml-1">{formatPrice(product.salePrice)}</span>
+                        </p>
                       </div>
                       <div className="flex items-center gap-2 bg-white rounded-full p-1 border shadow-sm">
                         <Button 
