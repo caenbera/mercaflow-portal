@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -56,7 +55,7 @@ const getTierIcon = (tier?: ClientTier) => {
 };
 
 export function ClientsPageClient() {
-  const t = useTranslations('ClientsPage');
+  const locale = useLocale();
   const { activeOrgId } = useOrganization();
   const { users, loading: usersLoading } = useUsers();
   const { organizations, loading: orgsLoading } = useOrganizations();
@@ -71,6 +70,101 @@ export function ClientsPageClient() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
+
+  const dict = {
+    es: {
+      title: "Cartera de Clientes",
+      subtitle: "Gestiona cuentas, créditos y socios vinculados en red.",
+      search_placeholder: "Buscar por Nombre, ID o Email...",
+      status_label: "Estado",
+      sort_label: "Ordenar",
+      filter_all: "Todos",
+      status_active: "Activo",
+      status_pending_approval: "Pendiente Aprobación",
+      status_blocked: "Bloqueado",
+      header_client: "Cliente / Negocio",
+      header_contact: "Contacto",
+      header_credit_status: "Estado de Crédito",
+      header_status: "Estado",
+      header_actions: "Acciones",
+      credit_limit: "Límite",
+      client_type_network: "Empresa Vinculada",
+      action_edit: "Editar",
+      action_view_orders: "Ver Pedidos",
+      change_status_label: "Cambiar Estado",
+      action_activate: "Activar Cliente",
+      action_block: "Bloquear Cliente",
+      action_delete: "Eliminar Cliente",
+      delete_confirm_title: "¿Estás seguro?",
+      delete_confirm_desc: "Esto eliminará permanentemente al cliente. Esta acción no se puede deshacer.",
+      cancel_button: "Cancelar",
+      delete_button_confirm: "Sí, Eliminar",
+      sort_recent: "Más Recientes",
+      sort_sales: "Ventas Altas",
+      sort_risk: "Riesgo Crediticio"
+    },
+    en: {
+      title: "Customer Portfolio",
+      subtitle: "Manage accounts, credits, and network-linked partners.",
+      search_placeholder: "Search by Name, ID, or Email...",
+      status_label: "Status",
+      sort_label: "Sort",
+      filter_all: "All",
+      status_active: "Active",
+      status_pending_approval: "Pending Approval",
+      status_blocked: "Blocked",
+      header_client: "Client / Business",
+      header_contact: "Contact",
+      header_credit_status: "Credit Status",
+      header_status: "Status",
+      header_actions: "Actions",
+      credit_limit: "Limit",
+      client_type_network: "Linked Company",
+      action_edit: "Edit",
+      action_view_orders: "View Orders",
+      change_status_label: "Change Status",
+      action_activate: "Activate Client",
+      action_block: "Block Client",
+      action_delete: "Delete Client",
+      delete_confirm_title: "Are you sure?",
+      delete_confirm_desc: "This will permanently delete the client. This action cannot be undone.",
+      cancel_button: "Cancel",
+      delete_button_confirm: "Yes, Delete",
+      sort_recent: "Most Recent",
+      sort_sales: "Highest Sales",
+      sort_risk: "Credit Risk"
+    }
+  }[locale as 'es' | 'en'] || {
+    title: "Customer Portfolio",
+    subtitle: "Manage accounts, credits, and network-linked partners.",
+    search_placeholder: "Search by Name, ID, or Email...",
+    status_label: "Status",
+    sort_label: "Sort",
+    filter_all: "All",
+    status_active: "Active",
+    status_pending_approval: "Pending Approval",
+    status_blocked: "Blocked",
+    header_client: "Client / Business",
+    header_contact: "Contact",
+    header_credit_status: "Credit Status",
+    header_status: "Status",
+    header_actions: "Actions",
+    credit_limit: "Limit",
+    client_type_network: "Linked Company",
+    action_edit: "Edit",
+    action_view_orders: "View Orders",
+    change_status_label: "Change Status",
+    action_activate: "Activate Client",
+    action_block: "Block Client",
+    action_delete: "Delete Client",
+    delete_confirm_title: "Are you sure?",
+    delete_confirm_desc: "This will permanently delete the client. This action cannot be undone.",
+    cancel_button: "Cancel",
+    delete_button_confirm: "Yes, Delete",
+    sort_recent: "Most Recent",
+    sort_sales: "Highest Sales",
+    sort_risk: "Credit Risk"
+  };
 
   const loading = usersLoading || orgsLoading || connLoading;
 
@@ -171,8 +265,8 @@ export function ClientsPageClient() {
     try {
       await updateUserProfile(client.uid, { status: newStatus });
       toast({ 
-          title: t('toast_status_updated_title'), 
-          description: t('toast_status_updated_desc', { clientName: client.businessName, newStatus: newStatus })
+          title: dict.status_active, 
+          description: `${client.businessName} status: ${newStatus}`
       });
     } catch (error) {
       toast({ variant: 'destructive', title: "Error", description: "Could not update the client's status." });
@@ -184,8 +278,8 @@ export function ClientsPageClient() {
     try {
       await deleteUser(clientToDelete.uid);
       toast({
-        title: t('toast_delete_success_title'),
-        description: t('toast_delete_success_desc', { clientName: clientToDelete.businessName }),
+        title: "Success",
+        description: `${clientToDelete.businessName} deleted`
       });
     } catch (error) {
       toast({ variant: 'destructive', title: "Error", description: "Could not delete client." });
@@ -201,15 +295,15 @@ export function ClientsPageClient() {
       <AlertDialog open={!!clientToDelete} onOpenChange={(open) => !open && setClientToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>{t('delete_confirm_title')}</AlertDialogTitle>
+                <AlertDialogTitle>{dict.delete_confirm_title}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    {t('delete_confirm_desc', { clientName: clientToDelete?.businessName })}
+                    {dict.delete_confirm_desc}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel>{t('cancel_button')}</AlertDialogCancel>
+                <AlertDialogCancel>{dict.cancel_button}</AlertDialogCancel>
                 <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">
-                    {t('delete_button_confirm')}
+                    {dict.delete_button_confirm}
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
@@ -217,8 +311,8 @@ export function ClientsPageClient() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold font-headline">{t('title')}</h1>
-            <p className="text-muted-foreground">{t('subtitle')}</p>
+            <h1 className="text-2xl font-bold font-headline">{dict.title}</h1>
+            <p className="text-muted-foreground">{dict.subtitle}</p>
           </div>
         </div>
 
@@ -229,7 +323,7 @@ export function ClientsPageClient() {
                 <div className="relative flex-grow w-full">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
-                        placeholder={t('search_placeholder')} 
+                        placeholder={dict.search_placeholder} 
                         className="pl-8" 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -237,23 +331,23 @@ export function ClientsPageClient() {
                 </div>
                  <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-full sm:w-auto">
-                        <SelectValue placeholder={t('status_label')} />
+                        <SelectValue placeholder={dict.status_label} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">{t('filter_all')}</SelectItem>
-                        <SelectItem value="active">{t('status_active')}</SelectItem>
-                        <SelectItem value="pending_approval">{t('status_pending_approval')}</SelectItem>
-                         <SelectItem value="blocked">{t('status_blocked')}</SelectItem>
+                        <SelectItem value="all">{dict.filter_all}</SelectItem>
+                        <SelectItem value="active">{dict.status_active}</SelectItem>
+                        <SelectItem value="pending_approval">{dict.status_pending_approval}</SelectItem>
+                         <SelectItem value="blocked">{dict.status_blocked}</SelectItem>
                     </SelectContent>
                 </Select>
                  <Select value={sortBy} onValueChange={setSortBy}>
                     <SelectTrigger className="w-full sm:w-auto">
-                        <SelectValue placeholder={t('sort_label')} />
+                        <SelectValue placeholder={dict.sort_label} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="recent">Most Recent</SelectItem>
-                        <SelectItem value="sales">Highest Sales</SelectItem>
-                         <SelectItem value="risk">Credit Risk</SelectItem>
+                        <SelectItem value="recent">{dict.sort_recent}</SelectItem>
+                        <SelectItem value="sales">{dict.sort_sales}</SelectItem>
+                         <SelectItem value="risk">{dict.sort_risk}</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -267,11 +361,11 @@ export function ClientsPageClient() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>{t('header_client')}</TableHead>
-                            <TableHead>{t('header_contact')}</TableHead>
-                            <TableHead>{t('header_credit_status')}</TableHead>
-                            <TableHead>{t('header_status')}</TableHead>
-                            <TableHead className="text-right">{t('header_actions')}</TableHead>
+                            <TableHead>{dict.header_client}</TableHead>
+                            <TableHead>{dict.header_contact}</TableHead>
+                            <TableHead>{dict.header_credit_status}</TableHead>
+                            <TableHead>{dict.header_status}</TableHead>
+                            <TableHead className="text-right">{dict.header_actions}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -314,7 +408,7 @@ export function ClientsPageClient() {
                                                                         <Globe className="h-3.5 w-3.5 text-primary" />
                                                                     </TooltipTrigger>
                                                                     <TooltipContent>
-                                                                        <p>{t('client_type_network')}</p>
+                                                                        <p>{dict.client_type_network}</p>
                                                                     </TooltipContent>
                                                                 </Tooltip>
                                                             </TooltipProvider>
@@ -345,17 +439,17 @@ export function ClientsPageClient() {
                                             <div className="w-32">
                                                 <div className="flex justify-between text-xs text-muted-foreground">
                                                     <span>{formatCurrency(creditUsed)}</span>
-                                                    <span>{t('credit_limit')}: {formatCurrency(creditLimit)}</span>
+                                                    <span>{dict.credit_limit}: {formatCurrency(creditLimit)}</span>
                                                 </div>
                                                 <Progress value={creditUsage} className="h-1.5 mt-1" indicatorClassName={creditColorClass} />
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex flex-col gap-1">
-                                                {client.status === 'active' && <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">{t('status_active')}</Badge>}
-                                                {client.status === 'pending_approval' && <Badge variant="outline" className="bg-yellow-100 text-yellow-600 border-yellow-200">{t('status_pending_approval')}</Badge>}
-                                                {client.status === 'blocked' && <Badge variant="destructive">{t('status_blocked')}</Badge>}
-                                                {client.isNetwork && <span className="text-[9px] font-bold text-primary uppercase ml-1">{t('client_type_network')}</span>}
+                                                {client.status === 'active' && <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">{dict.status_active}</Badge>}
+                                                {client.status === 'pending_approval' && <Badge variant="outline" className="bg-yellow-100 text-yellow-600 border-yellow-200">{dict.status_pending_approval}</Badge>}
+                                                {client.status === 'blocked' && <Badge variant="destructive">{dict.status_blocked}</Badge>}
+                                                {client.isNetwork && <span className="text-[9px] font-bold text-primary uppercase ml-1">{dict.client_type_network}</span>}
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right">
@@ -366,20 +460,20 @@ export function ClientsPageClient() {
                                                 <DropdownMenuContent align="end">
                                                     {!client.isNetwork ? (
                                                         <>
-                                                            <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2 h-4 w-4"/>{t('action_edit')}</DropdownMenuItem>
-                                                            <DropdownMenuItem><History className="mr-2 h-4 w-4"/>{t('action_view_orders')}</DropdownMenuItem>
+                                                            <DropdownMenuItem onSelect={() => handleEdit(client)}><Pencil className="mr-2 h-4 w-4"/>{dict.action_edit}</DropdownMenuItem>
+                                                            <DropdownMenuItem><History className="mr-2 h-4 w-4"/>{dict.action_view_orders}</DropdownMenuItem>
                                                             <DropdownMenuSeparator />
-                                                            <DropdownMenuLabel>{t('change_status_label')}</DropdownMenuLabel>
+                                                            <DropdownMenuLabel>{dict.change_status_label}</DropdownMenuLabel>
                                                             {client.status === 'pending_approval' && (
-                                                                <DropdownMenuItem onSelect={() => handleStatusChange(client, 'active')}><CheckCircle className="mr-2 h-4 w-4" />{t('action_activate')}</DropdownMenuItem>
+                                                                <DropdownMenuItem onSelect={() => handleStatusChange(client, 'active')}><CheckCircle className="mr-2 h-4 w-4" />{dict.action_activate}</DropdownMenuItem>
                                                             )}
                                                             {client.status === 'active' && (
-                                                                <DropdownMenuItem onSelect={() => handleStatusChange(client, 'blocked')} className="text-destructive focus:text-destructive"><XCircle className="mr-2 h-4 w-4" />{t('action_block')}</DropdownMenuItem>
+                                                                <DropdownMenuItem onSelect={() => handleStatusChange(client, 'blocked')} className="text-destructive focus:text-destructive"><XCircle className="mr-2 h-4 w-4" />{dict.action_block}</DropdownMenuItem>
                                                             )}
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuItem onSelect={() => setClientToDelete(client)} className="text-destructive focus:text-destructive">
                                                                 <Trash2 className="mr-2 h-4 w-4" />
-                                                                {t('action_delete')}
+                                                                {dict.action_delete}
                                                             </DropdownMenuItem>
                                                         </>
                                                     ) : (
