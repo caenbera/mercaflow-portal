@@ -4,7 +4,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link, usePathname, useRouter } from '@/navigation';
 import { useTranslations } from 'next-intl';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { LanguageSwitcher } from '../landing/language-switcher';
 import { useAuth } from '@/context/auth-context';
@@ -106,7 +106,7 @@ export function BottomNavBar({ navConfig }: { navConfig: NavDefinition }) {
                         )}
                     </button>
                   </SheetTrigger>
-                  <SheetContent side="bottom" className="h-[90dvh] max-h-[90dvh] p-0 flex flex-col">
+                  <SheetContent side="bottom" className="h-[90dvh] max-h-[90dvh] p-0 flex flex-col rounded-t-3xl overflow-hidden">
                     <NotificationSheetContent />
                   </SheetContent>
                 </Sheet>
@@ -125,7 +125,11 @@ export function BottomNavBar({ navConfig }: { navConfig: NavDefinition }) {
                             <span className="text-[11px] whitespace-normal text-center leading-tight">{item.label}</span>
                         </button>
                     </SheetTrigger>
-                    <SheetContent side="bottom" className="h-[85vh] w-full rounded-t-[32px] p-0 overflow-hidden">
+                    <SheetContent side="bottom" className="h-[85vh] w-full rounded-t-[32px] p-0 overflow-hidden flex flex-col">
+                      <SheetHeader className="sr-only">
+                        <SheetTitle>{t('more')}</SheetTitle>
+                        <SheetDescription>Navegación por niveles y edificios</SheetDescription>
+                      </SheetHeader>
                       <MoreMenuSheetContent 
                         onClose={() => setIsMoreSheetOpen(false)}
                         navConfig={navConfig}
@@ -215,6 +219,9 @@ function MoreMenuSheetContent({ onClose, navConfig }: { onClose: () => void, nav
             { href: `/admin/clients`, label: t('manageClients'), icon: Users },
             { href: `/admin/support`, label: t('support'), icon: Headset },
             { href: `/admin/store`, label: t('b2cStore'), icon: Fingerprint },
+        ],
+        logistics: [
+            { href: `/admin/logistics`, label: 'Logística & Delivery', icon: Truck },
         ],
         sales: [
             { href: `/admin/sales`, label: t('prospects'), icon: Target },

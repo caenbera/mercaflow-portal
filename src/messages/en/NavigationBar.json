@@ -40,6 +40,8 @@
   "group_activity": "My Activity",
   "group_account": "My Account",
   "group_ecosystem": "Ecosystem",
+  "group_clientPortal": "Client Portal",
+  "group_logistics": "Logistics & Delivery",
   "manageOrganizations": "Building Management",
   "group_level_importer": "Level 1: Importers",
   "group_level_distributor": "Level 2: Distributors",
