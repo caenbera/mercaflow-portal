@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -58,7 +59,9 @@ export default function StoreManagementPage() {
       tab_payments: "Pasarela de Pagos",
       main_logo_title: "Logotipo de la Empresa",
       logo_url_label: "Enlace del Logo (URL)",
-      logo_hint: "Pega la dirección de tu imagen (JPG, PNG o SVG). Se usará en tus invitaciones y pantallas de acceso.",
+      logo_hint: "Pega la dirección de tu imagen (JPG, PNG o SVG). Se usará en tus invitaciones y pantallas de acceso. Te sugerimos usar ",
+      logo_hint_action: "PostImages.org",
+      logo_hint_suffix: " y seleccionar la opción de 'Enlace directo'.",
       main_images_title: "Imágenes de la Web",
       hero_image_label: "URL Foto de Portada",
       category_images_title: "Imágenes de Categorías",
@@ -144,6 +147,7 @@ export default function StoreManagementPage() {
       toast_save_error_desc: "Hubo un error al guardar.",
       toast_category_deleted: "Campaña eliminada",
       confirm_delete_category: "Estás seguro que deseas borrar esta campaña?",
+      cancel: "Cancelar"
     },
     en: {
       identity_hub_title: "Identity & Branding",
@@ -163,7 +167,9 @@ export default function StoreManagementPage() {
       tab_payments: "Payment Gateway",
       main_logo_title: "Company Logo",
       logo_url_label: "Logo Link (URL)",
-      logo_hint: "Paste the address of your image (JPG, PNG or SVG). It will be used in your invitations and login screens.",
+      logo_hint: "Paste the address of your image (JPG, PNG or SVG). It will be used in your invitations and login screens. We suggest using ",
+      logo_hint_action: "PostImages.org",
+      logo_hint_suffix: " and selecting the 'Direct Link' option.",
       main_images_title: "Web Images",
       hero_image_label: "Cover Photo URL",
       category_images_title: "Category Images",
@@ -249,6 +255,7 @@ export default function StoreManagementPage() {
       toast_save_error_desc: "There was an error saving.",
       toast_category_deleted: "Campaign deleted",
       confirm_delete_category: "Are you sure you want to delete this campaign?",
+      cancel: "Cancel"
     }
   };
 
@@ -608,7 +615,13 @@ export default function StoreManagementPage() {
                                           placeholder="https://miweb.com/logo.png"
                                           className="bg-slate-50 h-11"
                                       />
-                                      <p className="text-[10px] text-muted-foreground">{l.logo_hint}</p>
+                                      <p className="text-[10px] text-muted-foreground">
+                                          {l.logo_hint}
+                                          <a href="https://postimages.org/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold ml-1">
+                                            {l.logo_hint_action}
+                                          </a>
+                                          {l.logo_hint_suffix}
+                                      </p>
                                   </div>
                                   <div className="h-24 w-24 bg-slate-50 border-2 border-dashed rounded-2xl flex items-center justify-center overflow-hidden mx-auto">
                                     {formData.logoUrl ? (

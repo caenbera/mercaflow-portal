@@ -22,7 +22,7 @@
   "tab_payments": "Payment Gateway",
   "main_logo_title": "Company Logo",
   "logo_url_label": "Logo Link (URL)",
-  "logo_hint": "Paste the address of your image (JPG, PNG or SVG). It will be used in your invitations and login screens.",
+  "logo_hint": "Paste the address of your image (JPG, PNG or SVG). It will be used in your invitations and login screens. We suggest using {link} and selecting the 'Direct Link' option.",
   "hero_title_label": "Main Title (Hero)",
   "hero_title_placeholder": "e.g., Your fresh market at your doorstep",
   "hero_subtitle_label": "Descriptive Subtitle",
